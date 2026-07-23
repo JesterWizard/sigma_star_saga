@@ -15,6 +15,7 @@ extern u8 gEnemyRemaining; /* Flight HUD quota / enemies left (not HP) */
 extern u32 gExpToCurrentLevel;
 extern u32 gExpToNextLevel;
 extern u8 gStageClearFlag;
+extern u8 gStageClearGate; /* 0 = allow clear (CB Clear Stage target) */
 
 /* IWRAM — inventory */
 extern u32 gGunDataBits[];

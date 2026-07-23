@@ -8,7 +8,7 @@ Early scaffold: the ROM is rebuilt by `.incbin`-ing `baserom.gba` so `make compa
 
 ### Flight battle skip (hack)
 
-Toggle `.skip_flight_battle` in [`configs/runtime.c`](configs/runtime.c). When `TRUE`, press **Select**, **L**, or **Start** during a 2D flight/shmup stage to force a stage clear. Implemented in-place at `0x0801749C` (`asm/flight_skip.s`).
+Toggle `.skip_flight_battle` in [`configs/runtime.c`](configs/runtime.c). When `TRUE`, hold **Select + L** during a 2D flight/shmup stage to force a stage clear. Implemented in-place at `0x0801749C` (`asm/flight_skip.s`).
 
 ### Always run (hack)
 

@@ -13,7 +13,7 @@
  * Edit configs/runtime.c, then rebuild.
  */
 typedef struct {
-    u8 skip_flight_battle; /* Select / L / Start in a 2D flight stage → stage clear */
+    u8 skip_flight_battle; /* SELECT+L in a 2D flight stage → stage clear */
     u8 always_run;         /* Overworld run speed without holding B */
     u8 always_max_health;  /* Flight: cancel hurt state (do not touch enemy counter) */
     u8 always_max_bombs;   /* Flight: smart bombs held at maximum (7) */

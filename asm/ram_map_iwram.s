@@ -45,6 +45,8 @@ SET_DATA gExpToNextLevel, 0x030071F0
 
 @ Stage-clear latch checked by planet flight handlers / TriggerStageClear.
 SET_DATA gStageClearFlag, 0x03007668
+@ Clear-sequence gate: 1 while battle active, 0 allows clear (CB Clear Stage).
+SET_DATA gStageClearGate, 0x03007730
 
 @ -- Inventory / Gun Data ------------------------------------------------------
 
