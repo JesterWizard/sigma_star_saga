@@ -63,10 +63,63 @@ NAMED_MODELS: dict[int, str] = {
     70: "zombie",
 }
 
-# Extra humanoid-sized ANMs to dump even without a name.
-# (Skip UI/objects; include remaining cast-sized walkers / NPCs.)
+# Unnamed ANMs still worth dumping (anm_NNN.png). Includes remaining
+# entries in 1..100 that parse as format-0 ANM, plus a few beyond.
 EXTRA_ANM_FILES = [
+    8,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
     44,  # was mis-ID'd as bloss; still dump until identified
+    52,
+    53,
+    55,
+    56,
+    57,
+    58,
+    59,
+    60,
+    68,
+    71,
+    72,
+    73,
+    74,
+    75,
+    76,
+    77,
+    78,
+    79,
+    80,
+    81,
+    82,
+    83,
+    84,
+    85,
+    86,
+    87,
+    88,
+    89,
+    90,
+    91,
+    92,
+    93,
+    94,
+    95,
+    96,
+    97,
     98,
     99,
     100,
@@ -211,7 +264,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--rom", type=Path, default=REPO / "baserom.gba")
     parser.add_argument(
-        "--out", type=Path, default=REPO / "graphics" / "character_models"
+        "--out", type=Path, default=REPO / "graphics" / "sprite_sheets"
     )
     parser.add_argument(
         "--frames",
