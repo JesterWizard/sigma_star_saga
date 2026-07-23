@@ -1,6 +1,7 @@
 #include "global.h"
 #include "runtime.h"
 #include "ram_map.h"
+#include "level_up.h"
 
 #define MAX_BOMBS 7
 
@@ -89,4 +90,34 @@ APPEND_TEXT void UpdateShooterFrame__Replacement(void)
         gPlayerBombs = MAX_BOMBS;
 
     ApplyInventoryCheatsOnce();
+}
+
+/* Veneered over AddExperience @ 0x0800FDC4 when exp_multiplier != 1. */
+APPEND_TEXT bool8 AddExperience__Replacement(u32 amount)
+{
+    u8 level = gPlayerLevel;
+
+    if (level > MAX_PLAYER_LEVEL - 1)
+        return FALSE;
+
+    amount *= gRuntimeConfig.exp_multiplier;
+
+    gPlayerExp += amount;
+
+    if (level == MAX_PLAYER_LEVEL)
+    {
+        if (gPlayerExp > gExpToNextLevel)
+            gPlayerExp = gExpToNextLevel;
+    }
+
+    if (gPlayerExp >= gExpToNextLevel)
+    {
+        gPlayerLevel++;
+        if (gPlayerLevel > MAX_PLAYER_LEVEL - 1)
+            gPlayerLevel = MAX_PLAYER_LEVEL;
+        CalcExpToNextLevel();
+        return TRUE;
+    }
+
+    return FALSE;
 }

@@ -23,6 +23,7 @@ typedef struct {
     u8 all_impact_data;    /* Unlock every Impact Data piece */
     u8 all_key_items;      /* DATA CARD, GENOME, VIRUS SAMPLE, … */
     u8 all_overworld_items; /* Flares, fossils, hints, … */
+    u8 exp_multiplier;     /* Scale AddExperience amount (1 = vanilla) */
 } RuntimeConfig;
 
 extern const RuntimeConfig gRuntimeConfigRom;

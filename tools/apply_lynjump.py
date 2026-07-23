@@ -48,6 +48,11 @@ ALWAYS_RUN_ANDS_SITES = [
 ANDS_R0_R1 = bytes((0x08, 0x40))  # 0x4008
 MOVS_R0_2 = bytes((0x02, 0x20))  # 0x2002
 
+# AddExperience @ 0xFDC4 — long-jump veneer when exp_multiplier != 1.
+ADD_EXPERIENCE_OFF = 0xFDC4
+ADD_EXPERIENCE_VENEER_LEN = 8
+EXP_MULT_RE = re.compile(r"\.exp_multiplier\s*=\s*(\d+)")
+
 
 def load_symbols(elf_path: pathlib.Path):
     output = subprocess.check_output(["arm-none-eabi-nm", str(elf_path)], text=True)
@@ -149,6 +154,12 @@ def load_runtime_flags() -> dict[str, bool]:
     return flags
 
 
+def load_exp_multiplier() -> int:
+    text = (ROOT / "configs" / "runtime.c").read_text()
+    match = EXP_MULT_RE.search(text)
+    return int(match.group(1)) if match else 1
+
+
 def apply_flight_skip_gate(rom: bytearray, owners: dict, enabled: bool):
     if enabled:
         print("runtime: skip_flight_battle=TRUE (in-place hook kept)")
@@ -207,6 +218,33 @@ def apply_shooter_cheats(rom: bytearray, owners: dict, symbols: dict, flags: dic
     print(f"runtime: shooter/inventory cheats ({', '.join(on)}) → 0x{hook:08X}")
 
 
+def apply_exp_multiplier(rom: bytearray, owners: dict, symbols: dict, multiplier: int):
+    baserom = (ROOT / "baserom.gba").read_bytes()
+    if multiplier == 1:
+        checked_write(
+            rom,
+            ADD_EXPERIENCE_OFF,
+            baserom[ADD_EXPERIENCE_OFF : ADD_EXPERIENCE_OFF + ADD_EXPERIENCE_VENEER_LEN],
+            owners,
+            "runtime:exp_multiplier=1",
+        )
+        print("runtime: exp_multiplier=1 (vanilla AddExperience)")
+        return
+
+    name = "AddExperience__Replacement"
+    if name not in symbols:
+        raise KeyError(f"symbol {name} not found (needed for exp_multiplier)")
+    hook = symbols[name]
+    checked_write(
+        rom,
+        ADD_EXPERIENCE_OFF,
+        SHOOTER_FRAME_VENEER_HEAD + struct.pack("<I", hook),
+        owners,
+        "runtime:exp_multiplier",
+    )
+    print(f"runtime: exp_multiplier={multiplier} → 0x{hook:08X}")
+
+
 def main():
     if len(sys.argv) != 3:
         print(f"usage: {sys.argv[0]} <elf> <rom>", file=sys.stderr)
@@ -220,6 +258,7 @@ def main():
     symbols = load_symbols(elf_path)
     owners: dict[int, str] = {}
     flags = load_runtime_flags()
+    exp_multiplier = load_exp_multiplier()
 
     if event_path.exists():
         apply_event(event_path, rom, symbols, owners)
@@ -227,6 +266,7 @@ def main():
     apply_flight_skip_gate(rom, owners, flags["skip_flight_battle"])
     apply_always_run(rom, owners, flags["always_run"])
     apply_shooter_cheats(rom, owners, symbols, flags)
+    apply_exp_multiplier(rom, owners, symbols, exp_multiplier)
 
     rom_path.write_bytes(rom)
     print(f"patches: {len(owners)} bytes written")
