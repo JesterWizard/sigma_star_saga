@@ -1,6 +1,8 @@
 #ifndef GUARD_CONFIG_H
 #define GUARD_CONFIG_H
 
+// Hack toggles live in configs/runtime.c (see include/runtime.h).
+
 // Comment out to enable AGBPrint / mGBA printf debugging.
 #define NDEBUG
 

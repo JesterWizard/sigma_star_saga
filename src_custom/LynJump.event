@@ -1,0 +1,7 @@
+// Flight skip is patched in-place at 0x1749C (see asm/flight_skip.s).
+// Gate with configs/runtime.c → skip_flight_battle; when FALSE, rebuild
+// without asm/flight_skip.o (restore vanilla peel) — for now the in-place
+// hook always ships when this file is linked. Additional LynJump hooks go here.
+
+PUSH
+POP
