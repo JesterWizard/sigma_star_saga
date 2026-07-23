@@ -1,1 +1,2 @@
-# Empty for now. Fill as IWRAM .bss symbols are discovered.
+# Prefer asm/ram_map_iwram.s for absolute IWRAM symbols (ygodm8-style).
+# Keep this file for future ramscrgen peels if needed.

@@ -8,11 +8,7 @@ MEMORY {
     ROM   (rx)  : ORIGIN = 0x08000000, LENGTH = 16M
 }
 
-/* Absolute IWRAM addresses for peeled symbols */
-gPlayerLevel = 0x0300702C;
-gPlayerExp = 0x0300705C;
-gExpToCurrentLevel = 0x0300717C;
-gExpToNextLevel = 0x030071F0;
+/* Absolute RAM symbols live in asm/ram_map.s (and region fragments). */
 
 SECTIONS {
     ewram (NOLOAD) : ALIGN(4)

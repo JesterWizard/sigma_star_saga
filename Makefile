@@ -42,7 +42,7 @@ ifeq (modern,$(MAKECMDGOALS))
   MODERN := 1
 endif
 
-ASFLAGS   := -mcpu=arm7tdmi --defsym MODERN=$(MODERN)
+ASFLAGS   := -mcpu=arm7tdmi -I asm --defsym MODERN=$(MODERN)
 INCLUDE_DIRS := include
 CPPFLAGS  := $(INCLUDE_DIRS:%=-iquote %) -Wno-trigraphs -DMODERN=$(MODERN)
 
@@ -98,11 +98,17 @@ DATA_ASM_BUILDDIR = $(OBJ_DIR)/$(DATA_ASM_SUBDIR)
 C_SRCS := $(C_SUBDIR)/level_up.c
 CUSTOM_C_SRCS := $(CUSTOM_C_SUBDIR)/flight_skip_hooks.c
 CONFIG_SRCS := $(CONFIG_SUBDIR)/runtime.c
+# Region fragments are .included by ram_map.s (not assembled alone).
+RAM_MAP_FRAGMENTS := \
+	$(ASM_SUBDIR)/ram_map_iwram.s \
+	$(ASM_SUBDIR)/ram_map_ewram.s \
+	$(ASM_SUBDIR)/ram_map_sram.s
 ASM_SRCS := \
 	$(ASM_SUBDIR)/rom.s \
 	$(ASM_SUBDIR)/rom_after_a.s \
 	$(ASM_SUBDIR)/flight_skip.s \
-	$(ASM_SUBDIR)/rom_after_b.s
+	$(ASM_SUBDIR)/rom_after_b.s \
+	$(ASM_SUBDIR)/ram_map.s
 DATA_ASM_SRCS :=
 
 C_OBJS := $(patsubst $(C_SUBDIR)/%.c,$(C_BUILDDIR)/%.o,$(C_SRCS))
@@ -144,6 +150,8 @@ clean: tidy
 tidy:
 	rm -f $(ROM) $(ELF) $(MAP)
 	rm -rf $(BUILD_DIR)
+
+$(ASM_BUILDDIR)/ram_map.o: $(RAM_MAP_FRAGMENTS)
 
 $(ASM_BUILDDIR)/%.o: $(ASM_SUBDIR)/%.s
 	$(AS) $(ASFLAGS) -I . -o $@ $<

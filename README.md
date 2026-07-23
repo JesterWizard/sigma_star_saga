@@ -42,10 +42,12 @@ make compare
 | Path | Role |
 |------|------|
 | `asm/` | Hand-written / disassembled ARM/Thumb + baserom peels |
+| `asm/ram_map*.s` | IWRAM / EWRAM / save address registry ([ygodm8](https://github.com/JesterWizard/ygodm8/blob/master/asm/ram_map.s)-style) |
 | `src/` | Decompiled vanilla C |
 | `src_custom/` | Hack hooks (`*_hooks.c`) + `LynJump.event` |
 | `configs/runtime.c` | Boolean / value toggles for hacks |
 | `include/`, `include/gba/` | Headers (GBA register/types from pret style) |
+| `documentation/ram-map.md` | How to allocate and extend the RAM map |
 | `data/`, `graphics/`, `sound/` | Extracted assets (empty for now) |
 | `ld_script.ld` | Memory map; append region starts after the 8MB baserom |
 | `tools/apply_lynjump.py` | Post-link absolute jump stubs into the ROM |

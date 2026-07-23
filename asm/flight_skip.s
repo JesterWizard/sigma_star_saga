@@ -42,5 +42,5 @@ UpdateShooterDebugInput:
 .Lmask:
 	.word	0x020C			@ SELECT | L | START
 .Lflag:
-	.word	0x03007668
+	.word	gStageClearFlag
 	.fill	0x5E - (. - UpdateShooterDebugInput), 1, 0
