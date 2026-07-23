@@ -24,6 +24,9 @@ extern u32 gItemsOwned;
 extern u32 gCannonOwned;
 extern u32 gImpactOwned;
 
+/* Last pool-backed vanilla IWRAM global (0x0300775C); free pool starts at 0x03007780. */
+extern u8 gVanillaIwramHighWater;
+
 /* Region free-space cursors (assembly .set symbols). */
 extern u8 FreeRamSpaceTop;
 extern u8 FreeRamSpaceBottom;

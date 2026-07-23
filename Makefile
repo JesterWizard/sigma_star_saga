@@ -98,11 +98,13 @@ DATA_ASM_BUILDDIR = $(OBJ_DIR)/$(DATA_ASM_SUBDIR)
 C_SRCS := $(C_SUBDIR)/level_up.c
 CUSTOM_C_SRCS := $(CUSTOM_C_SUBDIR)/flight_skip_hooks.c
 CONFIG_SRCS := $(CONFIG_SUBDIR)/runtime.c
-# Region fragments are .included by ram_map.s (not assembled alone).
+# Region fragments + pool inventories are .included by ram_map.s (not assembled alone).
 RAM_MAP_FRAGMENTS := \
 	$(ASM_SUBDIR)/ram_map_iwram.s \
 	$(ASM_SUBDIR)/ram_map_ewram.s \
-	$(ASM_SUBDIR)/ram_map_sram.s
+	$(ASM_SUBDIR)/ram_map_sram.s \
+	$(ASM_SUBDIR)/ram_map_iwram_pool.inc \
+	$(ASM_SUBDIR)/ram_map_ewram_pool.inc
 ASM_SRCS := \
 	$(ASM_SUBDIR)/rom.s \
 	$(ASM_SUBDIR)/rom_after_a.s \

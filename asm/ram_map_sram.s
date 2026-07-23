@@ -1,16 +1,23 @@
 @ =============================================================================
-@ Save storage (EEPROM) / unused SRAM bus window
+@ Save / SRAM-bus occupancy map (baserom Thumb LDR literal-pool scan)
 @ =============================================================================
-@ Cart save chip: EEPROM_V124 (string @ ROM 0x24BF44). Vanilla persistence
-@ goes through the EEPROM library, not a mapped SRAM/Flash image at 0x0E…
+@ Cart save: EEPROM_V124 (marker string @ ROM 0x24BF44) — NOT mapped SRAM.
+@ Vanilla I/O goes through the EEPROM library; do not treat 0x0E… as save RAM.
+@ Rescan: python3 tools/scan_ram_literals.py
 @
-@ Absolute 0x0E000000 literals are abundant in the baserom but mostly false
-@ positives in graphics/data. Do not treat the GBA SRAM window as save space
-@ unless a future hack explicitly remaps or patches save I/O.
+@ GBA SRAM bus window (hardware): 0x0E000000 – 0x0E010000  (64 KiB mirror)
+@ Pool-backed aligned hits in baserom (all single-hit — treated as false
+@ positives in graphics/data, not vanilla save globals):
+@   0x0E000F90  (1)   0x0E009F00  (1)
+@ Unaligned pool words also appear (0x0E003FBB, 0x0E00AA09) — ignore.
 @
-@ Symbols below reserve a documented scratch window on the SRAM bus for any
-@ future tooling that needs a fixed 0x0E address. Keep allocations tiny and
-@ verify on hardware/emulator that the cart mirror behaves as expected.
+@   0x0E000000 ── FreeFlashSpaceTop ────────── opt-in scratch (FREE**)
+@              bump _kernel_malloc_flash_free grows downward toward Top
+@   0x0E000100 ── FreeFlashSpaceBottom         (256 B reserved here)
+@   0x0E000100 – 0x0E010000   rest of bus     (UNUSED by this map)
+@
+@ ** Opt-in only. Keep tiny; verify on hardware/mGBA before relying on it.
+@ Real persistence = EEPROM. No gUnk inventory (no trustworthy pool targets).
 @ =============================================================================
 
 SET_DATA FreeFlashSpaceTop, 0x0E000000

@@ -5,9 +5,11 @@
 @ =============================================================================
 @
 @ Region sources (edit these, not this file, when adding symbols):
-@   ram_map_iwram.s  — IWRAM  (free pool 0x03007780–0x03007CA0)
-@   ram_map_ewram.s  — EWRAM  (free pool 0x02030000–0x02040000, provisional)
-@   ram_map_sram.s   — EEPROM note + unused 0x0E000000 window
+@   ram_map_iwram.s          — IWRAM free pool + named symbols
+@   ram_map_iwram_pool.inc   — auto gUnk_* from tools/scan_ram_literals.py
+@   ram_map_ewram.s          — EWRAM free pool (provisional)
+@   ram_map_ewram_pool.inc   — auto gUnk_* (hits>=2)
+@   ram_map_sram.s           — EEPROM note + unused 0x0E000000 window
 @
 @ Fragments are .included here (not compiled separately) so bump-allocator
 @ cursors carry across regions in a single assembly pass.

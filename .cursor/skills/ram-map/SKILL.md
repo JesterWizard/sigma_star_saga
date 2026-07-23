@@ -24,22 +24,31 @@ Guide: `documentation/ram-map.md`
 
 Do not edit `asm/ram_map.s` for new symbols — it only defines `SET_DATA` / `SET_ARRAY` and `.include`s the fragments.
 
+## Bulk rescan
+
+```bash
+python3 tools/scan_ram_literals.py              # cluster / hit report
+python3 tools/scan_ram_literals.py --emit-asm   # refresh asm/ram_map_*_pool.inc
+```
+
+Pool inventories hold unnamed `gUnk_XXXXXXXX` symbols. When promoting one to a real name, add it to the hand section of `ram_map_*.s`, add it to `KNOWN_IWRAM` in the scanner, re-emit, and mirror in `include/ram_map.h` / docs.
+
 ## Workflow
 
 1. **Classify**
    - **Vanilla / matched absolute** → `SET_DATA name, 0x……` (or `SET_ARRAY` if size known)
    - **Custom allocation** → region `_kernel_malloc*` only (never invent a fixed free-pool address)
-2. **Dedup** — grep `asm/ram_map_*.s` and `include/ram_map.h` for the name and address. Skip if already present with the same value; fix mismatches instead of duplicating.
+2. **Dedup** — grep `asm/ram_map_*.s`, `asm/ram_map_*_pool.inc`, and `include/ram_map.h` for the name and address. Skip if already present with the same value; fix mismatches instead of duplicating.
 3. **Validate**
    - Prefer Thumb literal-pool / code xrefs over absolute literals alone (EWRAM and `0x0E…` especially).
-   - IWRAM: never allocate at or above user stack `0x03007CA0`; stay in free pool `0x03007780`–`0x03007CA0` for custom malloc.
+   - IWRAM: never allocate at or above user stack `0x03007CA0`; stay in free pool `0x03007780`–`0x03007CA0` for custom malloc. High water is `gVanillaIwramHighWater` (`0x0300775C`).
    - EWRAM free floor `0x02030000` is provisional — raise `FreeEwramSpaceTop` only with evidence.
    - SRAM bus is not cart save (EEPROM_V124); only document / allocate there when explicitly needed.
 4. **Insert** into the matching thematic section (or add a short `@ -- Section --` block). Keep style:
    - Hex addresses uppercase digits as in existing files (`0x03001630`)
    - Brief `@` comment when role is non-obvious
    - Custom mallocs under `@ -- Custom free-space allocations --`
-5. **Mirror in C** — add `extern` to `include/ram_map.h` with the correct type (`u8` / `u16` / `u32` / pointer / array).
+5. **Mirror in C** — add `extern` to `include/ram_map.h` with the correct type (`u8` / `u16` / `u32` / pointer / array). Skip bulk `gUnk_*` until named.
 6. **Docs** — for newly matched vanilla IWRAM/EWRAM symbols, add a row to the known-symbols table in `documentation/ram-map.md`.
 7. **Consume** — replace hard-coded addresses in new/edited code with the symbol.
 
