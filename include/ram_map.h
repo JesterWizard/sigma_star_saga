@@ -11,7 +11,7 @@ extern u8 *gPlayerPtr;
 extern u8 gPlayerBombs;
 extern u8 gPlayerLevel;
 extern u32 gPlayerExp;
-extern u8 gPlayerHp;
+extern u8 gEnemyRemaining; /* Flight HUD quota / enemies left (not HP) */
 extern u32 gExpToCurrentLevel;
 extern u32 gExpToNextLevel;
 extern u8 gStageClearFlag;

@@ -15,7 +15,7 @@
 typedef struct {
     u8 skip_flight_battle; /* Select / L / Start in a 2D flight stage → stage clear */
     u8 always_run;         /* Overworld run speed without holding B */
-    u8 always_max_health;  /* Flight: full HP + invincibility frames every tick */
+    u8 always_max_health;  /* Flight: cancel hurt state (do not touch enemy counter) */
     u8 always_max_bombs;   /* Flight: smart bombs held at maximum (7) */
     /* 3 Gun Data types (Cannon / Bullet / Impact) */
     u8 all_cannon_data;    /* Unlock every Cannon Data piece */

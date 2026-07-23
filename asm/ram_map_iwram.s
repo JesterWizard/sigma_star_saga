@@ -38,7 +38,8 @@ SET_DATA gPlayerPtr, 0x03000DB8
 SET_DATA gPlayerBombs, 0x03007014
 SET_DATA gPlayerLevel, 0x0300702C
 SET_DATA gPlayerExp, 0x0300705C
-SET_DATA gPlayerHp, 0x03007080
+@ Flight HUD decimal (enemy/quota remaining). NOT ship HP — vanilla stores 6/13/30/…
+SET_DATA gEnemyRemaining, 0x03007080
 SET_DATA gExpToCurrentLevel, 0x0300717C
 SET_DATA gExpToNextLevel, 0x030071F0
 

@@ -16,7 +16,7 @@ Toggle `.always_run` in [`configs/runtime.c`](configs/runtime.c). When `TRUE`, o
 
 ### Always max health / bombs (hack)
 
-Toggle `.always_max_health` and `.always_max_bombs` in [`configs/runtime.c`](configs/runtime.c). During 2D flight stages, health stays full with invincibility frames, and smart bombs stay at the maximum (7).
+Toggle `.always_max_health` and `.always_max_bombs` in [`configs/runtime.c`](configs/runtime.c). During 2D flight stages, hurt state is cancelled each frame (the HUD enemy counter at `gEnemyRemaining` is left alone), and smart bombs stay at the maximum (7).
 
 ### Gun Data / items (hack)
 
