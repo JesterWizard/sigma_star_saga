@@ -18,6 +18,14 @@ Toggle `.always_run` in [`configs/runtime.c`](configs/runtime.c). When `TRUE`, o
 
 Toggle `.always_max_health` and `.always_max_bombs` in [`configs/runtime.c`](configs/runtime.c). During 2D flight stages, health stays full with invincibility frames, and smart bombs stay at the maximum (7).
 
+### Gun Data / items (hack)
+
+Toggle the Gun Data and item unlocks in [`configs/runtime.c`](configs/runtime.c):
+
+- `.all_cannon_data` / `.all_bullet_data` / `.all_impact_data` — unlock every piece of that Gun Data type
+- `.all_key_items` — DATA CARD, GENOME, VIRUS SAMPLE, and related key bits
+- `.all_overworld_items` — flares, fossils, hints, and related overworld bits
+
 ## Quick start
 
 See [INSTALL.md](INSTALL.md).

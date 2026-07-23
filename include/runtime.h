@@ -17,6 +17,12 @@ typedef struct {
     u8 always_run;         /* Overworld run speed without holding B */
     u8 always_max_health;  /* Flight: full HP + invincibility frames every tick */
     u8 always_max_bombs;   /* Flight: smart bombs held at maximum (7) */
+    /* 3 Gun Data types (Cannon / Bullet / Impact) */
+    u8 all_cannon_data;    /* Unlock every Cannon Data piece */
+    u8 all_bullet_data;    /* Unlock every Bullet Data piece */
+    u8 all_impact_data;    /* Unlock every Impact Data piece */
+    u8 all_key_items;      /* DATA CARD, GENOME, VIRUS SAMPLE, … */
+    u8 all_overworld_items; /* Flares, fossils, hints, … */
 } RuntimeConfig;
 
 extern const RuntimeConfig gRuntimeConfigRom;

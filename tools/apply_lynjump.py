@@ -12,8 +12,20 @@ ORG_RE = re.compile(r"ORG\s+\$([0-9A-Fa-f]+)")
 WORD_RE = re.compile(r"WORD\s+(.+)")
 POIN_RE = re.compile(r"POIN\s+(\w+)")
 BOOL_RE = re.compile(
-    r"\.(skip_flight_battle|always_run|always_max_health|always_max_bombs)\s*=\s*(TRUE|FALSE|true|false|1|0)",
+    r"\.(skip_flight_battle|always_run|always_max_health|always_max_bombs|"
+    r"all_cannon_data|all_bullet_data|all_impact_data|"
+    r"all_key_items|all_overworld_items)\s*=\s*(TRUE|FALSE|true|false|1|0)",
     re.IGNORECASE,
+)
+
+SHOOTER_CHEAT_FLAGS = (
+    "always_max_health",
+    "always_max_bombs",
+    "all_cannon_data",
+    "all_bullet_data",
+    "all_impact_data",
+    "all_key_items",
+    "all_overworld_items",
 )
 
 FLIGHT_SKIP_OFF = 0x1749C
@@ -125,6 +137,11 @@ def load_runtime_flags() -> dict[str, bool]:
         "always_run": False,
         "always_max_health": False,
         "always_max_bombs": False,
+        "all_cannon_data": False,
+        "all_bullet_data": False,
+        "all_impact_data": False,
+        "all_key_items": False,
+        "all_overworld_items": False,
     }
     for match in BOOL_RE.finditer(text):
         name = match.group(1)
@@ -161,11 +178,10 @@ def apply_always_run(rom: bytearray, owners: dict, enabled: bool):
     print(f"runtime: always_run=TRUE (patched {len(ALWAYS_RUN_ANDS_SITES)} B-checks)")
 
 
-def apply_shooter_cheats(
-    rom: bytearray, owners: dict, symbols: dict, health: bool, bombs: bool
-):
+def apply_shooter_cheats(rom: bytearray, owners: dict, symbols: dict, flags: dict):
     baserom = (ROOT / "baserom.gba").read_bytes()
-    if not health and not bombs:
+    enabled = any(flags[name] for name in SHOOTER_CHEAT_FLAGS)
+    if not enabled:
         checked_write(
             rom,
             SHOOTER_FRAME_OFF,
@@ -173,7 +189,7 @@ def apply_shooter_cheats(
             owners,
             "runtime:shooter_cheats=FALSE",
         )
-        print("runtime: always_max_health/bombs=FALSE (vanilla 0x14E70)")
+        print("runtime: shooter/inventory cheats=FALSE (vanilla 0x14E70)")
         return
 
     name = "UpdateShooterFrame__Replacement"
@@ -187,10 +203,8 @@ def apply_shooter_cheats(
         owners,
         "runtime:shooter_cheats",
     )
-    print(
-        "runtime: shooter cheats "
-        f"(health={health}, bombs={bombs}) → 0x{hook:08X}"
-    )
+    on = [n for n in SHOOTER_CHEAT_FLAGS if flags[n]]
+    print(f"runtime: shooter/inventory cheats ({', '.join(on)}) → 0x{hook:08X}")
 
 
 def main():
@@ -212,13 +226,7 @@ def main():
 
     apply_flight_skip_gate(rom, owners, flags["skip_flight_battle"])
     apply_always_run(rom, owners, flags["always_run"])
-    apply_shooter_cheats(
-        rom,
-        owners,
-        symbols,
-        flags["always_max_health"],
-        flags["always_max_bombs"],
-    )
+    apply_shooter_cheats(rom, owners, symbols, flags)
 
     rom_path.write_bytes(rom)
     print(f"patches: {len(owners)} bytes written")
