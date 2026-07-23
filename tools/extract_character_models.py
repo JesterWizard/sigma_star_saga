@@ -50,10 +50,16 @@ NAMED_MODELS: dict[int, str] = {
     50: "krill_parasite",
     54: "sisters",
     # Overworld fauna / field enemies (best-effort labels).
+    13: "burrowing_worm",
+    51: "slug",
     61: "hennk",
+    62: "shell_beetle",
+    63: "tick_spider",
+    64: "jumping_spider",
     65: "cephalopod",
     66: "mech_spider",
     67: "hanging_spider",
+    69: "multi_eye",
     70: "zombie",
 }
 
