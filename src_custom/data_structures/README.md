@@ -2,14 +2,16 @@
 
 Edit JSON files in this folder. `make` compiles them into append-ROM tables
 that custom hooks read at runtime (same append/`APPEND_RODATA` pattern as
-dialogue). Adding or removing impacts in [`impact_data.json`](impact_data.json)
-also resizes the OnImpact jump table, description table, and gun-icon ANM
-buffer automatically.
+dialogue). Adding or removing pieces in [`impact_data.json`](impact_data.json)
+or [`cannon_data.json`](cannon_data.json) also resizes the matching dispatch
+jump table, description table, and the shared gun-icon ANM buffer
+automatically.
 
 | File | Toggle (`configs/runtime.c`) | Effect |
 |------|------------------------------|--------|
 | [`enemy_exp.json`](enemy_exp.json) | `.custom_enemy_exp` | Remap 2D flight kill EXP |
 | [`impact_data.json`](impact_data.json) | `.custom_gun_data` | Custom Impact Data (text / icon / id / behavior) |
+| [`cannon_data.json`](cannon_data.json) | `.custom_gun_data` | Custom Cannon Data (text / icon / id / firing pattern) |
 
 ```bash
 make
@@ -51,3 +53,24 @@ Defines custom Impact Data pieces after the vanilla 28.
 Unlock with `.all_impact_data` and/or `.custom_gun_data` (status screen auto-unlocks
 JSON pieces when `.custom_gun_data` is on). Each `icon_png` is injected as an ANM
 frame pair starting at 196.
+
+## `cannon_data.json`
+
+Defines custom Cannon Data pieces after the vanilla 28.
+
+| Field | Meaning |
+|-------|---------|
+| `index` | Local cannon index (`28` = 29th) |
+| `id` | Gun Data id (`80`, …) |
+| `number` | Status-screen list number |
+| `name` / `text` | Status blurb → `"NAME : text"` (max 0x50 bytes) |
+| `icon_from` | Vanilla local index whose ANM frames to reuse (`27` = Mirror Node) |
+| `fire_from` | Vanilla local index whose OnCannon handler to reuse (`0` = Standard Cannon) |
+| `icon_png` | Authored art with badge digits |
+
+| Piece | Effect |
+|-------|--------|
+| **AUTO TARGET** | Fires the Standard Cannon pattern; shots bend toward the nearest enemy |
+
+Unlock with `.all_cannon_data` and/or `.custom_gun_data`. Cannon icon frame pairs
+follow the impact pairs in the same extended ANM (196 + 2 × impact count + 2 × i).

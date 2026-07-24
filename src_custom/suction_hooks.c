@@ -1,6 +1,7 @@
 #include "global.h"
 #include "runtime.h"
 #include "ram_map.h"
+#include "actor.h"
 #include "data_structures.h"
 #include "suction.h"
 #include "nocash.h"
@@ -9,6 +10,14 @@ typedef u32 (*CalcAngleFn)(s32 x0, s32 y0, s32 x1, s32 y1);
 
 #define CALC_ANGLE ((CalcAngleFn)0x08003D15)
 #define SIN_TABLE ((s16 *)0x0805A93C)
+
+/* Per-type Gun Data piece counts {cannon, bullet, impact, item}; the cannon and
+ * impact words are widened by apply_lynjump.py for the custom pieces. */
+#define GUN_DATA_TYPE_COUNTS ((const u32 *)0x080F0A98)
+#define GUN_DATA_TYPE_MAX 4
+
+/* Sin table amplitude is 256, so one frame bends a shot by up to 1 pixel. */
+#define AUTO_TARGET_BEND_SHIFT 8
 
 #define SHOOTER_FILE_TABLE 0x086188C4
 #define GUN_ICON_FILE_INDEX 231 /* 1-based shooter archive index for ANM #230 */
@@ -408,6 +417,94 @@ APPEND_TEXT void LeechGemUpdate__Replacement(void)
     LeechGemUpdate__Continue();
 }
 
+/* OnCannon @ 0x0802D76C reads the equipped cannon as a plain local index. */
+APPEND_TEXT u32 EquippedCannonIndex(void)
+{
+    return gGunLoadout & 0xFF;
+}
+
+APPEND_TEXT u32 AutoTargetIsEquipped(void)
+{
+    return EquippedCannonIndex() == CANNON_AUTO_TARGET;
+}
+
+/* Nearest live enemy to (x, y), using the same actor class the vanilla
+ * target search @ 0x0802EF1A matches. Distance is compared in whole pixels
+ * so dx*dx + dy*dy cannot overflow the 16.16 world coords. */
+APPEND_TEXT static u8 *NearestEnemyActor(s32 x, s32 y)
+{
+    u8 *best = NULL;
+    s32 bestDist = 0x7FFFFFFF;
+    u32 i;
+
+    for (i = 1; i < ACTOR_COUNT; i++)
+    {
+        u8 *actor = &gActorPool[i * ACTOR_STRIDE];
+        s32 dx;
+        s32 dy;
+        s32 dist;
+
+        if ((*(u16 *)(actor + ACTOR_OFF_FLAGS) & ACTOR_FLAG_ACTIVE) == 0)
+            continue;
+        if (actor[ACTOR_OFF_CLASS] != ACTOR_CLASS_ENEMY)
+            continue;
+        if (*(u32 *)(actor + ACTOR_OFF_HP) == 0)
+            continue;
+
+        dx = (*(s32 *)(actor + ACTOR_OFF_X) >> 16) - (x >> 16);
+        dy = (*(s32 *)(actor + ACTOR_OFF_Y) >> 16) - (y >> 16);
+        dist = dx * dx + dy * dy;
+        if (dist < bestDist)
+        {
+            bestDist = dist;
+            best = actor;
+        }
+    }
+    return best;
+}
+
+/*
+ * AUTO TARGET (29th Cannon Data): bend live player shots toward the closest
+ * enemy. Position-only nudge with the gem-magnet math — shot velocity stays
+ * owned by the vanilla cannon handler, so nothing about firing rate, tile
+ * ownership or despawn changes.
+ */
+APPEND_TEXT void ApplyAutoTarget(void)
+{
+    u32 i;
+
+    if (!gRuntimeConfig.custom_gun_data || gPlayerPtr == NULL)
+        return;
+    if (!AutoTargetIsEquipped())
+        return;
+
+    for (i = 1; i < ACTOR_COUNT; i++)
+    {
+        u8 *shot = &gActorPool[i * ACTOR_STRIDE];
+        u8 *target;
+        s32 *sx;
+        s32 *sy;
+        u32 angle;
+
+        if ((*(u16 *)(shot + ACTOR_OFF_FLAGS) & ACTOR_FLAG_ACTIVE) == 0)
+            continue;
+        if (shot[ACTOR_OFF_CLASS] != ACTOR_CLASS_PLAYER_SHOT)
+            continue;
+
+        sx = (s32 *)(shot + ACTOR_OFF_X);
+        sy = (s32 *)(shot + ACTOR_OFF_Y);
+        target = NearestEnemyActor(*sx, *sy);
+        if (target == NULL)
+            return;
+
+        angle = CALC_ANGLE(*sx, *sy,
+                           *(s32 *)(target + ACTOR_OFF_X),
+                           *(s32 *)(target + ACTOR_OFF_Y)) & 0xFF;
+        *sx += ((s32)SIN_TABLE[angle + 64]) << AUTO_TARGET_BEND_SHIFT;
+        *sy += ((s32)SIN_TABLE[angle]) << AUTO_TARGET_BEND_SHIFT;
+    }
+}
+
 /* Status UI ownership — unlock custom impacts before the ??? fallback. */
 APPEND_TEXT u32 IsGunDataOwned__Replacement(u32 type, u32 local)
 {
@@ -447,17 +544,24 @@ APPEND_TEXT u32 GetArchiveFileSize__Replacement(u32 index)
     return entry[1] - entry[0];
 }
 
+/* Vanilla frame layout: cannon 0, bullet 28, impact 48, item 76 (× 2 frames). */
+APPEND_RODATA static const u8 sGunIconTypeBase[GUN_DATA_TYPE_MAX] = { 0, 28, 48, 76 };
+
 /*
- * Custom impacts use extended ANM frames 196+ (one locked/owned pair each).
- * Vanilla pieces keep the Continue path.
+ * Custom impacts use extended ANM frames 196+ (one locked/owned pair each),
+ * custom cannons the pairs right after them. Vanilla pieces keep the Continue
+ * path — except out-of-range locals, which vanilla would resolve to another
+ * type's frames (an equipped index past the live count rendered as a red
+ * bullet icon). Clamp those to the type's own first frame instead.
  */
 APPEND_TEXT void GetGunDataIconFrame__Replacement(u32 type, u32 local, u32 owned, u16 *out)
 {
+    u32 kind = type & 0xFF;
     u16 i;
 
     EnsureCustomImpactsOwned();
 
-    if ((type & 0xFF) == 2)
+    if (kind == 2)
     {
         for (i = 0; i < gCustomImpactCount; i++)
         {
@@ -468,6 +572,25 @@ APPEND_TEXT void GetGunDataIconFrame__Replacement(u32 type, u32 local, u32 owned
                 return;
             }
         }
+    }
+
+    if (kind == 0)
+    {
+        for (i = 0; i < gCustomCannonCount; i++)
+        {
+            if (gCustomCannons[i].index == (u8)local)
+            {
+                *out = (u16)(SUCTION_ICON_FRAME_BASE + gCustomImpactCount * 2
+                             + i * 2 + ((owned & 0xFF) ? 1 : 0));
+                return;
+            }
+        }
+    }
+
+    if (kind < GUN_DATA_TYPE_MAX && (local & 0xFF) >= GUN_DATA_TYPE_COUNTS[kind])
+    {
+        *out = (u16)(sGunIconTypeBase[kind] * 2);
+        return;
     }
 
     GetGunDataIconFrame__Continue(type, local, owned, out);

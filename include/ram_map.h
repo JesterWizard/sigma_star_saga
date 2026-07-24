@@ -10,6 +10,13 @@ extern u8 gMode;
 extern u8 *gPlayerPtr;
 extern u8 *gExpGemPtr; /* Current gem in ExpGemUpdate (@ +0x18/+0x1C) */
 extern u8 gActorPool[]; /* Flight actors, stride 0x60; [0] = ship */
+extern u16 gSoftOam[]; /* Soft OAM @ 0x03001F70 (8 bytes/entry) */
+extern u8 gOamCursor;
+extern u8 gSoftOamCount;
+extern u8 gAffineSlotCounter;
+extern u8 gActorOamStart;
+extern u8 gUseYSorting;
+extern u8 gCameras[]; /* Camera array, stride 0x84 */
 extern u8 gPlayerBombs;
 extern u8 gPlayerLevel;
 extern u32 gPlayerExp;
@@ -41,6 +48,9 @@ extern u8 gNoCashHeartbeat;
 extern u8 gPhoenixCrashLogged;
 extern u8 gPhoenixReviveAnmSwap;
 extern u8 gPhoenixReviveAnmRestore;
+extern u32 gActorMaxHp[];
+extern u8 gHpBarTilesReady;
+extern u32 gHpBarTileScratch[];
 
 /* Last pool-backed vanilla IWRAM global (0x0300775C); free pool starts at 0x03007780. */
 extern u8 gVanillaIwramHighWater;

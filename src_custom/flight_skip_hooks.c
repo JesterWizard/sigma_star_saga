@@ -46,7 +46,7 @@ static void ApplyInventoryCheatsOnce(void)
 
     if (gRuntimeConfig.all_cannon_data)
     {
-        gCannonOwned |= 0x0FFFFFFFu; /* 28 pieces */
+        gCannonOwned |= 0x1FFFFFFFu; /* vanilla 28 + AUTO TARGET */
         SetGunDataBits(CANNON_ID_LO, CANNON_ID_HI);
     }
 
@@ -62,8 +62,9 @@ static void ApplyInventoryCheatsOnce(void)
         SetGunDataBits(IMPACT_ID_LO, IMPACT_ID_HI);
     }
 
-    /* Append pieces from impact_data.json (Suction, …). */
+    /* Append pieces from impact_data.json (Suction, …) and cannon_data.json. */
     EnsureCustomImpactsOwned();
+    EnsureCustomCannonsOwned();
 
     if (gRuntimeConfig.all_key_items)
         gItemsOwned |= KEY_ITEMS_MASK;
@@ -104,6 +105,7 @@ APPEND_TEXT void UpdateShooterFrame__Replacement(void)
 
     ApplyPhoenixRevive();
     TickPhoenixRevivePopup();
+    ApplyAutoTarget();
     ApplyInventoryCheatsOnce();
 }
 

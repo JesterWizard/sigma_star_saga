@@ -15,4 +15,5 @@ const RuntimeConfig gRuntimeConfigRom __attribute__((section(".runtime_config"))
     .custom_enemy_exp = TRUE,
     .custom_dialogue = TRUE,
     .custom_gun_data = TRUE,
+    .enemy_hp_bars = TRUE,
 };

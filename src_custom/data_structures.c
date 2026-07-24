@@ -51,6 +51,23 @@ APPEND_TEXT u8 RemapCustomImpactIcon(u8 type, u8 local)
     return local;
 }
 
+APPEND_TEXT void EnsureCustomCannonsOwned(void)
+{
+    u16 i;
+
+    if (!gRuntimeConfig.custom_gun_data)
+        return;
+
+    for (i = 0; i < gCustomCannonCount; i++)
+    {
+        u8 index = gCustomCannons[i].index;
+        u8 id = gCustomCannons[i].id;
+
+        gCannonOwned |= ((u32)1 << index);
+        gGunDataBits[id >> 5] |= ((u32)1 << (id & 31));
+    }
+}
+
 APPEND_TEXT void EnsureCustomImpactsOwned(void)
 {
     u16 i;
@@ -66,4 +83,8 @@ APPEND_TEXT void EnsureCustomImpactsOwned(void)
         gImpactOwned |= ((u32)1 << index);
         gGunDataBits[id >> 5] |= ((u32)1 << (id & 31));
     }
+
+    /* Cannon ids are outside the 49..76 impact sync loop, so unlock them on the
+     * same status-screen entry paths that unlock impacts. */
+    EnsureCustomCannonsOwned();
 }

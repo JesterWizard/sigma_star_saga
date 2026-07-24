@@ -27,6 +27,7 @@ typedef struct {
     u8 custom_enemy_exp;   /* Remap kill EXP via data_structures/enemy_exp.json */
     u8 custom_dialogue;    /* Use src_custom/dialogue banks (append + ptr redirect) */
     u8 custom_gun_data; /* Custom Impact Data from impact_data.json */
+    u8 enemy_hp_bars;   /* Flight: HP bars under enemies (soft OAM only) */
 } RuntimeConfig;
 
 extern const RuntimeConfig gRuntimeConfigRom;

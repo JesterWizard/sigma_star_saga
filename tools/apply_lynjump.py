@@ -15,7 +15,7 @@ BOOL_RE = re.compile(
     r"\.(skip_flight_battle|always_run|always_max_health|always_max_bombs|"
     r"all_cannon_data|all_bullet_data|all_impact_data|"
     r"all_key_items|all_overworld_items|custom_enemy_exp|custom_dialogue|"
-    r"custom_gun_data)\s*=\s*(TRUE|FALSE|true|false|1|0)",
+    r"custom_gun_data|enemy_hp_bars)\s*=\s*(TRUE|FALSE|true|false|1|0)",
     re.IGNORECASE,
 )
 
@@ -75,6 +75,8 @@ PLAYER_HIT_UPDATE_OFF = 0x24E24
 PLAYER_SHIP_UPDATE_OFF = 0x15F34
 PLAYER_DEATH_FX_OFF = 0x1BA4C
 DELETE_ACTOR_OFF = 0x6310
+DRAW_ACTORS_OFF = 0x6C0C
+INIT_ACTOR_PARAMS_OFF = 0x318B4
 EXP_GEM_UPDATE_OFF = 0x4ABEC
 LEECH_GEM_UPDATE_OFF = 0x4B188
 GUN_ICON_FRAME_OFF = 0x39F30
@@ -103,6 +105,19 @@ SHOOTER_FT_OFF = 0x6188C4
 GUN_ICON_ANM_INDEX = 230  # 0-based shooter file index
 IMPACT_DATA_JSON = ROOT / "src_custom" / "data_structures" / "impact_data.json"
 CUSTOM_IMPACT_ENTRY_SIZE = 0x60  # matches CustomImpactEntry in data_structures.h
+
+# --- Auto Target (29th Cannon Data) --------------------------------------------
+CANNON_COUNT_OFF = 0xF0A98  # word[0] of {28,20,28,22}
+ONCANNON_MAX_OFF = 0x2D780  # cmp r0, #0x1B
+ONCANNON_JT_PTR_OFF = 0x2D798  # → vanilla 0x0802D79C
+ONCANNON_JT_VANILLA_OFF = 0x2D79C
+CANNON_DESC_PTR_OFF = 0x3A36C  # → vanilla 0x080781E4
+CANNON_DESC_VANILLA_OFF = 0x781E4
+CANNON_DESC_STRIDE = 0x50
+VANILLA_CANNON_COUNT = 28
+CANNON_DATA_JSON = ROOT / "src_custom" / "data_structures" / "cannon_data.json"
+CUSTOM_CANNON_ENTRY_SIZE = 0x58  # matches CustomCannonEntry in data_structures.h
+CUSTOM_CANNON_DESC_OFF = 5  # index, id, number, icon_from, fire_from
 
 
 def load_symbols(elf_path: pathlib.Path):
@@ -201,6 +216,7 @@ def load_runtime_flags() -> dict[str, bool]:
         "custom_enemy_exp": False,
         "custom_dialogue": False,
         "custom_gun_data": True,
+        "enemy_hp_bars": False,
     }
     for match in BOOL_RE.finditer(text):
         name = match.group(1)
@@ -460,22 +476,29 @@ def _encode_icon_tiles(png_path: pathlib.Path, palette: list[int]) -> bytes:
     return bytes(out)
 
 
-def _load_custom_impact_icon_pngs() -> list[pathlib.Path]:
+def _load_custom_icon_pngs(json_path: pathlib.Path, key: str) -> list[pathlib.Path]:
     import json
 
-    data = json.loads(IMPACT_DATA_JSON.read_text())
+    data = json.loads(json_path.read_text())
     paths: list[pathlib.Path] = []
-    for entry in data.get("impacts") or []:
+    for entry in data.get(key) or []:
         rel = entry.get("icon_png")
         if not rel:
-            raise ValueError(f"{IMPACT_DATA_JSON}: impact missing icon_png")
+            raise ValueError(f"{json_path}: {key[:-1]} missing icon_png")
         path = ROOT / rel
         if not path.is_file():
-            raise FileNotFoundError(f"missing custom impact icon: {path}")
+            raise FileNotFoundError(f"missing custom {key[:-1]} icon: {path}")
         paths.append(path)
     if not paths:
-        raise ValueError(f"{IMPACT_DATA_JSON}: no impacts")
+        raise ValueError(f"{json_path}: no {key}")
     return paths
+
+
+def _load_custom_cannon_fire_from() -> list[int]:
+    import json
+
+    data = json.loads(CANNON_DATA_JSON.read_text())
+    return [int(entry["fire_from"]) for entry in data.get("cannons") or []]
 
 
 def build_extended_gun_icon_anm(
@@ -548,6 +571,10 @@ def apply_suction(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
             (ONIMPACT_JT_PTR_OFF, 4, "jt_ptr"),
             (IMPACT_DESC_PTR_OFF, 4, "desc_ptr"),
             (IMPACT_OWN_SYNC_END_OFF, 2, "own_sync"),
+            (CANNON_COUNT_OFF, 4, "cannon_count"),
+            (ONCANNON_MAX_OFF, 2, "cannon_max"),
+            (ONCANNON_JT_PTR_OFF, 4, "cannon_jt_ptr"),
+            (CANNON_DESC_PTR_OFF, 4, "cannon_desc_ptr"),
             (EXP_GEM_UPDATE_OFF, VENEER_LEN, "exp_gem"),
             (LEECH_GEM_UPDATE_OFF, VENEER_LEN, "leech_gem"),
             (GUN_ICON_FRAME_OFF, ICON_VENEER_LEN, "icon"),
@@ -654,7 +681,105 @@ def apply_suction(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
         "runtime:gun_data:desc_ptr",
     )
 
+    # --- Custom Cannon Data (mirrors the Impact pipeline above) ---------------
+    cannon_jt_off = _sym_file_off(symbols, "gCannonJumpTable")
+    cannon_desc_off = _sym_file_off(symbols, "gCannonDescTable")
+    custom_cannon_off = _sym_file_off(symbols, "gCustomCannons")
+    cannon_count_sym_off = _sym_file_off(symbols, "gCustomCannonCount")
+    cannon_count = struct.unpack_from("<H", rom, cannon_count_sym_off)[0]
+    if cannon_count < 1:
+        raise ValueError("custom_gun_data: gCustomCannonCount < 1 (build cannon_data.json)")
+
+    cannon_total = VANILLA_CANNON_COUNT + cannon_count
+    fire_from = _load_custom_cannon_fire_from()
+    if cannon_count != len(fire_from):
+        raise ValueError(
+            f"custom_gun_data: gCustomCannonCount={cannon_count} but JSON has "
+            f"{len(fire_from)} cannons"
+        )
+
+    # Relocated OnCannon jump table: vanilla branch targets + one reused
+    # handler per custom cannon (fire_from picks the vanilla firing pattern).
+    vanilla_cannon_jt = [
+        struct.unpack_from("<I", baserom, ONCANNON_JT_VANILLA_OFF + i * 4)[0]
+        for i in range(VANILLA_CANNON_COUNT)
+    ]
+    cannon_jt = bytearray(
+        baserom[
+            ONCANNON_JT_VANILLA_OFF : ONCANNON_JT_VANILLA_OFF + VANILLA_CANNON_COUNT * 4
+        ]
+    )
+    for src in fire_from:
+        if not 0 <= src < VANILLA_CANNON_COUNT:
+            raise ValueError(f"custom_gun_data: cannon fire_from {src} out of range")
+        cannon_jt += struct.pack("<I", vanilla_cannon_jt[src])
+    checked_write(rom, cannon_jt_off, bytes(cannon_jt), owners, "runtime:gun_data:cannon_jt_data")
+
+    # Relocated cannon desc table from baserom + gCustomCannons[].desc.
+    cannon_desc = bytearray(
+        baserom[
+            CANNON_DESC_VANILLA_OFF : CANNON_DESC_VANILLA_OFF
+            + VANILLA_CANNON_COUNT * CANNON_DESC_STRIDE
+        ]
+    )
+    cannon_desc += b"\0" * (cannon_count * CANNON_DESC_STRIDE)
+    for i in range(cannon_count):
+        base = custom_cannon_off + i * CUSTOM_CANNON_ENTRY_SIZE
+        index = rom[base]
+        slot_desc = bytes(
+            rom[
+                base + CUSTOM_CANNON_DESC_OFF : base
+                + CUSTOM_CANNON_DESC_OFF
+                + CANNON_DESC_STRIDE
+            ]
+        )
+        if index >= cannon_total:
+            raise ValueError(f"custom_gun_data: cannon index {index} out of range")
+        start = index * CANNON_DESC_STRIDE
+        cannon_desc[start : start + CANNON_DESC_STRIDE] = slot_desc
+    checked_write(
+        rom, cannon_desc_off, bytes(cannon_desc), owners, "runtime:gun_data:cannon_desc_data"
+    )
+
+    # Cannon type count 28 → 28+N.
+    checked_write(
+        rom,
+        CANNON_COUNT_OFF,
+        struct.pack("<I", cannon_total),
+        owners,
+        "runtime:gun_data:cannon_count",
+    )
+
+    # OnCannon: cmp r0, #0x1B → cmp r0, #(cannon_total-1)
+    cannon_max_index = cannon_total - 1
+    cur = bytes(rom[ONCANNON_MAX_OFF : ONCANNON_MAX_OFF + 2])
+    if cur not in (bytes((0x1B, 0x28)), bytes((cannon_max_index, 0x28))):
+        raise ValueError(f"custom_gun_data: unexpected OnCannon max insn {cur.hex()}")
+    checked_write(
+        rom,
+        ONCANNON_MAX_OFF,
+        bytes((cannon_max_index, 0x28)),
+        owners,
+        "runtime:gun_data:cannon_max",
+    )
+
+    checked_write(
+        rom,
+        ONCANNON_JT_PTR_OFF,
+        struct.pack("<I", 0x08000000 + cannon_jt_off),
+        owners,
+        "runtime:gun_data:cannon_jt_ptr",
+    )
+    checked_write(
+        rom,
+        CANNON_DESC_PTR_OFF,
+        struct.pack("<I", 0x08000000 + cannon_desc_off),
+        owners,
+        "runtime:gun_data:cannon_desc_ptr",
+    )
+
     # Ownership sync loop end: cmp r2, #0x4C → last custom Gun Data id.
+    # Cannon ids stay out of it: that loop maps id-49 onto gImpactOwned bits.
     last_gun_id = max(rom[custom_off + i * entry_size + 1] for i in range(custom_count))
     if last_gun_id < 76:
         last_gun_id = 76
@@ -671,18 +796,25 @@ def apply_suction(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
         "runtime:gun_data:own_sync",
     )
 
-    # Extended gun-icon ANM with custom impact frames (196+).
-    icon_pngs = _load_custom_impact_icon_pngs()
+    # Extended gun-icon ANM: custom impact frames at 196+, cannons after them.
+    icon_pngs = _load_custom_icon_pngs(IMPACT_DATA_JSON, "impacts")
     if custom_count != len(icon_pngs):
         raise ValueError(
             f"custom_gun_data: gCustomImpactCount={custom_count} but JSON has "
             f"{len(icon_pngs)} icon_png entries"
         )
+    cannon_icon_pngs = _load_custom_icon_pngs(CANNON_DATA_JSON, "cannons")
+    if cannon_count != len(cannon_icon_pngs):
+        raise ValueError(
+            f"custom_gun_data: gCustomCannonCount={cannon_count} but JSON has "
+            f"{len(cannon_icon_pngs)} icon_png entries"
+        )
+    icon_pngs = icon_pngs + cannon_icon_pngs
     anm_ext = build_extended_gun_icon_anm(baserom, icon_pngs)
     anm_off = _sym_file_off(symbols, "gGunIconAnmExt")
     size_off = _sym_file_off(symbols, "gGunIconAnmExtSize")
     # Buffer sized by compile_data_structures.py: 16 + (196+2N)*300, 32-byte aligned.
-    anm_cap = (16 + (196 + custom_count * 2) * 300 + 31) & ~31
+    anm_cap = (16 + (196 + len(icon_pngs) * 2) * 300 + 31) & ~31
     if len(anm_ext) > anm_cap:
         raise ValueError(
             f"custom_gun_data: ANM {len(anm_ext)} bytes exceeds expected "
@@ -712,8 +844,46 @@ def apply_suction(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
 
     print(
         "runtime: custom_gun_data=TRUE "
-        f"(JT @ 0x{0x08000000 + jt_off:08X}, desc @ 0x{0x08000000 + desc_off:08X}, "
+        f"(impact JT @ 0x{0x08000000 + jt_off:08X}, "
+        f"desc @ 0x{0x08000000 + desc_off:08X}; "
+        f"cannon JT @ 0x{0x08000000 + cannon_jt_off:08X}, "
+        f"desc @ 0x{0x08000000 + cannon_desc_off:08X}; "
+        f"counts {cannon_total} cannon / {impact_total} impact; "
         f"ANM ext {len(anm_ext)} bytes)"
+    )
+
+
+def apply_enemy_hp_bars(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
+    baserom = (ROOT / "baserom.gba").read_bytes()
+    if not enabled:
+        checked_write(
+            rom,
+            DRAW_ACTORS_OFF,
+            baserom[DRAW_ACTORS_OFF : DRAW_ACTORS_OFF + VENEER_LEN],
+            owners,
+            "runtime:enemy_hp_bars=FALSE:draw",
+        )
+        checked_write(
+            rom,
+            INIT_ACTOR_PARAMS_OFF,
+            baserom[INIT_ACTOR_PARAMS_OFF : INIT_ACTOR_PARAMS_OFF + VENEER_LEN],
+            owners,
+            "runtime:enemy_hp_bars=FALSE:init",
+        )
+        print("runtime: enemy_hp_bars=FALSE (vanilla DrawActors / InitActorParams)")
+        return
+
+    for sym, off, tag in (
+        ("DrawActors__Replacement", DRAW_ACTORS_OFF, "draw"),
+        ("InitActorParams__Replacement", INIT_ACTOR_PARAMS_OFF, "init"),
+    ):
+        if sym not in symbols:
+            raise KeyError(f"symbol {sym} not found (needed for enemy_hp_bars)")
+        apply_veneer(rom, owners, off, symbols[sym], f"runtime:enemy_hp_bars:{tag}")
+    print(
+        "runtime: enemy_hp_bars=TRUE → "
+        f"DrawActors 0x{symbols['DrawActors__Replacement']:08X}, "
+        f"InitActorParams 0x{symbols['InitActorParams__Replacement']:08X}"
     )
 
 
@@ -743,6 +913,7 @@ def main():
     )
     apply_custom_dialogue(rom, owners, symbols, flags["custom_dialogue"])
     apply_suction(rom, owners, symbols, flags["custom_gun_data"])
+    apply_enemy_hp_bars(rom, owners, symbols, flags["enemy_hp_bars"])
 
     rom_path.write_bytes(rom)
     print(f"patches: {len(owners)} bytes written")

@@ -64,6 +64,16 @@ SET_DATA gExpGemPtr, 0x03006FE0
 @ Flight actor pool base (stride 0x60; index 0 = player ship).
 SET_DATA gActorPool, 0x03002780
 
+@ Soft OAM shadow (128 × 8 bytes) — DMA'd to 0x07000000 each VBlank.
+SET_DATA gSoftOam, 0x03001F70
+SET_DATA gOamCursor, 0x03006910
+SET_DATA gSoftOamCount, 0x03006918
+SET_DATA gAffineSlotCounter, 0x03006914
+SET_DATA gActorOamStart, 0x03000D60
+SET_DATA gUseYSorting, 0x03001658
+@ Camera array (stride 0x84; X @ +0x2C, Y @ +0x30, both 16.16).
+SET_DATA gCameras, 0x030009C0
+
 @ -- Player RPG / flight combat state ------------------------------------------
 
 SET_DATA gPlayerBombs, 0x03007014
@@ -123,3 +133,11 @@ _kernel_malloc gPhoenixCrashLogged, 0x1
 _kernel_malloc gPhoenixReviveAnmSwap, 0x1
 @ Frames left before restoring the "+ EXP" ANM bank after a REVIVE popup.
 _kernel_malloc gPhoenixReviveAnmRestore, 0x1
+@ Pad so gActorMaxHp is word-aligned.
+_kernel_malloc gActorMaxHpAlignPad, 0x3
+@ Per-slot max HP snapshot from InitActorParams (40 × u32).
+_kernel_malloc gActorMaxHp, 0xA0
+@ 1 = HP-bar tiles queued into OBJ VRAM this session.
+_kernel_malloc gHpBarTilesReady, 0x1
+@ Scratch for one-time bar tile encode (9 × 2 × 32 = 0x240).
+_kernel_malloc gHpBarTileScratch, 0x240

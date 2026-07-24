@@ -63,6 +63,10 @@ Method: Thumb `LDR Rd,[PC,#imm]` literal pools only (not raw absolute words). Wo
 | `gPlayerPtr` | `0x03000DB8` | Flight player object pointer |
 | `gExpGemPtr` | `0x03006FE0` | Current EXP gem during `ExpGemUpdate` |
 | `gActorPool` | `0x03002780` | Flight actor pool (stride `0x60`) |
+| `gSoftOam` | `0x03001F70` | Soft OAM shadow (128 × 8 bytes) |
+| `gOamCursor` | `0x03006910` | Soft OAM write cursor |
+| `gSoftOamCount` | `0x03006918` | Soft OAM entry count (128) |
+| `gCameras` | `0x030009C0` | Camera array (stride `0x84`) |
 | `gPlayerBombs` | `0x03007014` | Smart bomb count |
 | `gPlayerLevel` | `0x0300702C` | RPG level |
 | `gPlayerExp` | `0x0300705C` | Experience |

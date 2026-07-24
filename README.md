@@ -38,6 +38,10 @@ JSON tables under [`src_custom/data_structures/`](src_custom/data_structures/) c
 
 Toggle `.custom_gun_data` in [`configs/runtime.c`](configs/runtime.c). When `TRUE` (default), loads custom Impact Data from [`impact_data.json`](src_custom/data_structures/impact_data.json) (e.g. **Suction** / **Suction+** magnets, **Phoenix** one revive per battle). Unlocked with `.all_impact_data` / `.custom_gun_data`. Note: `.always_max_health` prevents death, so Phoenix will not trigger while that cheat is on.
 
+### Enemy HP bars (hack)
+
+Toggle `.enemy_hp_bars` in [`configs/runtime.c`](configs/runtime.c). When `TRUE` (default), draws HP bars under flight enemies via soft OAM after `DrawActors`. Max HP is snapshotted in `InitActorParams`. Decomps: [`src/actor.c`](src/actor.c), [`src/actor_draw.c`](src/actor_draw.c).
+
 ## Quick start
 
 See [INSTALL.md](INSTALL.md).
