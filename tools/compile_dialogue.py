@@ -73,7 +73,7 @@ SCRIPT_RE = re.compile(
 )
 # Macro call: NAME( ... ) with nested parens only in strings — keep simple.
 CALL_RE = re.compile(
-    r"\b(TALK|TEXT|CHAPTER_TITLE|EMPTY)\s*\(",
+    r"\b(TALK|TEXT|CHAPTER_TITLE|CHOICE|EMPTY)\s*\(",
 )
 
 
@@ -231,6 +231,12 @@ def encode_events(body: str) -> bytes:
         if name == "EMPTY":
             saw_content = True
             # bare '#' already written; nothing else
+        elif name == "CHOICE":
+            # Yes/No prompt opcode: must follow a page-end `\x0c`.
+            if not out.endswith(b"\x0c"):
+                out.append(0x0C)
+            out.append(ord("?"))
+            saw_content = True
         elif name in ("TEXT", "CHAPTER_TITLE"):
             if len(args) < 1:
                 raise ValueError(f"{name} needs at least one string")

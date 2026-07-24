@@ -32,6 +32,7 @@ SHOOTER_CHEAT_FLAGS = (
     "all_impact_data",
     "all_key_items",
     "all_overworld_items",
+    "custom_gun_data",  # Phoenix per-frame revive via UpdateShooterFrame
 )
 
 FLIGHT_SKIP_OFF = 0x1749C
@@ -69,11 +70,18 @@ IMPACT_DESC_PTR_OFF = 0x3A384  # → vanilla 0x0807901C
 IMPACT_DESC_VANILLA_OFF = 0x7901C
 IMPACT_DESC_STRIDE = 0x5A
 IMPACT_OWN_SYNC_END_OFF = 0x25996  # cmp r2, #0x4C (Gun ID 76)
+PLAYER_STATE_MACHINE_OFF = 0x25DB4
+PLAYER_HIT_UPDATE_OFF = 0x24E24
+PLAYER_DEATH_FX_OFF = 0x1BA4C
+DELETE_ACTOR_OFF = 0x6310
 EXP_GEM_UPDATE_OFF = 0x4ABEC
 LEECH_GEM_UPDATE_OFF = 0x4B188
 GUN_ICON_FRAME_OFF = 0x39F30
 ABSORB_HANDLER = 0x08030494
 VENEER_LEN = 8
+# ygodm8 LynJump long stub (16 bytes): bx pc; nop; ldr ip,[pc]; bx ip; .word
+LONG_VENEER_LEN = 16
+LONG_VENEER_HEAD = struct.pack("<III", 0x46C04778, 0xE59FC000, 0xE12FFF1C)
 # Icon helper: out-ptr in r3, and lr must stay as the caller's return.
 # push {r0-r3}; ldr r0,[pc,#8]; mov r12,r0; pop {r0-r3}; bx r12; pad; .word hook
 ICON_VENEER_LEN = 16
@@ -361,6 +369,11 @@ def _sym_file_off(symbols: dict, name: str) -> int:
 
 
 def apply_veneer(rom: bytearray, owners: dict, off: int, hook: int, owner: str):
+    if off & 3:
+        raise ValueError(
+            f"{owner}: long veneer at 0x{off:X} is not 4-byte aligned "
+            "(Thumb ldr [pc,#0] would miss the hook word)"
+        )
     checked_write(
         rom,
         off,
@@ -524,9 +537,10 @@ def build_extended_gun_icon_anm(
 
 
 def apply_suction(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
-    baserom = (ROOT / "baserom.gba").read_bytes()
     if not enabled:
-        # Restore sites we own when disabled.
+        # Restore sites we own when disabled. Clear LynJump.event owners first
+        # so player hit/SM long stubs can be reverted.
+        baserom = (ROOT / "baserom.gba").read_bytes()
         for off, length, tag in (
             (IMPACT_COUNT_OFF, 4, "count"),
             (ONIMPACT_MAX_OFF, 2, "max"),
@@ -539,7 +553,13 @@ def apply_suction(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
             (IS_GUN_DATA_OWNED_OFF, VENEER_LEN, "owned"),
             (GET_ARCHIVE_FILE_START_OFF, VENEER_LEN, "file_start"),
             (GET_ARCHIVE_FILE_SIZE_OFF, VENEER_LEN, "file_size"),
+            (PLAYER_STATE_MACHINE_OFF, LONG_VENEER_LEN, "player_sm"),
+            (PLAYER_HIT_UPDATE_OFF, LONG_VENEER_LEN, "player_hit"),
+            (PLAYER_DEATH_FX_OFF, VENEER_LEN, "player_death_fx"),
+            (DELETE_ACTOR_OFF, VENEER_LEN, "delete_actor"),
         ):
+            for offset in range(off, off + length):
+                owners.pop(offset, None)
             checked_write(
                 rom,
                 off,
@@ -549,6 +569,8 @@ def apply_suction(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
             )
         print("runtime: custom_gun_data=FALSE")
         return
+
+    baserom = (ROOT / "baserom.gba").read_bytes()
 
     jt_off = _sym_file_off(symbols, "gImpactJumpTable")
     desc_off = _sym_file_off(symbols, "gImpactDescTable")
@@ -669,7 +691,7 @@ def apply_suction(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
         rom, size_off, struct.pack("<I", len(anm_ext)), owners, "runtime:gun_data:anm_size"
     )
 
-    # Veneers.
+    # Veneers (PlayerHitUpdate / PlayerStateMachine use LynJump.event).
     for sym, off, tag, icon in (
         ("ExpGemUpdate__Replacement", EXP_GEM_UPDATE_OFF, "exp_gem", False),
         ("LeechGemUpdate__Replacement", LEECH_GEM_UPDATE_OFF, "leech_gem", False),
@@ -677,6 +699,7 @@ def apply_suction(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
         ("GetArchiveFileStart__Replacement", GET_ARCHIVE_FILE_START_OFF, "file_start", False),
         ("GetArchiveFileSize__Replacement", GET_ARCHIVE_FILE_SIZE_OFF, "file_size", False),
         ("GetGunDataIconFrame__Replacement", GUN_ICON_FRAME_OFF, "icon", True),
+        ("PlayerDeathFx__Replacement", PLAYER_DEATH_FX_OFF, "player_death_fx", False),
     ):
         if sym not in symbols:
             raise KeyError(f"symbol {sym} not found (needed for custom_gun_data)")

@@ -3,6 +3,8 @@
 #include "ram_map.h"
 #include "level_up.h"
 #include "data_structures.h"
+#include "suction.h"
+#include "nocash.h"
 
 #define MAX_BOMBS 7
 
@@ -83,6 +85,15 @@ static void ApplyMaxHealth(void)
 
 APPEND_TEXT void UpdateShooterFrame__Replacement(void)
 {
+    static u8 sNoCashHeartbeat;
+
+    /* One-shot so No$GBA TTY can be verified before any death path. */
+    if (!sNoCashHeartbeat)
+    {
+        sNoCashHeartbeat = 1;
+        NoCashGBAPrint("PHX nocash heartbeat: UpdateShooterFrame");
+    }
+
     /* Vanilla meter / kill credit first, then light refills. */
     ((VoidFunc)0x08014A49)();
     ((VoidFunc)0x0801749D)();
@@ -93,6 +104,7 @@ APPEND_TEXT void UpdateShooterFrame__Replacement(void)
     if (gRuntimeConfig.always_max_bombs && gPlayerBombs < MAX_BOMBS)
         gPlayerBombs = MAX_BOMBS;
 
+    ApplyPhoenixRevive();
     ApplyInventoryCheatsOnce();
 }
 

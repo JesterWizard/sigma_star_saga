@@ -196,10 +196,16 @@ def parse_entry(blob: bytes) -> list[tuple]:
             while i < len(body) and not is_talk_header(body, i):
                 i += 1
             chunk = body[start:i]
+            # Trailing `\x0c?` is the Yes/No choice opcode (not display text).
+            has_choice = chunk.rstrip(b"\0").endswith(b"\x0c?")
+            if has_choice:
+                chunk = chunk.rstrip(b"\0")[:-1]  # drop '?'
             pages = split_pages(chunk)
             if not pages:
                 text = decode_text_bytes(chunk).strip()
                 if text in ("", "?"):
+                    if has_choice:
+                        events.append(("choice",))
                     continue
                 pages = [text]
             for page in pages:
@@ -210,6 +216,8 @@ def parse_entry(blob: bytes) -> list[tuple]:
                     events.append(("chapter_title", page))
                 else:
                     events.append(("text", page))
+            if has_choice:
+                events.append(("choice",))
     return events if events else [("empty",)]
 
 
@@ -239,6 +247,8 @@ def emit_c(rom_addr: int, file_off: int, events: list[tuple]) -> str:
             lines.append(format_call("CHAPTER_TITLE", [ev[1]]))
         elif ev[0] == "text":
             lines.append(format_call("TEXT", [ev[1]]))
+        elif ev[0] == "choice":
+            lines.append("  CHOICE()")
         elif ev[0] == "talk":
             _, speaker, side, expr, pages = ev
             sp = speaker_macro(speaker)

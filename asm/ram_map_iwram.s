@@ -22,7 +22,7 @@
 @
 @   0x0300775C – 0x03007780   pad (do not touch)
 @   0x03007780 ── FreeRamSpaceTop ──────────── SAFE custom pool (FREE)
-@              bump _kernel_malloc grows downward toward Top
+@              bump _kernel_malloc grows UP toward Bottom (away from stack)
 @   0x03007CA0 ── FreeRamSpaceBottom / user SP  (1 312 B free)
 @   0x03007CA0 – 0x03007FA0   user/sys stack   (USED — grows down)
 @   0x03007FA0 ── IRQ SP
@@ -31,12 +31,13 @@
 @   0x03008000  end of IWRAM
 @
 @ Safe leftover for custom code: ONLY 0x03007780–0x03007CA0 via _kernel_malloc.
+@ Grow from Top upward so the first byte is NOT under the user SP.
 @ Full unknown inventory: ram_map_iwram_pool.inc (431 gUnk_* symbols).
 @ =============================================================================
 
 SET_DATA FreeRamSpaceTop, 0x03007780
 SET_DATA FreeRamSpaceBottom, 0x03007CA0
-SET_DATA UsedFreeRamSpaceTop, FreeRamSpaceBottom
+SET_DATA UsedFreeRamSpaceTop, FreeRamSpaceTop
 
 SET_DATA gUserStackTop, 0x03007CA0
 SET_DATA gIrqStackTop, 0x03007FA0
@@ -45,8 +46,8 @@ SET_DATA gIrqStackTop, 0x03007FA0
 SET_DATA gVanillaIwramHighWater, 0x0300775C
 
 .macro _kernel_malloc name, size
-    .set UsedFreeRamSpaceTop, UsedFreeRamSpaceTop - \size
     SET_DATA \name, UsedFreeRamSpaceTop
+    .set UsedFreeRamSpaceTop, UsedFreeRamSpaceTop + \size
 .endm
 
 @ -- Engine / mode -------------------------------------------------------------
@@ -100,4 +101,12 @@ SET_DATA gImpactOwned, 0x03007748
 .include "ram_map_iwram_pool.inc"
 
 @ -- Custom free-space allocations ---------------------------------------------
-@ Prefer _kernel_malloc here for small hot-path scratch. Grow downward only.
+@ Prefer _kernel_malloc here for small hot-path scratch. Grow upward from Top.
+
+@ Phoenix Impact: 1 = revive already used this battle.
+_kernel_malloc gPhoenixReviveUsed, 0x1
+@ Magic bytes initialize the revive flag even if this free RAM starts dirty.
+_kernel_malloc gPhoenixReviveMagicA, 0x1
+_kernel_malloc gPhoenixReviveMagicB, 0x1
+@ Set for the caller tail after death FX so Phoenix can skip player deletion.
+_kernel_malloc gPhoenixReviveTailSkips, 0x1

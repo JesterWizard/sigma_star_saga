@@ -4,7 +4,8 @@ ENTRY(gBaserom)
 MEMORY {
     EWRAM (rwx) : ORIGIN = 0x02000000, LENGTH = 256K
     IWRAM (rwx) : ORIGIN = 0x03000000, LENGTH = 32K
-    /* 16M: 8M baserom + append space for src_custom / runtime config */
+    /* 16M address space so append past 8MB is allowed; output ROM is
+     * trimmed to __append_end (not a full 16MB file). */
     ROM   (rx)  : ORIGIN = 0x08000000, LENGTH = 16M
 }
 

@@ -21,6 +21,16 @@
       "icon_from": 27,
       "icon_from_name": "exp_miner_plus",
       "icon_png": "graphics/gun_data/impact/30_suction_plus.png"
+    },
+    {
+      "index": 30,
+      "id": 79,
+      "number": 31,
+      "name": "PHOENIX",
+      "text": "one full revival when dying per battle",
+      "icon_from": 0,
+      "icon_from_name": "absorb",
+      "icon_png": "graphics/gun_data/impact/31_phoenix.png"
     }
   ]
 }

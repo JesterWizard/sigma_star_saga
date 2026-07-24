@@ -97,9 +97,11 @@ DATA_ASM_BUILDDIR = $(OBJ_DIR)/$(DATA_ASM_SUBDIR)
 
 C_SRCS := $(C_SUBDIR)/level_up.c
 CUSTOM_C_SRCS := \
+	$(CUSTOM_C_SUBDIR)/nocash.c \
 	$(CUSTOM_C_SUBDIR)/flight_skip_hooks.c \
 	$(CUSTOM_C_SUBDIR)/data_structures.c \
-	$(CUSTOM_C_SUBDIR)/suction_hooks.c
+	$(CUSTOM_C_SUBDIR)/suction_hooks.c \
+	$(CUSTOM_C_SUBDIR)/player_hit_hooks.c
 CONFIG_SRCS := $(CONFIG_SUBDIR)/runtime.c
 # Region fragments + pool inventories are .included by ram_map.s (not assembled alone).
 RAM_MAP_FRAGMENTS := \
@@ -234,8 +236,11 @@ ifneq ($(wildcard $(FIX)),)
 	$(FIX) $@ -p --silent
 endif
 	python3 $(APPLY_LYNJUMP) $(ELF) $@
-	@# 16MB cart size so 0x08800000 append space does not mirror onto 0x08000000
-	@truncate -s 16777216 $@
+	@# Pad only through append end. Must be >8MB so 0x08800000 is not a
+	@# mirror of 0x08000000; do not force a full 16MB image.
+	@end=$$(arm-none-eabi-nm $(ELF) | awk '/__append_end$$/{print $$1}'); \
+	 size=$$((0x$$end - 0x08000000)); \
+	 truncate -s $$size $@
 ifneq ($(wildcard $(FIX)),)
 	$(FIX) $@ -p --silent
 endif

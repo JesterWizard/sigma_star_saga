@@ -22,6 +22,9 @@
 /* System / UI line with no portrait header. */
 #define TEXT(...)
 
+/* Yes/No prompt after a TEXT page (`\\x0c?` in the talk stream). */
+#define CHOICE()
+
 /* Chapter title card embedded in the talk stream. */
 #define CHAPTER_TITLE(...)
 

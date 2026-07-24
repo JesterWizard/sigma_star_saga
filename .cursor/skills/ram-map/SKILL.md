@@ -41,7 +41,7 @@ Pool inventories hold unnamed `gUnk_XXXXXXXX` symbols. When promoting one to a r
 2. **Dedup** — grep `asm/ram_map_*.s`, `asm/ram_map_*_pool.inc`, and `include/ram_map.h` for the name and address. Skip if already present with the same value; fix mismatches instead of duplicating.
 3. **Validate**
    - Prefer Thumb literal-pool / code xrefs over absolute literals alone (EWRAM and `0x0E…` especially).
-   - IWRAM: never allocate at or above user stack `0x03007CA0`; stay in free pool `0x03007780`–`0x03007CA0` for custom malloc. High water is `gVanillaIwramHighWater` (`0x0300775C`).
+   - IWRAM: never allocate at or above user stack `0x03007CA0`; stay in free pool `0x03007780`–`0x03007CA0` for custom malloc (grows **up** from `FreeRamSpaceTop` so the first byte is not under SP). High water is `gVanillaIwramHighWater` (`0x0300775C`).
    - EWRAM free floor `0x02030000` is provisional — raise `FreeEwramSpaceTop` only with evidence.
    - SRAM bus is not cart save (EEPROM_V124); only document / allocate there when explicitly needed.
 4. **Insert** into the matching thematic section (or add a short `@ -- Section --` block). Keep style:

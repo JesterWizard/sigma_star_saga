@@ -46,6 +46,7 @@ Defines custom Impact Data pieces after the vanilla 28.
 |-------|--------|
 | **SUCTION** | Pulls every EXP gem on screen (vanilla magnet speed) |
 | **SUCTION+** | Same pull at **2×** speed |
+| **PHOENIX** | One full HP revival when dying, once per battle |
 
 Unlock with `.all_impact_data` and/or `.custom_gun_data` (status screen auto-unlocks
 JSON pieces when `.custom_gun_data` is on). Each `icon_png` is injected as an ANM

@@ -30,6 +30,12 @@ extern u32 gItemsOwned;
 extern u32 gCannonOwned;
 extern u32 gImpactOwned;
 
+/* Custom free-pool (via _kernel_malloc in ram_map_iwram.s). */
+extern u8 gPhoenixReviveUsed;
+extern u8 gPhoenixReviveMagicA;
+extern u8 gPhoenixReviveMagicB;
+extern u8 gPhoenixReviveTailSkips;
+
 /* Last pool-backed vanilla IWRAM global (0x0300775C); free pool starts at 0x03007780. */
 extern u8 gVanillaIwramHighWater;
 

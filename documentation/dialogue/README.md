@@ -45,6 +45,7 @@ Set `custom_dialogue = FALSE` to keep vanilla talk banks (no pointer redirect).
 | Entry delimiter | `#` |
 | Talk header | `\x07 <speaker_id> </> <expr> \x07` then text |
 | Page / box end | `\x0c` (one C string arg per page) |
+| Yes/No choice | `?` immediately after `\x0c` (`CHOICE()`) |
 | Portrait side | `<` → `SIDE_LEFT`, `>` → `SIDE_RIGHT` |
 
 ### Chapter folders (7 banks)
@@ -68,6 +69,7 @@ Each `scene_XXXXXX.c` is one `#` entry (`XXXXXX` = vanilla file offset). `EMPTY(
 | `DIALOGUE_SCRIPT(rom_addr, name)` / `END_DIALOGUE_SCRIPT()` | Scene wrapper (vanilla address is documentary) |
 | `TALK(speaker, side, expr, "page", …)` | Portrait line; one string per page |
 | `TEXT("…")` | System / UI line (no talk header) |
+| `CHOICE()` | Yes/No prompt after a `TEXT` page (emits `\x0c?`) |
 | `CHAPTER_TITLE("…")` | Chapter title card |
 | `EMPTY()` | Empty `#` stub that still consumes a script ID |
 
@@ -127,6 +129,6 @@ cp -a data/dialogue src_custom/dialogue
 - Chapters 2 and 5 have no in-stream title string; folder numbers follow the pointer table.
 - `EXPR_ALT` is only a label for expression byte `1`.
 - Speaker names are provisional until RE confirms portrait wiring.
-- Round-trip is not byte-identical to vanilla (e.g. stray `?` after some `\x0c`); gameplay uses the compiled banks.
+- `CHOICE()` (`?` after `\x0c`) is required for Yes/No prompts (e.g. save overwrite). Omitting it shows the options but softlocks on select.
 
 Report dump/compile issues with the scene ROM offset from the file header comment (`0x08……`).
