@@ -10,6 +10,7 @@
 #define IMPACT_ID_SUCTION_PLUS 78
 #define IMPACT_PHOENIX 30
 #define IMPACT_ID_PHOENIX 79
+#define IMPACT_NUM_PHOENIX 31 /* status-screen badge number */
 
 /* Extended gun-icon ANM frames: custom impact i → 196+2*i (+1 if owned). */
 #define SUCTION_ICON_FRAME_BASE 196
@@ -21,8 +22,15 @@ u32 EquippedSuctionSpeedShift(void);
 void AttractExpGem(u8 *gem, u32 pos_off, u32 speed_shift);
 void ApplyPhoenixRevive(void);
 u32 DoPhoenixRevive(void);
+u32 PhoenixDeathFxShouldSkip(void);
+void SpawnPhoenixRevivePopup(void);
+void TickPhoenixRevivePopup(void);
+u32 PlayerLooksCrashed(u8 *player);
+void LogPhoenixDeathFxEntry(void);
+void LogPhoenixCrashProbe(const char *tag);
 void PlayerStateMachine__Replacement(void);
 void PlayerHitUpdate__Replacement(void);
+void PlayerShipUpdate__Replacement(void);
 void PlayerDeathFx__Replacement(void);
 void ExpGemUpdate__Replacement(u32 arg);
 void LeechGemUpdate__Replacement(void);

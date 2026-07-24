@@ -12,7 +12,16 @@ typedef u32 (*CalcAngleFn)(s32 x0, s32 y0, s32 x1, s32 y1);
 
 #define SHOOTER_FILE_TABLE 0x086188C4
 #define GUN_ICON_FILE_INDEX 231 /* 1-based shooter archive index for ANM #230 */
+#define EXP_POPUP_FILE_INDEX 0x71 /* 1-based; green "+ EXP" floating text ANM */
 #define CUR_ARCHIVE_FT_PTR ((volatile u32 *)0x03001200)
+
+/* Vanilla SpawnExpText @ 0x0804AA48 — floats green pickup label at (x, y). */
+typedef void (*SpawnExpTextFn)(s32 x, s32 y);
+#define SPAWN_EXP_TEXT ((SpawnExpTextFn)0x0804AA49)
+
+/* Re-DMA every loaded shooter ANM bank from GetArchiveFileStart sources. */
+typedef void (*ReloadAnmBanksFn)(void);
+#define RELOAD_ANM_BANKS ((ReloadAnmBanksFn)0x08005E7D)
 
 /* Defined in asm/suction_trampoline.s */
 void ExpGemUpdate__Continue(u32 arg);
@@ -20,21 +29,37 @@ void LeechGemUpdate__Continue(void);
 void GetGunDataIconFrame__Continue(u32 type, u32 local, u32 owned, u16 *out);
 u32 IsGunDataOwned__Continue(u32 type, u32 local);
 
+/*
+ * Green "REVIVE" popup — same ANM layout as shooter file 0x71 ("+ EXP").
+ * Swapped in via GetArchiveFileStart while gPhoenixReviveAnmSwap is set.
+ */
+APPEND_RODATA static const u8 sRevivePopupAnm[188] = {
+    0x00, 0x00, 0x01, 0x00, 0x80, 0x00, 0x01, 0x00, 0x3C, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00,
+    0x1C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00, 0xF7, 0xFF, 0xF7, 0xFF,
+    0xF7, 0xFF, 0x07, 0x00, 0x07, 0x00, 0x07, 0x00, 0xFD, 0xFF, 0xFD, 0xFF, 0xFD, 0xFF, 0x03, 0x00,
+    0x03, 0x00, 0x03, 0x00, 0x01, 0x00, 0xF1, 0xFF, 0xFD, 0xFF, 0x00, 0x14, 0x1A, 0x11, 0xAA, 0x11,
+    0x1A, 0xAA, 0xA1, 0xA1, 0x1A, 0x11, 0xAA, 0x11, 0x1A, 0x1A, 0xAA, 0xA1, 0x1A, 0xAA, 0xA1, 0xA1,
+    0x1A, 0xAA, 0xA1, 0x11, 0xAA, 0xAA, 0xAA, 0xAA, 0x00, 0x00, 0x00, 0x00, 0x11, 0x1A, 0xAA, 0xA1,
+    0xAA, 0x1A, 0xAA, 0xA1, 0xA1, 0x1A, 0xAA, 0xA1, 0xAA, 0xAA, 0xA1, 0xA1, 0xAA, 0xAA, 0xA1, 0xA1,
+    0x11, 0xAA, 0x1A, 0xAA, 0xAA, 0x0A, 0xAA, 0x0A, 0x00, 0x00, 0x00, 0x00, 0x1A, 0x0A, 0x1A, 0xAA,
+    0x1A, 0x0A, 0x1A, 0xAA, 0x1A, 0x0A, 0x1A, 0xAA, 0x1A, 0x0A, 0xAA, 0xA1, 0x1A, 0x0A, 0xA0, 0xA1,
+    0x1A, 0x0A, 0xA0, 0x1A, 0xAA, 0x0A, 0x00, 0xAA, 0x00, 0x00, 0x00, 0x00, 0xA1, 0x11, 0x11, 0x0A,
+    0xA1, 0xA1, 0xAA, 0x0A, 0xA1, 0x11, 0xA1, 0x00, 0xA1, 0xA1, 0xAA, 0x00, 0xA1, 0xA1, 0xAA, 0x0A,
+    0xAA, 0x11, 0x11, 0x0A, 0xAA, 0xAA, 0xAA, 0x0A, 0x00, 0x00, 0x00, 0x00,
+};
+
 #define PLAYER_STATE_OFF 8
 #define PLAYER_STATE_SPAWN 1
 #define PLAYER_STATE_HURT 6
 #define PLAYER_STATE_FLY 7
-#define PLAYER_STATE_DYING 0x2F
+#define PLAYER_STATE_DYING 0x2F /* HitUpdate lethal write @ 0x08025232 */
 #define PLAYER_STATE_DEAD_A 0x30
-#define PLAYER_STATE_DEAD_B 9
-#define PLAYER_STATE_DEAD_C 0x3A /* stage-handler lethal path @ 0x08023B68 */
-#define PLAYER_STATE_DEAD_D 0x13 /* post-dying anim; lives drain @ PlayerHitUpdate */
-#define PLAYER_STATE_DEAD_E 0x34 /* special-form lethal twin of 0x13 */
 #define PLAYER_HP_OFF 0x34
 #define PLAYER_IFRAME_OFF 0x12
 #define PLAYER_ANIM_TIMER_OFF 0x2C
 #define PLAYER_STAGE_TYPE_OFF 0x22
 #define PLAYER_FLAGS_OFF 0x18
+#define PLAYER_HIT_FLAG 0x1000
 #define PHOENIX_MAGIC_A 0xA5
 #define PHOENIX_MAGIC_B 0x5A
 
@@ -49,6 +74,14 @@ APPEND_TEXT u32 EquippedImpactIndex(void)
     return idx & 0xFF;
 }
 
+APPEND_TEXT u32 ImpactIdIsPhoenix(u32 id)
+{
+    id &= 0xFF;
+    return id == IMPACT_PHOENIX
+        || id == IMPACT_ID_PHOENIX
+        || id == IMPACT_NUM_PHOENIX;
+}
+
 APPEND_TEXT u32 PhoenixIsEquipped(void)
 {
     u32 idx = EquippedImpactIndex();
@@ -57,14 +90,10 @@ APPEND_TEXT u32 PhoenixIsEquipped(void)
 
     /* Active slot first (same as OnImpact / Suction). Also accept the other
      * loadout word so a sticky primary-flag mismatch cannot soft-disable it.
-     * Custom Phoenix may appear as local index 30 or Gun Data ID 79.
+     * Phoenix may appear as local index 30, Gun Data ID 79, or badge #31.
      * Do NOT treat mere ownership as equipped — all_impact_data would make
      * Phoenix always-on and poison DeleteActor skips on the overworld. */
-    if (idx == IMPACT_PHOENIX || idx == IMPACT_ID_PHOENIX)
-        return 1;
-    if (primary == IMPACT_PHOENIX || primary == IMPACT_ID_PHOENIX)
-        return 1;
-    if (alt == IMPACT_PHOENIX || alt == IMPACT_ID_PHOENIX)
+    if (ImpactIdIsPhoenix(idx) || ImpactIdIsPhoenix(primary) || ImpactIdIsPhoenix(alt))
         return 1;
 
     return 0;
@@ -103,29 +132,77 @@ APPEND_TEXT u32 PlayerNeedsPhoenixRevive(u8 *player)
     u8 state = player[PLAYER_STATE_OFF];
     u32 hp = *(u32 *)(player + PLAYER_HP_OFF);
     u16 flags = *(u16 *)(player + PLAYER_FLAGS_OFF);
+    u32 hpGone = (hp == 0 || hp == 0xFF);
 
-    /* Dying / post-death states (vanilla sets these on the lethal path). */
-    if (state == PLAYER_STATE_DYING
-        || state == PLAYER_STATE_DEAD_A
-        || state == PLAYER_STATE_DEAD_B
-        || state == PLAYER_STATE_DEAD_C
-        || state == PLAYER_STATE_DEAD_D
-        || state == PLAYER_STATE_DEAD_E)
+    /* Only true lethal signals. Do NOT treat living special-form states
+     * (0x13 / 0x34) or generic HURT+hit-flag as death — that consumed the
+     * one revive before HP actually hit 0. */
+    if (state == PLAYER_STATE_DYING)
+        return 1;
+    if (state == PLAYER_STATE_DEAD_A && hpGone)
         return 1;
 
-    /* The known-good max-health hack works by cancelling this pre-death hurt
-     * state. Catch it here so Phoenix prevents the vanilla transition instead
-     * of trying to unwind game-over code after the fact. */
-    if (state == PLAYER_STATE_HURT
-        && (hp == 0 || hp == 0xFF || (flags & 0x1000) != 0))
-        return 1;
-
-    /* Stage handlers may leave HP at 0 without writing 0x2F — only treat
-     * that as death when the hit flag is still set (not battle init). */
-    if (hp == 0 && (flags & 0x1000) != 0)
+    /* ShipUpdate @ 0x16114 / stage DeathFx callers: hit flag + empty HP. */
+    if ((flags & PLAYER_HIT_FLAG) != 0 && hpGone)
         return 1;
 
     return 0;
+}
+
+/* True when the ship looks like it is on a lethal / crash path (for logs). */
+APPEND_TEXT u32 PlayerLooksCrashed(u8 *player)
+{
+    if (player == NULL)
+        return 0;
+    return PlayerNeedsPhoenixRevive(player);
+}
+
+APPEND_TEXT void LogPhoenixCrashProbe(const char *tag)
+{
+    u8 *player = gPlayerPtr;
+    u32 state = 0xEE;
+    u32 hp = 0xEEEEEEEE;
+    u32 flags = 0;
+    u32 primary = gGunLoadoutImpact & 0xFF;
+    u32 alt = gGunLoadoutImpactAlt & 0xFF;
+    u32 active = EquippedImpactIndex();
+    u32 slotFlag = gGunLoadoutPrimaryFlag & 0xFF;
+
+    if (player != NULL)
+    {
+        state = player[PLAYER_STATE_OFF];
+        hp = *(u32 *)(player + PLAYER_HP_OFF);
+        flags = *(u16 *)(player + PLAYER_FLAGS_OFF);
+    }
+
+    NoCashGBAPrintf(
+        "PHX %s st=%u hp=%u fl=%x eq=%u used=%u act=%u pri=%u alt=%u sf=%u need=%u",
+        tag,
+        state,
+        hp,
+        flags,
+        PhoenixIsEquipped(),
+        gPhoenixReviveUsed & 0xFF,
+        active,
+        primary,
+        alt,
+        slotFlag,
+        (player != NULL) ? PlayerNeedsPhoenixRevive(player) : 0);
+}
+
+/* Called from PlayerDeathFx veneer before revive attempt (once per death FX). */
+APPEND_TEXT void LogPhoenixDeathFxEntry(void)
+{
+    if (gPhoenixCrashLogged)
+        return;
+    NoCashGBAPrint("PHX DeathFx ENTRY");
+    LogPhoenixCrashProbe("DeathFx");
+    /* Leave latch clear so DoPhoenixRevive still prints its decision. */
+}
+
+APPEND_TEXT void ClearPhoenixCrashLogLatch(void)
+{
+    gPhoenixCrashLogged = 0;
 }
 
 /* Perform revive. No dying-state gate — callers decide when.
@@ -135,32 +212,45 @@ APPEND_TEXT u32 PlayerNeedsPhoenixRevive(u8 *player)
 APPEND_TEXT u32 DoPhoenixRevive(void)
 {
     u8 *player = gPlayerPtr;
+    u32 log = !gPhoenixCrashLogged;
 
-    NoCashGBAPrint("PHX DoRevive enter");
+    /* At most one TTY dump per crash (Apply may call this every frame). */
+    if (log)
+    {
+        gPhoenixCrashLogged = 1;
+        NoCashGBAPrint("PHX DoRevive enter");
+        LogPhoenixCrashProbe("DoRevive");
+    }
+
     if (!gRuntimeConfig.custom_gun_data)
     {
-        NoCashGBAPrint("PHX reject: custom off");
+        if (log)
+            NoCashGBAPrint("PHX reject: custom off");
         return 0;
     }
     if (player == NULL)
     {
-        NoCashGBAPrint("PHX reject: no player");
+        if (log)
+            NoCashGBAPrint("PHX reject: no player");
         return 0;
     }
     if (!PhoenixIsEquipped())
     {
-        NoCashGBAPrint("PHX reject: not equipped");
+        if (log)
+            NoCashGBAPrint("PHX reject: not equipped");
         return 0;
     }
     EnsurePhoenixReviveState(player);
     if (player[PLAYER_STATE_OFF] == PLAYER_STATE_SPAWN)
     {
-        NoCashGBAPrint("PHX reject: spawn state");
+        if (log)
+            NoCashGBAPrint("PHX reject: spawn state");
         return 0;
     }
     if (gPhoenixReviveUsed)
     {
-        NoCashGBAPrint("PHX reject: already used");
+        if (log)
+            NoCashGBAPrint("PHX reject: already used");
         return 0;
     }
 
@@ -172,11 +262,71 @@ APPEND_TEXT u32 DoPhoenixRevive(void)
     player[PLAYER_IFRAME_OFF] = 0x3C;
     player[0x11] = 0xFF;
     *(s16 *)(player + PLAYER_ANIM_TIMER_OFF) = 0;
-    *(u16 *)(player + PLAYER_FLAGS_OFF) &= (u16)~0x1000;
+    *(u16 *)(player + PLAYER_FLAGS_OFF) &= (u16)~PLAYER_HIT_FLAG;
     /* Clear velocity so a death-zeroed ship doesn't softlock mid-explode. */
     *(u32 *)(player + 0x48) = 0;
     *(u32 *)(player + 0x54) = 0;
+    /* Popup after HP restore — must not block the skip-death return path. */
+    SpawnPhoenixRevivePopup();
     return 1;
+}
+
+/*
+ * DeathFx callers often still fire after ShipUpdate already revived this frame.
+ * Skipping only on DoPhoenixRevive success then hits "already used" and plays
+ * explosion → DeleteActor → game over. Treat a healthy post-revive ship as skip.
+ */
+APPEND_TEXT u32 PhoenixDeathFxShouldSkip(void)
+{
+    u8 *player;
+
+    if (DoPhoenixRevive())
+        return 1;
+
+    if (!gPhoenixReviveUsed)
+        return 0;
+
+    player = gPlayerPtr;
+    if (player == NULL)
+        return 0;
+    if (PlayerNeedsPhoenixRevive(player))
+        return 0;
+
+    NoCashGBAPrint("PHX DeathFx skip: already revived");
+    return 1;
+}
+
+/* Float green "REVIVE" at the ship — same path as "+ EXP" gem pickup text.
+ * Swap only for the spawn GetArchiveFileStart(0x71); do NOT RELOAD_ANM_BANKS
+ * here (full-bank DMA during death can corrupt state / lose the skip). */
+APPEND_TEXT void SpawnPhoenixRevivePopup(void)
+{
+    u8 *player = gPlayerPtr;
+    s32 x;
+    s32 y;
+
+    if (player == NULL)
+        return;
+
+    x = *(s32 *)(player + 0x40);
+    y = *(s32 *)(player + 0x4C);
+
+    gPhoenixReviveAnmSwap = 1;
+    SPAWN_EXP_TEXT(x, y);
+    gPhoenixReviveAnmSwap = 0;
+    /* Restore "+ EXP" bank after the float finishes (Tick does the reload). */
+    gPhoenixReviveAnmRestore = 60;
+}
+
+APPEND_TEXT void TickPhoenixRevivePopup(void)
+{
+    if (gPhoenixReviveAnmRestore == 0)
+        return;
+    gPhoenixReviveAnmRestore--;
+    if (gPhoenixReviveAnmRestore != 0)
+        return;
+    gPhoenixReviveAnmSwap = 0;
+    RELOAD_ANM_BANKS();
 }
 
 /* Called from hit-update / state-machine after death may have been written. */
@@ -186,6 +336,11 @@ APPEND_TEXT void ApplyPhoenixRevive(void)
 
     if (!gRuntimeConfig.custom_gun_data || player == NULL)
         return;
+
+    /* Edge-trigger latch for DeathFx/DoRevive TTY — clear when healthy. */
+    if (!PlayerLooksCrashed(player))
+        ClearPhoenixCrashLogLatch();
+
     if (!PhoenixIsEquipped())
         return;
     EnsurePhoenixReviveState(player);
@@ -196,10 +351,7 @@ APPEND_TEXT void ApplyPhoenixRevive(void)
     /* Vanilla often sets HP to 0xFF right before state 0x2F; stage paths
      * leave HP at 0 instead. Accept either signal. */
     if (PlayerNeedsPhoenixRevive(player))
-    {
-        NoCashGBAPrint("PHX Apply: needs revive");
         DoPhoenixRevive();
-    }
 }
 
 /* 7 = Suction (vanilla magnet speed), 8 = Suction+ (2×), 0 = unequipped. */
@@ -263,7 +415,8 @@ APPEND_TEXT u32 IsGunDataOwned__Replacement(u32 type, u32 local)
     return IsGunDataOwned__Continue(type, local);
 }
 
-/* Redirect shooter gun-icon ANM to the extended blob with Suction frames. */
+/* Redirect shooter gun-icon ANM to the extended blob with Suction frames.
+ * Also swaps the "+ EXP" popup ANM for "REVIVE" while Phoenix is spawning it. */
 APPEND_TEXT void *GetArchiveFileStart__Replacement(u32 index)
 {
     u32 ft = *CUR_ARCHIVE_FT_PTR;
@@ -271,6 +424,9 @@ APPEND_TEXT void *GetArchiveFileStart__Replacement(u32 index)
 
     if (ft == SHOOTER_FILE_TABLE && index == GUN_ICON_FILE_INDEX && gGunIconAnmExtSize != 0)
         return gGunIconAnmExt;
+
+    if (ft == SHOOTER_FILE_TABLE && index == EXP_POPUP_FILE_INDEX && gPhoenixReviveAnmSwap)
+        return (void *)sRevivePopupAnm;
 
     table = (u32 *)ft;
     return (void *)(ft + table[index]);
@@ -283,6 +439,9 @@ APPEND_TEXT u32 GetArchiveFileSize__Replacement(u32 index)
 
     if (ft == SHOOTER_FILE_TABLE && index == GUN_ICON_FILE_INDEX && gGunIconAnmExtSize != 0)
         return gGunIconAnmExtSize;
+
+    if (ft == SHOOTER_FILE_TABLE && index == EXP_POPUP_FILE_INDEX && gPhoenixReviveAnmSwap)
+        return sizeof(sRevivePopupAnm);
 
     entry = (u32 *)(ft + index * 4);
     return entry[1] - entry[0];

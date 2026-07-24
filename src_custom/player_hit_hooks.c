@@ -12,9 +12,41 @@
 
 void PlayerHitUpdate__Continue(void);
 void PlayerStateMachine__Continue(void);
+void PlayerShipUpdate__Continue(void);
 void PlayerDeathFx__Continue(void);
 void DeleteActor__Continue(u32 actor);
 u32 PhoenixDeathFxSkipReturn(u32 lr);
+
+/*
+ * Common 2D ship tick @ 0x08015F34 — most stages kill here via DeleteActor
+ * (explosion particles + game-over tail) without ever calling PlayerDeathFx.
+ * Revive first; on success HP/hit-flag are cleared so vanilla skips DeleteActor.
+ */
+APPEND_TEXT void PlayerShipUpdate__Replacement(void)
+{
+    u8 *player = gPlayerPtr;
+
+    if (gRuntimeConfig.custom_gun_data && player != NULL)
+    {
+        u32 hp = *(u32 *)(player + 0x34);
+        u16 flags = *(u16 *)(player + 0x18);
+
+        if ((flags & 0x1000) != 0 && (hp == 0 || hp == 0xFF))
+        {
+            if (!gPhoenixCrashLogged)
+            {
+                NoCashGBAPrint("PHX ShipUpdate lethal");
+                LogPhoenixCrashProbe("ShipTick");
+            }
+            /* On success skip vanilla entirely this frame — Continue would still
+             * race with stage DeathFx tails that already sampled HP==0. */
+            if (DoPhoenixRevive())
+                return;
+        }
+    }
+
+    PlayerShipUpdate__Continue();
+}
 
 APPEND_TEXT void PlayerHitUpdate__Replacement(void)
 {

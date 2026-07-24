@@ -64,6 +64,26 @@ IsGunDataOwned__Continue:
 	bx r3
 	.pool
 
+@ PlayerShipUpdate @ 0x08015F34 — common 2D ship tick (HP0→DeleteActor).
+@ 16-byte LynJump stub overwrites through 0x08015F42; reissue then resume.
+	.global PlayerShipUpdate__Continue
+	.thumb_func
+PlayerShipUpdate__Continue:
+	push {r4, r5, r6, r7, lr}
+	sub sp, #0x10
+	ldr r5, =0x03000DB8
+	ldr r1, [r5]
+	ldrb r0, [r1, #8]
+	cmp r0, #7
+	beq 1f
+	cmp r0, #7
+	ldr r3, =0x08015F45
+	bx r3
+1:
+	ldr r3, =0x08015F6B
+	bx r3
+	.pool
+
 @ PlayerStateMachine @ 0x08025DB4 — 16-byte LynJump stub; resume at 0x08025DC4
 	.global PlayerStateMachine__Continue
 	.thumb_func
@@ -124,13 +144,14 @@ DeleteActor__Continue:
 	.thumb
 	.align 2
 
-@ PlayerDeathFx replacement: revive, then skip the caller's death tail
-@ (which includes DeleteActor for every known caller).
+@ PlayerDeathFx replacement: log crash entry, revive (or skip if already
+@ revived this map), then remap LR past the caller's DeleteActor tail.
 	.global PlayerDeathFx__Replacement
 	.thumb_func
 PlayerDeathFx__Replacement:
 	push {lr}
-	bl DoPhoenixRevive
+	bl LogPhoenixDeathFxEntry
+	bl PhoenixDeathFxShouldSkip
 	cmp r0, #0
 	bne 1f
 	bl PlayerDeathFx__Continue

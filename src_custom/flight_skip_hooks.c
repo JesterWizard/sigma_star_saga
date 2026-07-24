@@ -36,14 +36,13 @@ static void SetGunDataBits(int idLo, int idHi)
 
 /* Unlock flags are persistent — apply once. Re-writing gun-data bits every
  * frame makes CountGunData() always succeed and trips per-entity "owned"
- * branches that re-init encounter / HUD state. */
+ * branches that re-init encounter / HUD state.
+ * Latch lives in free IWRAM (gInventoryCheatsApplied) — not C static/.bss. */
 static void ApplyInventoryCheatsOnce(void)
 {
-    static u8 sApplied;
-
-    if (sApplied)
+    if (gInventoryCheatsApplied)
         return;
-    sApplied = 1;
+    gInventoryCheatsApplied = 1;
 
     if (gRuntimeConfig.all_cannon_data)
     {
@@ -85,12 +84,11 @@ static void ApplyMaxHealth(void)
 
 APPEND_TEXT void UpdateShooterFrame__Replacement(void)
 {
-    static u8 sNoCashHeartbeat;
-
-    /* One-shot so No$GBA TTY can be verified before any death path. */
-    if (!sNoCashHeartbeat)
+    /* One-shot so No$GBA TTY can be verified before any death path.
+     * Latch is free-pool IWRAM — C static would land in .bss @ 0x03000000. */
+    if (!gNoCashHeartbeat)
     {
-        sNoCashHeartbeat = 1;
+        gNoCashHeartbeat = 1;
         NoCashGBAPrint("PHX nocash heartbeat: UpdateShooterFrame");
     }
 
@@ -105,6 +103,7 @@ APPEND_TEXT void UpdateShooterFrame__Replacement(void)
         gPlayerBombs = MAX_BOMBS;
 
     ApplyPhoenixRevive();
+    TickPhoenixRevivePopup();
     ApplyInventoryCheatsOnce();
 }
 

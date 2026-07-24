@@ -72,6 +72,7 @@ IMPACT_DESC_STRIDE = 0x5A
 IMPACT_OWN_SYNC_END_OFF = 0x25996  # cmp r2, #0x4C (Gun ID 76)
 PLAYER_STATE_MACHINE_OFF = 0x25DB4
 PLAYER_HIT_UPDATE_OFF = 0x24E24
+PLAYER_SHIP_UPDATE_OFF = 0x15F34
 PLAYER_DEATH_FX_OFF = 0x1BA4C
 DELETE_ACTOR_OFF = 0x6310
 EXP_GEM_UPDATE_OFF = 0x4ABEC
@@ -555,6 +556,7 @@ def apply_suction(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
             (GET_ARCHIVE_FILE_SIZE_OFF, VENEER_LEN, "file_size"),
             (PLAYER_STATE_MACHINE_OFF, LONG_VENEER_LEN, "player_sm"),
             (PLAYER_HIT_UPDATE_OFF, LONG_VENEER_LEN, "player_hit"),
+            (PLAYER_SHIP_UPDATE_OFF, LONG_VENEER_LEN, "player_ship"),
             (PLAYER_DEATH_FX_OFF, VENEER_LEN, "player_death_fx"),
             (DELETE_ACTOR_OFF, VENEER_LEN, "delete_actor"),
         ):

@@ -102,6 +102,8 @@ SET_DATA gImpactOwned, 0x03007748
 
 @ -- Custom free-space allocations ---------------------------------------------
 @ Prefer _kernel_malloc here for small hot-path scratch. Grow upward from Top.
+@ NEVER use C `static` locals in APPEND_TEXT — the linker puts .bss at
+@ 0x03000000 and will stomp vanilla IWRAM (event flags / Recker form / etc.).
 
 @ Phoenix Impact: 1 = revive already used this battle.
 _kernel_malloc gPhoenixReviveUsed, 0x1
@@ -110,3 +112,14 @@ _kernel_malloc gPhoenixReviveMagicA, 0x1
 _kernel_malloc gPhoenixReviveMagicB, 0x1
 @ Set for the caller tail after death FX so Phoenix can skip player deletion.
 _kernel_malloc gPhoenixReviveTailSkips, 0x1
+@ Durable No$GBA print scratch (must outlive the call; not stack / not .bss).
+_kernel_malloc gNoCashPrintBuf, 0x100
+@ One-shot latches formerly wrongly placed in .bss @ 0x03000000+.
+_kernel_malloc gInventoryCheatsApplied, 0x1
+_kernel_malloc gNoCashHeartbeat, 0x1
+@ Edge-trigger crash TTY logs (clear when ship is no longer crashed).
+_kernel_malloc gPhoenixCrashLogged, 0x1
+@ When set, GetArchiveFileStart(0x71) returns the REVIVE popup ANM.
+_kernel_malloc gPhoenixReviveAnmSwap, 0x1
+@ Frames left before restoring the "+ EXP" ANM bank after a REVIVE popup.
+_kernel_malloc gPhoenixReviveAnmRestore, 0x1

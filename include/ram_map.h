@@ -35,6 +35,12 @@ extern u8 gPhoenixReviveUsed;
 extern u8 gPhoenixReviveMagicA;
 extern u8 gPhoenixReviveMagicB;
 extern u8 gPhoenixReviveTailSkips;
+extern char gNoCashPrintBuf[];
+extern u8 gInventoryCheatsApplied;
+extern u8 gNoCashHeartbeat;
+extern u8 gPhoenixCrashLogged;
+extern u8 gPhoenixReviveAnmSwap;
+extern u8 gPhoenixReviveAnmRestore;
 
 /* Last pool-backed vanilla IWRAM global (0x0300775C); free pool starts at 0x03007780. */
 extern u8 gVanillaIwramHighWater;

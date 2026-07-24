@@ -94,6 +94,7 @@ def main() -> int:
         "PlayerDeathFx__Replacement",
         "DeleteActor__Replacement",
         "DoPhoenixRevive",
+        "PhoenixDeathFxShouldSkip",
         "DeleteActor__Continue",
         "gPhoenixReviveUsed",
         "gPhoenixReviveMagicA",
