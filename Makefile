@@ -113,13 +113,19 @@ ASM_SRCS := \
 	$(ASM_SUBDIR)/ram_map.s
 DATA_ASM_SRCS :=
 
+DIALOGUE_SRC_DIR := $(CUSTOM_C_SUBDIR)/dialogue
+DIALOGUE_SCENE_SRCS := $(wildcard $(DIALOGUE_SRC_DIR)/chapter_*/*.c)
+DIALOGUE_BANKS_C := $(OBJ_DIR)/dialogue_banks.c
+DIALOGUE_BANKS_O := $(OBJ_DIR)/dialogue_banks.o
+COMPILE_DIALOGUE := $(TOOLS_DIR)/compile_dialogue.py
+
 C_OBJS := $(patsubst $(C_SUBDIR)/%.c,$(C_BUILDDIR)/%.o,$(C_SRCS))
 CUSTOM_C_OBJS := $(patsubst $(CUSTOM_C_SUBDIR)/%.c,$(CUSTOM_C_BUILDDIR)/%.o,$(CUSTOM_C_SRCS))
 CONFIG_OBJS := $(patsubst $(CONFIG_SUBDIR)/%.c,$(CONFIG_BUILDDIR)/%.o,$(CONFIG_SRCS))
 ASM_OBJS := $(patsubst $(ASM_SUBDIR)/%.s,$(ASM_BUILDDIR)/%.o,$(ASM_SRCS))
 DATA_ASM_OBJS := $(patsubst $(DATA_ASM_SUBDIR)/%.s,$(DATA_ASM_BUILDDIR)/%.o,$(DATA_ASM_SRCS))
 
-OBJS := $(C_OBJS) $(CUSTOM_C_OBJS) $(CONFIG_OBJS) $(ASM_OBJS) $(DATA_ASM_OBJS)
+OBJS := $(C_OBJS) $(CUSTOM_C_OBJS) $(CONFIG_OBJS) $(DIALOGUE_BANKS_O) $(ASM_OBJS) $(DATA_ASM_OBJS)
 OBJS_REL := $(patsubst $(OBJ_DIR)/%,%,$(OBJS))
 
 LYNJUMP_EVENT := $(CUSTOM_C_SUBDIR)/LynJump.event
@@ -179,6 +185,16 @@ endif
 
 # runtime.c uses C99 designated initializers (ygodm8-style); compile with modern gcc.
 $(CONFIG_BUILDDIR)/%.o: $(CONFIG_SUBDIR)/%.c
+	$(PREFIX)gcc -c -mcpu=arm7tdmi -mthumb -mthumb-interwork -O2 \
+		-fno-toplevel-reorder -iquote include -I include \
+		-o $@ $<
+
+# Compile editable src_custom/dialogue macros → APPEND_RODATA banks.
+$(DIALOGUE_BANKS_C): $(COMPILE_DIALOGUE) $(DIALOGUE_SCENE_SRCS) $(DIALOGUE_SRC_DIR)/README.md
+	@mkdir -p $(dir $@)
+	python3 $(COMPILE_DIALOGUE) --src $(DIALOGUE_SRC_DIR) --out $@
+
+$(DIALOGUE_BANKS_O): $(DIALOGUE_BANKS_C)
 	$(PREFIX)gcc -c -mcpu=arm7tdmi -mthumb -mthumb-interwork -O2 \
 		-fno-toplevel-reorder -iquote include -I include \
 		-o $@ $<
