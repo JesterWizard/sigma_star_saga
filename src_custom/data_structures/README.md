@@ -68,12 +68,12 @@ Defines custom Cannon Data pieces after the vanilla 28.
 | `number` | Status-screen list number |
 | `name` / `text` | Status blurb → `"NAME : text"` (max 0x50 bytes) |
 | `icon_from` | Vanilla local index whose ANM frames to reuse (`27` = Mirror Node) |
-| `fire_from` | Vanilla local index whose OnCannon handler to reuse (`0` = Standard Cannon) |
+| `fire_from` | Vanilla local index whose OnCannon handler to reuse (`1` = Rapid Cannon) |
 | `icon_png` | Authored art with badge digits |
 
 | Piece | Effect |
 |-------|--------|
-| **AUTO TARGET** | Fires the Standard Cannon pattern; shots bend toward the nearest enemy |
+| **AUTO TARGET** | Fires the Rapid Cannon pattern; shots bend toward the nearest enemy |
 
 Unlock with `.all_cannon_data` and/or `.custom_gun_data`. Cannon icon frame pairs
 follow the impact pairs in the same extended ANM (196 + 2 × impact count + 2 × i).

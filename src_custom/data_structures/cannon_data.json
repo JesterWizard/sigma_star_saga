@@ -10,8 +10,8 @@
       "text": "shots bend toward the nearest enemy",
       "icon_from": 27,
       "icon_from_name": "mirror_node",
-      "fire_from": 0,
-      "fire_from_name": "standard_cannon",
+      "fire_from": 1,
+      "fire_from_name": "rapid_cannon",
       "icon_png": "graphics/gun_data/cannon/29_auto_target.png"
     }
   ]

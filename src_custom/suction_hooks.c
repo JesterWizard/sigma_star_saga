@@ -17,7 +17,11 @@ typedef u32 (*CalcAngleFn)(s32 x0, s32 y0, s32 x1, s32 y1);
 #define GUN_DATA_TYPE_MAX 4
 
 /* Sin table amplitude is 256, so one frame bends a shot by up to 1 pixel. */
-#define AUTO_TARGET_BEND_SHIFT 8
+/* Position nudge per frame (sintab << shift). 10 ≈ 4× the old shift-8 pull. */
+#define AUTO_TARGET_BEND_SHIFT 10
+/* Actor velocity (16.16); x += vx / y += vy in vanilla integrate. */
+#define ACTOR_OFF_VX 0x48
+#define ACTOR_OFF_VY 0x54
 
 #define SHOOTER_FILE_TABLE 0x086188C4
 #define GUN_ICON_FILE_INDEX 231 /* 1-based shooter archive index for ANM #230 */
@@ -465,9 +469,9 @@ APPEND_TEXT static u8 *NearestEnemyActor(s32 x, s32 y)
 
 /*
  * AUTO TARGET (29th Cannon Data): bend live player shots toward the closest
- * enemy. Position-only nudge with the gem-magnet math — shot velocity stays
- * owned by the vanilla cannon handler, so nothing about firing rate, tile
- * ownership or despawn changes.
+ * enemy. Stronger than gem-magnet position nudge alone — also retargets vx/vy
+ * so high/low angles are not drowned by forward speed. Fire rate from
+ * fire_from in cannon_data.json (Rapid Cannon).
  */
 APPEND_TEXT void ApplyAutoTarget(void)
 {
@@ -484,6 +488,11 @@ APPEND_TEXT void ApplyAutoTarget(void)
         u8 *target;
         s32 *sx;
         s32 *sy;
+        s32 cosine;
+        s32 sine;
+        s32 vx;
+        s32 vy;
+        s32 speed;
         u32 angle;
 
         if ((*(u16 *)(shot + ACTOR_OFF_FLAGS) & ACTOR_FLAG_ACTIVE) == 0)
@@ -500,8 +509,19 @@ APPEND_TEXT void ApplyAutoTarget(void)
         angle = CALC_ANGLE(*sx, *sy,
                            *(s32 *)(target + ACTOR_OFF_X),
                            *(s32 *)(target + ACTOR_OFF_Y)) & 0xFF;
-        *sx += ((s32)SIN_TABLE[angle + 64]) << AUTO_TARGET_BEND_SHIFT;
-        *sy += ((s32)SIN_TABLE[angle]) << AUTO_TARGET_BEND_SHIFT;
+        cosine = (s32)SIN_TABLE[angle + 64];
+        sine = (s32)SIN_TABLE[angle];
+        *sx += cosine << AUTO_TARGET_BEND_SHIFT;
+        *sy += sine << AUTO_TARGET_BEND_SHIFT;
+
+        vx = *(s32 *)(shot + ACTOR_OFF_VX);
+        vy = *(s32 *)(shot + ACTOR_OFF_VY);
+        speed = (vx < 0 ? -vx : vx) + (vy < 0 ? -vy : vy);
+        if (speed < 0x20000)
+            speed = 0x40000;
+        /* sintab ±0x100; (speed >> 8) keeps |vel| ≈ speed when aligned. */
+        *(s32 *)(shot + ACTOR_OFF_VX) = cosine * (speed >> 8);
+        *(s32 *)(shot + ACTOR_OFF_VY) = sine * (speed >> 8);
     }
 }
 
