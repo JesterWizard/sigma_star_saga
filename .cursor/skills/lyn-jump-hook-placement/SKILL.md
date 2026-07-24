@@ -4,13 +4,18 @@ description: >-
   Use when adding or moving custom hack logic in this repo; place the body in
   `src_custom/*_hooks.c` (APPEND_TEXT `__Replacement`) and wire it through
   LynJump / `tools/apply_lynjump.py` instead of editing vanilla `src/` or
-  baserom peels for gameplay changes.
+  baserom peels for gameplay changes. For brand-new features, follow
+  decomp-then-lynjump first (decomp into src/, then hook).
 ---
 
 # Lyn Jump Hook Placement
 
 Use this skill when creating or moving custom functionality (hacks, feature
 replacements, runtime-gated behavior).
+
+**New features:** read `.cursor/skills/decomp-then-lynjump/SKILL.md` first.
+Decompile the touched vanilla functions into `src/`, then put the hack body
+here under `src_custom/`. Do not LynJump opaque ROM without a decomp.
 
 ## Core Rule
 
