@@ -24,6 +24,7 @@ typedef struct {
     u8 all_key_items;      /* DATA CARD, GENOME, VIRUS SAMPLE, … */
     u8 all_overworld_items; /* Flares, fossils, hints, … */
     u8 exp_multiplier;     /* Scale AddExperience amount (1 = vanilla) */
+    u8 custom_dialogue;    /* Use src_custom/dialogue banks (append + ptr redirect) */
 } RuntimeConfig;
 
 extern const RuntimeConfig gRuntimeConfigRom;

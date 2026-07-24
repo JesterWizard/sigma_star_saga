@@ -1,0 +1,7 @@
+#include "dialogue_macros.h"
+
+/* ROM 0x0806A126 */
+DIALOGUE_SCRIPT(0x0806A126, scene_06A126)
+  TALK(SPEAKER_ZELLY, SIDE_RIGHT, EXPR_NEUTRAL,
+      "Blune.")
+END_DIALOGUE_SCRIPT()

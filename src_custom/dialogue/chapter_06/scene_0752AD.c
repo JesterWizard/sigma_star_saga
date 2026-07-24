@@ -1,0 +1,7 @@
+#include "dialogue_macros.h"
+
+/* ROM 0x080752AD */
+DIALOGUE_SCRIPT(0x080752AD, scene_0752AD)
+  TALK(SPEAKER_SCARLET, SIDE_RIGHT, EXPR_NEUTRAL,
+      "Let's go!")
+END_DIALOGUE_SCRIPT()

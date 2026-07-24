@@ -1,0 +1,6 @@
+#include "dialogue_macros.h"
+
+/* ROM 0x08068D04 */
+DIALOGUE_SCRIPT(0x08068D04, scene_068D04)
+  TEXT("YOU GOT 10 FLARES!")
+END_DIALOGUE_SCRIPT()

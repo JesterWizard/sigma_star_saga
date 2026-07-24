@@ -1,0 +1,7 @@
+#include "dialogue_macros.h"
+
+/* ROM 0x0806C83E */
+DIALOGUE_SCRIPT(0x0806C83E, scene_06C83E)
+  TALK(SPEAKER_PSYME, SIDE_RIGHT, EXPR_NEUTRAL,
+      "Recker, wait up!")
+END_DIALOGUE_SCRIPT()

@@ -1,0 +1,7 @@
+#include "dialogue_macros.h"
+
+/* ROM 0x08068319 */
+DIALOGUE_SCRIPT(0x08068319, scene_068319)
+  TALK(SPEAKER_PSYME, SIDE_RIGHT, EXPR_NEUTRAL,
+      "I heard shots!")
+END_DIALOGUE_SCRIPT()

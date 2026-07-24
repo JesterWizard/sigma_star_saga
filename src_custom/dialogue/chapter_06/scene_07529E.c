@@ -1,0 +1,7 @@
+#include "dialogue_macros.h"
+
+/* ROM 0x0807529E */
+DIALOGUE_SCRIPT(0x0807529E, scene_07529E)
+  TALK(SPEAKER_SCARLET, SIDE_RIGHT, EXPR_NEUTRAL,
+      "Come on!")
+END_DIALOGUE_SCRIPT()

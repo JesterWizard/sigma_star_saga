@@ -1,0 +1,6 @@
+#include "dialogue_macros.h"
+
+/* ROM 0x0805D942 */
+DIALOGUE_SCRIPT(0x0805D942, scene_05D942)
+  EMPTY()
+END_DIALOGUE_SCRIPT()

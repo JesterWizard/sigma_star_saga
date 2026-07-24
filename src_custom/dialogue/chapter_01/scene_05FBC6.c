@@ -1,0 +1,7 @@
+#include "dialogue_macros.h"
+
+/* ROM 0x0805FBC6 */
+DIALOGUE_SCRIPT(0x0805FBC6, scene_05FBC6)
+  TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
+      "Are you finished?")
+END_DIALOGUE_SCRIPT()

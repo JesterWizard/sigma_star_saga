@@ -14,9 +14,14 @@ POIN_RE = re.compile(r"POIN\s+(\w+)")
 BOOL_RE = re.compile(
     r"\.(skip_flight_battle|always_run|always_max_health|always_max_bombs|"
     r"all_cannon_data|all_bullet_data|all_impact_data|"
-    r"all_key_items|all_overworld_items)\s*=\s*(TRUE|FALSE|true|false|1|0)",
+    r"all_key_items|all_overworld_items|custom_dialogue)\s*=\s*(TRUE|FALSE|true|false|1|0)",
     re.IGNORECASE,
 )
+
+# Talk-script bank pointer table (7 ROM pointers) + script-ID range pairs.
+DIALOGUE_BANK_TABLE_OFF = 0x24EA6C
+DIALOGUE_BANK_COUNT = 7
+DIALOGUE_ID_RANGE_OFF = 0x5BF3C
 
 SHOOTER_CHEAT_FLAGS = (
     "always_max_health",
@@ -147,6 +152,7 @@ def load_runtime_flags() -> dict[str, bool]:
         "all_impact_data": False,
         "all_key_items": False,
         "all_overworld_items": False,
+        "custom_dialogue": False,
     }
     for match in BOOL_RE.finditer(text):
         name = match.group(1)
@@ -218,6 +224,64 @@ def apply_shooter_cheats(rom: bytearray, owners: dict, symbols: dict, flags: dic
     print(f"runtime: shooter/inventory cheats ({', '.join(on)}) → 0x{hook:08X}")
 
 
+def apply_custom_dialogue(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
+    baserom = (ROOT / "baserom.gba").read_bytes()
+    table_len = DIALOGUE_BANK_COUNT * 4
+    range_len = DIALOGUE_BANK_COUNT * 8
+    if not enabled:
+        checked_write(
+            rom,
+            DIALOGUE_BANK_TABLE_OFF,
+            baserom[DIALOGUE_BANK_TABLE_OFF : DIALOGUE_BANK_TABLE_OFF + table_len],
+            owners,
+            "runtime:custom_dialogue=FALSE:banks",
+        )
+        checked_write(
+            rom,
+            DIALOGUE_ID_RANGE_OFF,
+            baserom[DIALOGUE_ID_RANGE_OFF : DIALOGUE_ID_RANGE_OFF + range_len],
+            owners,
+            "runtime:custom_dialogue=FALSE:ranges",
+        )
+        print("runtime: custom_dialogue=FALSE (vanilla talk banks)")
+        return
+
+    bank_ptrs = []
+    for i in range(DIALOGUE_BANK_COUNT):
+        name = f"gDialogueBank{i}"
+        if name not in symbols:
+            raise KeyError(f"symbol {name} not found (needed for custom_dialogue)")
+        # Data symbols: use address as-is (no Thumb bit).
+        bank_ptrs.append(symbols[name] & ~1)
+
+    checked_write(
+        rom,
+        DIALOGUE_BANK_TABLE_OFF,
+        b"".join(struct.pack("<I", p) for p in bank_ptrs),
+        owners,
+        "runtime:custom_dialogue:banks",
+    )
+
+    if "gDialogueIdRanges" in symbols:
+        # Ranges live in append ROM; copy the 14 u32 words into the vanilla table.
+        # Prefer embedding via already-linked bytes: read from ROM at symbol.
+        ranges_addr = symbols["gDialogueIdRanges"] & ~1
+        file_off = ranges_addr - 0x08000000
+        if file_off < 0 or file_off + range_len > len(rom):
+            raise ValueError(f"gDialogueIdRanges out of ROM: 0x{ranges_addr:08X}")
+        checked_write(
+            rom,
+            DIALOGUE_ID_RANGE_OFF,
+            bytes(rom[file_off : file_off + range_len]),
+            owners,
+            "runtime:custom_dialogue:ranges",
+        )
+    print(
+        "runtime: custom_dialogue=TRUE → banks "
+        + ", ".join(f"0x{p:08X}" for p in bank_ptrs)
+    )
+
+
 def apply_exp_multiplier(rom: bytearray, owners: dict, symbols: dict, multiplier: int):
     baserom = (ROOT / "baserom.gba").read_bytes()
     if multiplier == 1:
@@ -267,6 +331,7 @@ def main():
     apply_always_run(rom, owners, flags["always_run"])
     apply_shooter_cheats(rom, owners, symbols, flags)
     apply_exp_multiplier(rom, owners, symbols, exp_multiplier)
+    apply_custom_dialogue(rom, owners, symbols, flags["custom_dialogue"])
 
     rom_path.write_bytes(rom)
     print(f"patches: {len(owners)} bytes written")

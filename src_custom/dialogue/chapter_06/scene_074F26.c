@@ -1,0 +1,6 @@
+#include "dialogue_macros.h"
+
+/* ROM 0x08074F26 */
+DIALOGUE_SCRIPT(0x08074F26, scene_074F26)
+  CHAPTER_TITLE("CHAPTER 6: Conclusion")
+END_DIALOGUE_SCRIPT()

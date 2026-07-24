@@ -1,0 +1,7 @@
+#include "dialogue_macros.h"
+
+/* ROM 0x0806DF6E */
+DIALOGUE_SCRIPT(0x0806DF6E, scene_06DF6E)
+  TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
+      "I got a FOSSIL! Only 8 more to go!")
+END_DIALOGUE_SCRIPT()

@@ -1,0 +1,7 @@
+#include "dialogue_macros.h"
+
+/* ROM 0x0805E5BB */
+DIALOGUE_SCRIPT(0x0805E5BB, scene_05E5BB)
+  TALK(SPEAKER_BLOSS, SIDE_RIGHT, EXPR_NEUTRAL,
+      "Get up, Earth dog!")
+END_DIALOGUE_SCRIPT()

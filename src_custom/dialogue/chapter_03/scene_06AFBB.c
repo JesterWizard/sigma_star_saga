@@ -1,0 +1,7 @@
+#include "dialogue_macros.h"
+
+/* ROM 0x0806AFBB */
+DIALOGUE_SCRIPT(0x0806AFBB, scene_06AFBB)
+  TALK(SPEAKER_ZELLY, SIDE_RIGHT, EXPR_NEUTRAL,
+      "Is it done?")
+END_DIALOGUE_SCRIPT()

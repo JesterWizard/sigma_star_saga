@@ -1,0 +1,11 @@
+#include "dialogue_macros.h"
+
+/* ROM 0x08067F70 */
+DIALOGUE_SCRIPT(0x08067F70, scene_067F70)
+  TALK(SPEAKER_UNKNOWN, SIDE_RIGHT, EXPR_NEUTRAL,
+      "Help! Help me! They're everywhere!")
+  TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
+      "Hang on!")
+  TALK(SPEAKER_UNKNOWN, SIDE_RIGHT, EXPR_NEUTRAL,
+      "Aim for the head!")
+END_DIALOGUE_SCRIPT()

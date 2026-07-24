@@ -1,0 +1,7 @@
+#include "dialogue_macros.h"
+
+/* ROM 0x08069DC7 */
+DIALOGUE_SCRIPT(0x08069DC7, scene_069DC7)
+  TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
+      "Psyme!")
+END_DIALOGUE_SCRIPT()

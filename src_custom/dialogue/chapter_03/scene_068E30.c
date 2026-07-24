@@ -1,0 +1,7 @@
+#include "dialogue_macros.h"
+
+/* ROM 0x08068E30 */
+DIALOGUE_SCRIPT(0x08068E30, scene_068E30)
+  TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
+      "Good. 5 more to go.")
+END_DIALOGUE_SCRIPT()

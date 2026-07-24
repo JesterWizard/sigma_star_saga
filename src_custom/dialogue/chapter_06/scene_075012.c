@@ -1,0 +1,7 @@
+#include "dialogue_macros.h"
+
+/* ROM 0x08075012 */
+DIALOGUE_SCRIPT(0x08075012, scene_075012)
+  TALK(SPEAKER_SOLDIER, SIDE_RIGHT, EXPR_NEUTRAL,
+      "Huh?")
+END_DIALOGUE_SCRIPT()

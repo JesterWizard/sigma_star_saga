@@ -26,6 +26,10 @@ Toggle the Gun Data and item unlocks in [`configs/runtime.c`](configs/runtime.c)
 - `.all_key_items` — DATA CARD, GENOME, VIRUS SAMPLE, and related key bits
 - `.all_overworld_items` — flares, fossils, hints, and related overworld bits
 
+### Custom dialogue (hack)
+
+Toggle `.custom_dialogue` in [`configs/runtime.c`](configs/runtime.c). When `TRUE` (default), edit scenes under [`src_custom/dialogue/`](src_custom/dialogue/) and `make` — talk banks are compiled into append ROM and the vanilla bank pointer table is redirected. See [`documentation/dialogue/`](documentation/dialogue/).
+
 ## Quick start
 
 See [INSTALL.md](INSTALL.md).
@@ -44,10 +48,10 @@ make compare
 | `asm/` | Hand-written / disassembled ARM/Thumb + baserom peels |
 | `asm/ram_map*.s` | IWRAM / EWRAM / save address registry ([ygodm8](https://github.com/JesterWizard/ygodm8/blob/master/asm/ram_map.s)-style) |
 | `src/` | Decompiled vanilla C |
-| `src_custom/` | Hack hooks (`*_hooks.c`) + `LynJump.event` |
+| `src_custom/` | Hack hooks (`*_hooks.c`) + `LynJump.event` + editable `dialogue/` |
 | `configs/runtime.c` | Boolean / value toggles for hacks |
-| `include/`, `include/gba/` | Headers (GBA register/types from pret style) |
-| `documentation/ram-map.md` | How to allocate and extend the RAM map |
+| `data/dialogue/` | Vanilla talk-script dump (regenerable reference) |
+| `documentation/` | Feature docs (`ram-map.md`, `dialogue/`, …) |
 | `data/`, `graphics/`, `sound/` | Extracted assets (empty for now) |
 | `ld_script.ld` | Memory map; append region starts after the 8MB baserom |
 | `tools/apply_lynjump.py` | Post-link absolute jump stubs into the ROM |

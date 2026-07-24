@@ -1,0 +1,7 @@
+#include "dialogue_macros.h"
+
+/* ROM 0x08076EEE */
+DIALOGUE_SCRIPT(0x08076EEE, scene_076EEE)
+  TALK(SPEAKER_OVERLORD, SIDE_RIGHT, EXPR_NEUTRAL,
+      "Will be...")
+END_DIALOGUE_SCRIPT()

@@ -1,0 +1,7 @@
+#include "dialogue_macros.h"
+
+/* ROM 0x0805D852 */
+DIALOGUE_SCRIPT(0x0805D852, scene_05D852)
+  TALK(SPEAKER_RECKER, SIDE_LEFT, EXPR_NEUTRAL,
+      "To Sigma Team.")
+END_DIALOGUE_SCRIPT()

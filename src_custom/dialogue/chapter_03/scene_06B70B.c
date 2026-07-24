@@ -1,0 +1,7 @@
+#include "dialogue_macros.h"
+
+/* ROM 0x0806B70B */
+DIALOGUE_SCRIPT(0x0806B70B, scene_06B70B)
+  TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
+      "Here's your box.")
+END_DIALOGUE_SCRIPT()

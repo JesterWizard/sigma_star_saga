@@ -1,0 +1,7 @@
+#include "dialogue_macros.h"
+
+/* ROM 0x08068EA7 */
+DIALOGUE_SCRIPT(0x08068EA7, scene_068EA7)
+  TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
+      "Yes! Only 1 more to go!")
+END_DIALOGUE_SCRIPT()

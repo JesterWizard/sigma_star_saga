@@ -1,0 +1,7 @@
+#include "dialogue_macros.h"
+
+/* ROM 0x0806E73F */
+DIALOGUE_SCRIPT(0x0806E73F, scene_06E73F)
+  TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
+      "Oh crumb.")
+END_DIALOGUE_SCRIPT()

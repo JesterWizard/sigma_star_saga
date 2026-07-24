@@ -1,0 +1,9 @@
+#include "dialogue_macros.h"
+
+/* ROM 0x0806EF78 */
+DIALOGUE_SCRIPT(0x0806EF78, scene_06EF78)
+  TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
+      "PSYME!!",
+      "Come back!"
+  )
+END_DIALOGUE_SCRIPT()

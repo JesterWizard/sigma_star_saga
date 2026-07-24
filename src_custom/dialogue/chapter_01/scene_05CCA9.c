@@ -1,0 +1,7 @@
+#include "dialogue_macros.h"
+
+/* ROM 0x0805CCA9 */
+DIALOGUE_SCRIPT(0x0805CCA9, scene_05CCA9)
+  TALK(SPEAKER_SOLDIER, SIDE_RIGHT, EXPR_ALT,
+      "Yeeeeehaw!")
+END_DIALOGUE_SCRIPT()

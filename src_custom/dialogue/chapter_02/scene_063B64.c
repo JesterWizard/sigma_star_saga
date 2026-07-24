@@ -1,0 +1,7 @@
+#include "dialogue_macros.h"
+
+/* ROM 0x08063B64 */
+DIALOGUE_SCRIPT(0x08063B64, scene_063B64)
+  TALK(SPEAKER_BLUNE, SIDE_RIGHT, EXPR_NEUTRAL,
+      "Use the NAV COM to land.")
+END_DIALOGUE_SCRIPT()

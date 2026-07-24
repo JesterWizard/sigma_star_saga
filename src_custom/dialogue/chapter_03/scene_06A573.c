@@ -1,0 +1,7 @@
+#include "dialogue_macros.h"
+
+/* ROM 0x0806A573 */
+DIALOGUE_SCRIPT(0x0806A573, scene_06A573)
+  TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
+      "Blune! I found you!")
+END_DIALOGUE_SCRIPT()

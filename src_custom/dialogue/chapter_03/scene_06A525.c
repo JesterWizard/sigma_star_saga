@@ -1,0 +1,7 @@
+#include "dialogue_macros.h"
+
+/* ROM 0x0806A525 */
+DIALOGUE_SCRIPT(0x0806A525, scene_06A525)
+  TALK(SPEAKER_BLOSS, SIDE_RIGHT, EXPR_NEUTRAL,
+      "But Recker...")
+END_DIALOGUE_SCRIPT()

@@ -1,0 +1,7 @@
+#include "dialogue_macros.h"
+
+/* ROM 0x080691B2 */
+DIALOGUE_SCRIPT(0x080691B2, scene_0691B2)
+  TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
+      "What was that?")
+END_DIALOGUE_SCRIPT()

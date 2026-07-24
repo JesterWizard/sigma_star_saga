@@ -1,0 +1,7 @@
+#include "dialogue_macros.h"
+
+/* ROM 0x0805C38B */
+DIALOGUE_SCRIPT(0x0805C38B, scene_05C38B)
+  TALK(SPEAKER_CREWMAN, SIDE_RIGHT, EXPR_ALT,
+      "Sir! ")
+END_DIALOGUE_SCRIPT()

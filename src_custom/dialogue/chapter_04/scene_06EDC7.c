@@ -1,0 +1,6 @@
+#include "dialogue_macros.h"
+
+/* ROM 0x0806EDC7 */
+DIALOGUE_SCRIPT(0x0806EDC7, scene_06EDC7)
+  TEXT("YOU GOT THE GIRL WINGS! Wings like a GIRL!!")
+END_DIALOGUE_SCRIPT()
