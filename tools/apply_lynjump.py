@@ -15,7 +15,7 @@ BOOL_RE = re.compile(
     r"\.(skip_flight_battle|always_run|always_max_health|always_max_bombs|"
     r"all_cannon_data|all_bullet_data|all_impact_data|"
     r"all_key_items|all_overworld_items|custom_enemy_exp|custom_dialogue|"
-    r"custom_suction_impact)\s*=\s*(TRUE|FALSE|true|false|1|0)",
+    r"custom_gun_data)\s*=\s*(TRUE|FALSE|true|false|1|0)",
     re.IGNORECASE,
 )
 
@@ -92,8 +92,8 @@ GET_ARCHIVE_FILE_START_OFF = 0x37B4
 GET_ARCHIVE_FILE_SIZE_OFF = 0x37C8
 SHOOTER_FT_OFF = 0x6188C4
 GUN_ICON_ANM_INDEX = 230  # 0-based shooter file index
-SUCTION_ICON_PNG = ROOT / "graphics" / "gun_data" / "impact" / "29_suction.png"
-GUN_ICON_ANM_EXT_MAX = 0xE820  # 59424 — fits rebuilt ANM (59416)
+IMPACT_DATA_JSON = ROOT / "src_custom" / "data_structures" / "impact_data.json"
+CUSTOM_IMPACT_ENTRY_SIZE = 0x60  # matches CustomImpactEntry in data_structures.h
 
 
 def load_symbols(elf_path: pathlib.Path):
@@ -191,7 +191,7 @@ def load_runtime_flags() -> dict[str, bool]:
         "all_overworld_items": False,
         "custom_enemy_exp": False,
         "custom_dialogue": False,
-        "custom_suction_impact": True,
+        "custom_gun_data": True,
     }
     for match in BOOL_RE.finditer(text):
         name = match.group(1)
@@ -446,8 +446,28 @@ def _encode_icon_tiles(png_path: pathlib.Path, palette: list[int]) -> bytes:
     return bytes(out)
 
 
-def build_extended_gun_icon_anm(baserom: bytes, icon_png: pathlib.Path) -> bytes:
-    """Rebuild shooter ANM #230 with two extra frames (196/197) for Suction."""
+def _load_custom_impact_icon_pngs() -> list[pathlib.Path]:
+    import json
+
+    data = json.loads(IMPACT_DATA_JSON.read_text())
+    paths: list[pathlib.Path] = []
+    for entry in data.get("impacts") or []:
+        rel = entry.get("icon_png")
+        if not rel:
+            raise ValueError(f"{IMPACT_DATA_JSON}: impact missing icon_png")
+        path = ROOT / rel
+        if not path.is_file():
+            raise FileNotFoundError(f"missing custom impact icon: {path}")
+        paths.append(path)
+    if not paths:
+        raise ValueError(f"{IMPACT_DATA_JSON}: no impacts")
+    return paths
+
+
+def build_extended_gun_icon_anm(
+    baserom: bytes, icon_pngs: list[pathlib.Path]
+) -> bytes:
+    """Rebuild shooter ANM #230 with locked/owned frame pairs for each custom icon."""
     start, end = _shooter_file_range(baserom, GUN_ICON_ANM_INDEX)
     data = baserom[start:end]
     flags, maxpieces, maxbytes, total, tilestart, tilesize = struct.unpack_from(
@@ -457,7 +477,6 @@ def build_extended_gun_icon_anm(baserom: bytes, icon_png: pathlib.Path) -> bytes
         raise ValueError(f"unexpected gun icon ANM frame count {total}")
 
     palette = _load_scn_sprite_palette(baserom)
-    tiles_new = _encode_icon_tiles(icon_png, palette)
 
     frames: list[tuple[int, bytes, bytes]] = []
     for i in range(total):
@@ -469,8 +488,10 @@ def build_extended_gun_icon_anm(baserom: bytes, icon_png: pathlib.Path) -> bytes
         frames.append((unk, ph, tiles))
 
     ph151 = frames[151][1]
-    frames.append((256, ph151, tiles_new))  # 196 locked
-    frames.append((256, ph151, tiles_new))  # 197 owned
+    for png in icon_pngs:
+        tiles_new = _encode_icon_tiles(png, palette)
+        frames.append((256, ph151, tiles_new))  # locked
+        frames.append((256, ph151, tiles_new))  # owned
 
     new_total = len(frames)
     ft_size = new_total * 12
@@ -499,8 +520,6 @@ def build_extended_gun_icon_anm(baserom: bytes, icon_png: pathlib.Path) -> bytes
         fs_cursor += len(tiles)
     out += ph_blob
     out += tile_blob
-    if len(out) > GUN_ICON_ANM_EXT_MAX:
-        raise ValueError(f"extended ANM too large: {len(out)} > {GUN_ICON_ANM_EXT_MAX}")
     return bytes(out)
 
 
@@ -528,7 +547,7 @@ def apply_suction(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
                 owners,
                 f"runtime:suction=FALSE:{tag}",
             )
-        print("runtime: custom_suction_impact=FALSE")
+        print("runtime: custom_gun_data=FALSE")
         return
 
     jt_off = _sym_file_off(symbols, "gImpactJumpTable")
@@ -537,7 +556,7 @@ def apply_suction(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
     custom_count_off = _sym_file_off(symbols, "gCustomImpactCount")
     custom_count = struct.unpack_from("<H", rom, custom_count_off)[0]
     if custom_count < 1:
-        raise ValueError("suction: gCustomImpactCount < 1 (build impact_suction.json)")
+        raise ValueError("custom_gun_data: gCustomImpactCount < 1 (build impact_data.json)")
 
     impact_total = VANILLA_IMPACT_COUNT + custom_count
 
@@ -547,7 +566,7 @@ def apply_suction(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
     )
     for _ in range(custom_count):
         jt += struct.pack("<I", ABSORB_HANDLER)
-    checked_write(rom, jt_off, bytes(jt), owners, "runtime:suction:jt_data")
+    checked_write(rom, jt_off, bytes(jt), owners, "runtime:gun_data:jt_data")
 
     # Fill relocated desc table from baserom + gCustomImpacts[].desc.
     desc = bytearray(
@@ -557,16 +576,16 @@ def apply_suction(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
         ]
     )
     desc += b"\0" * (custom_count * IMPACT_DESC_STRIDE)
-    entry_size = 4 + IMPACT_DESC_STRIDE  # CustomImpactEntry
+    entry_size = CUSTOM_IMPACT_ENTRY_SIZE
     for i in range(custom_count):
         base = custom_off + i * entry_size
         index = rom[base]
         slot_desc = bytes(rom[base + 4 : base + 4 + IMPACT_DESC_STRIDE])
         if index >= impact_total:
-            raise ValueError(f"suction: custom impact index {index} out of range")
+            raise ValueError(f"custom_gun_data: impact index {index} out of range")
         start = index * IMPACT_DESC_STRIDE
         desc[start : start + IMPACT_DESC_STRIDE] = slot_desc
-    checked_write(rom, desc_off, bytes(desc), owners, "runtime:suction:desc_data")
+    checked_write(rom, desc_off, bytes(desc), owners, "runtime:gun_data:desc_data")
 
     # Impact type count 28 → 28+N.
     checked_write(
@@ -574,7 +593,7 @@ def apply_suction(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
         IMPACT_COUNT_OFF,
         struct.pack("<I", impact_total),
         owners,
-        "runtime:suction:count",
+        "runtime:gun_data:count",
     )
 
     # OnImpact: cmp r3, #0x1B → cmp r3, #(impact_total-1)
@@ -582,7 +601,7 @@ def apply_suction(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
     if rom[ONIMPACT_MAX_OFF : ONIMPACT_MAX_OFF + 2] != bytes((0x1B, 0x2B)):
         if rom[ONIMPACT_MAX_OFF : ONIMPACT_MAX_OFF + 2] != bytes((max_index, 0x2B)):
             raise ValueError(
-                f"suction: unexpected OnImpact max insn "
+                f"custom_gun_data: unexpected OnImpact max insn "
                 f"{rom[ONIMPACT_MAX_OFF:ONIMPACT_MAX_OFF+2].hex()}"
             )
     checked_write(
@@ -590,7 +609,7 @@ def apply_suction(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
         ONIMPACT_MAX_OFF,
         bytes((max_index, 0x2B)),
         owners,
-        "runtime:suction:max",
+        "runtime:gun_data:max",
     )
 
     # Point OnImpact at relocated JT.
@@ -599,7 +618,7 @@ def apply_suction(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
         ONIMPACT_JT_PTR_OFF,
         struct.pack("<I", 0x08000000 + jt_off),
         owners,
-        "runtime:suction:jt_ptr",
+        "runtime:gun_data:jt_ptr",
     )
 
     # Point status-screen desc printer at relocated table.
@@ -608,7 +627,7 @@ def apply_suction(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
         IMPACT_DESC_PTR_OFF,
         struct.pack("<I", 0x08000000 + desc_off),
         owners,
-        "runtime:suction:desc_ptr",
+        "runtime:gun_data:desc_ptr",
     )
 
     # Ownership sync loop end: cmp r2, #0x4C → last custom Gun Data id.
@@ -619,24 +638,35 @@ def apply_suction(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
     expect_patched = bytes((last_gun_id, 0x2A))
     cur = bytes(rom[IMPACT_OWN_SYNC_END_OFF : IMPACT_OWN_SYNC_END_OFF + 2])
     if cur not in (expect_vanilla, expect_patched):
-        raise ValueError(f"suction: unexpected own-sync cmp {cur.hex()}")
+        raise ValueError(f"custom_gun_data: unexpected own-sync cmp {cur.hex()}")
     checked_write(
         rom,
         IMPACT_OWN_SYNC_END_OFF,
         expect_patched,
         owners,
-        "runtime:suction:own_sync",
+        "runtime:gun_data:own_sync",
     )
 
-    # Extended gun-icon ANM with Suction frames 196/197.
-    if not SUCTION_ICON_PNG.is_file():
-        raise FileNotFoundError(f"missing Suction icon PNG: {SUCTION_ICON_PNG}")
-    anm_ext = build_extended_gun_icon_anm(baserom, SUCTION_ICON_PNG)
+    # Extended gun-icon ANM with custom impact frames (196+).
+    icon_pngs = _load_custom_impact_icon_pngs()
+    if custom_count != len(icon_pngs):
+        raise ValueError(
+            f"custom_gun_data: gCustomImpactCount={custom_count} but JSON has "
+            f"{len(icon_pngs)} icon_png entries"
+        )
+    anm_ext = build_extended_gun_icon_anm(baserom, icon_pngs)
     anm_off = _sym_file_off(symbols, "gGunIconAnmExt")
     size_off = _sym_file_off(symbols, "gGunIconAnmExtSize")
-    checked_write(rom, anm_off, anm_ext, owners, "runtime:suction:anm_ext")
+    # Buffer sized by compile_data_structures.py: 16 + (196+2N)*300, 32-byte aligned.
+    anm_cap = (16 + (196 + custom_count * 2) * 300 + 31) & ~31
+    if len(anm_ext) > anm_cap:
+        raise ValueError(
+            f"custom_gun_data: ANM {len(anm_ext)} bytes exceeds expected "
+            f"buffer {anm_cap} (update impact_data.json / rebuild)"
+        )
+    checked_write(rom, anm_off, anm_ext, owners, "runtime:gun_data:anm_ext")
     checked_write(
-        rom, size_off, struct.pack("<I", len(anm_ext)), owners, "runtime:suction:anm_size"
+        rom, size_off, struct.pack("<I", len(anm_ext)), owners, "runtime:gun_data:anm_size"
     )
 
     # Veneers.
@@ -649,14 +679,14 @@ def apply_suction(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
         ("GetGunDataIconFrame__Replacement", GUN_ICON_FRAME_OFF, "icon", True),
     ):
         if sym not in symbols:
-            raise KeyError(f"symbol {sym} not found (needed for Suction)")
+            raise KeyError(f"symbol {sym} not found (needed for custom_gun_data)")
         if icon:
-            apply_icon_veneer(rom, owners, off, symbols[sym], f"runtime:suction:{tag}")
+            apply_icon_veneer(rom, owners, off, symbols[sym], f"runtime:gun_data:{tag}")
         else:
-            apply_veneer(rom, owners, off, symbols[sym], f"runtime:suction:{tag}")
+            apply_veneer(rom, owners, off, symbols[sym], f"runtime:gun_data:{tag}")
 
     print(
-        "runtime: custom_suction_impact=TRUE "
+        "runtime: custom_gun_data=TRUE "
         f"(JT @ 0x{0x08000000 + jt_off:08X}, desc @ 0x{0x08000000 + desc_off:08X}, "
         f"ANM ext {len(anm_ext)} bytes)"
     )
@@ -687,7 +717,7 @@ def main():
         rom, owners, symbols, exp_multiplier, flags["custom_enemy_exp"]
     )
     apply_custom_dialogue(rom, owners, symbols, flags["custom_dialogue"])
-    apply_suction(rom, owners, symbols, flags["custom_suction_impact"])
+    apply_suction(rom, owners, symbols, flags["custom_gun_data"])
 
     rom_path.write_bytes(rom)
     print(f"patches: {len(owners)} bytes written")

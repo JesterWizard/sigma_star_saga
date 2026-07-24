@@ -13,14 +13,20 @@ typedef struct {
     u16 exp;
 } EnemyExpIdEntry;
 
-/* One appended Impact Data piece (see impact_suction.json). */
+/* One appended Impact Data piece (see impact_data.json).
+ * Trailing pad keeps sizeof == 0x60 (agbcc aligns array elements). */
 typedef struct {
     u8 index;     /* local impact index (28 = 29th piece) */
-    u8 id;        /* Gun Data id (77) */
-    u8 number;    /* status-screen badge number (29) */
+    u8 id;        /* Gun Data id */
+    u8 number;    /* status-screen badge number */
     u8 icon_from; /* vanilla local index whose ANM frames to reuse */
     char desc[0x5A]; /* "NAME : text" status blurb */
+    u8 pad[2];
 } CustomImpactEntry;
+
+#define CUSTOM_IMPACT_ENTRY_SIZE 0x60
+#define VANILLA_IMPACT_COUNT 28
+#define IMPACT_DESC_STRIDE 0x5A
 
 extern const EnemyExpRemapEntry gEnemyExpRemap[];
 extern const u16 gEnemyExpRemapCount;
@@ -29,6 +35,12 @@ extern const u16 gEnemyExpByIdCount;
 
 extern const CustomImpactEntry gCustomImpacts[];
 extern const u16 gCustomImpactCount;
+
+/* Sized from impact_data.json (vanilla 28 + custom count). */
+extern u32 gImpactJumpTable[];
+extern u8 gImpactDescTable[];
+extern u8 gGunIconAnmExt[];
+extern u32 gGunIconAnmExtSize;
 
 /* Remap a vanilla flight-enemy gem amount using enemy_exp.json. */
 u32 RemapEnemyExpAmount(u32 vanilla_amount);

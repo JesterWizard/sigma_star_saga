@@ -99,8 +99,7 @@ C_SRCS := $(C_SUBDIR)/level_up.c
 CUSTOM_C_SRCS := \
 	$(CUSTOM_C_SUBDIR)/flight_skip_hooks.c \
 	$(CUSTOM_C_SUBDIR)/data_structures.c \
-	$(CUSTOM_C_SUBDIR)/suction_hooks.c \
-	$(CUSTOM_C_SUBDIR)/suction_data.c
+	$(CUSTOM_C_SUBDIR)/suction_hooks.c
 CONFIG_SRCS := $(CONFIG_SUBDIR)/runtime.c
 # Region fragments + pool inventories are .included by ram_map.s (not assembled alone).
 RAM_MAP_FRAGMENTS := \

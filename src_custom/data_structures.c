@@ -55,7 +55,7 @@ APPEND_TEXT void EnsureCustomImpactsOwned(void)
 {
     u16 i;
 
-    if (!gRuntimeConfig.custom_suction_impact)
+    if (!gRuntimeConfig.custom_gun_data)
         return;
 
     for (i = 0; i < gCustomImpactCount; i++)

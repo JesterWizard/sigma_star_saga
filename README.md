@@ -36,7 +36,7 @@ JSON tables under [`src_custom/data_structures/`](src_custom/data_structures/) c
 
 ### Suction Impact Data (hack)
 
-Toggle `.custom_suction_impact` in [`configs/runtime.c`](configs/runtime.c). When `TRUE` (default), adds a 29th Impact Data piece **Suction** that pulls every EXP gem on screen to the ship. Unlocked with `.all_impact_data`.
+Toggle `.custom_gun_data` in [`configs/runtime.c`](configs/runtime.c). When `TRUE` (default), loads custom Impact Data from [`impact_data.json`](src_custom/data_structures/impact_data.json) (e.g. **Suction** / **Suction+** full-screen EXP magnets). Unlocked with `.all_impact_data` / `.custom_gun_data`.
 
 ## Quick start
 

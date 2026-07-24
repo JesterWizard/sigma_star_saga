@@ -8,6 +8,7 @@
 /* IWRAM — engine / player */
 extern u8 gMode;
 extern u8 *gPlayerPtr;
+extern u8 *gExpGemPtr; /* Current gem in ExpGemUpdate (@ +0x18/+0x1C) */
 extern u8 gActorPool[]; /* Flight actors, stride 0x60; [0] = ship */
 extern u8 gPlayerBombs;
 extern u8 gPlayerLevel;

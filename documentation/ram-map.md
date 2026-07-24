@@ -61,6 +61,7 @@ Method: Thumb `LDR Rd,[PC,#imm]` literal pools only (not raw absolute words). Wo
 | `gGunLoadoutImpactAlt` | `0x0300078C` | Alternate equipped impact index |
 | `gGunLoadoutPrimaryFlag` | `0x030007EE` | Non-zero → primary impact |
 | `gPlayerPtr` | `0x03000DB8` | Flight player object pointer |
+| `gExpGemPtr` | `0x03006FE0` | Current EXP gem during `ExpGemUpdate` |
 | `gActorPool` | `0x03002780` | Flight actor pool (stride `0x60`) |
 | `gPlayerBombs` | `0x03007014` | Smart bomb count |
 | `gPlayerLevel` | `0x0300702C` | RPG level |

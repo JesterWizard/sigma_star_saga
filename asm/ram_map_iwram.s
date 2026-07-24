@@ -57,6 +57,9 @@ SET_DATA gMode, 0x03001630
 @ Pointer to the active 2D-flight player object.
 SET_DATA gPlayerPtr, 0x03000DB8
 
+@ Current EXP gem object while ExpGemUpdate runs (pos at +0x18/+0x1C).
+SET_DATA gExpGemPtr, 0x03006FE0
+
 @ Flight actor pool base (stride 0x60; index 0 = player ship).
 SET_DATA gActorPool, 0x03002780
 

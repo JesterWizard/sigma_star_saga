@@ -11,6 +11,16 @@
       "icon_from": 27,
       "icon_from_name": "exp_miner_plus",
       "icon_png": "graphics/gun_data/impact/29_suction.png"
+    },
+    {
+      "index": 29,
+      "id": 78,
+      "number": 30,
+      "name": "SUCTION+",
+      "text": "pulls all EXP gems in at 2x speed",
+      "icon_from": 27,
+      "icon_from_name": "exp_miner_plus",
+      "icon_png": "graphics/gun_data/impact/30_suction_plus.png"
     }
   ]
 }

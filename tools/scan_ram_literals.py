@@ -24,6 +24,7 @@ KNOWN_IWRAM = {
     0x0300078C: "gGunLoadoutImpactAlt",
     0x030007EE: "gGunLoadoutPrimaryFlag",
     0x03000DB8: "gPlayerPtr",
+    0x03006FE0: "gExpGemPtr",
     0x03001630: "gMode",
     0x03002780: "gActorPool",
     0x03007014: "gPlayerBombs",

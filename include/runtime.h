@@ -26,7 +26,7 @@ typedef struct {
     u8 exp_multiplier;     /* Scale AddExperience amount (1 = vanilla) */
     u8 custom_enemy_exp;   /* Remap kill EXP via data_structures/enemy_exp.json */
     u8 custom_dialogue;    /* Use src_custom/dialogue banks (append + ptr redirect) */
-    u8 custom_suction_impact; /* 29th Impact "Suction": full-screen EXP magnet */
+    u8 custom_gun_data; /* Custom Impact Data from impact_data.json */
 } RuntimeConfig;
 
 extern const RuntimeConfig gRuntimeConfigRom;

@@ -26,10 +26,23 @@ APPEND_TEXT u32 EquippedImpactIndex(void)
     return gGunLoadoutImpactAlt;
 }
 
-/* Match vanilla gem magnet math (angle → sintab << 7), no range gate. */
-APPEND_TEXT void AttractExpGemAtPlayerPtr(u32 pos_off)
+/* 7 = Suction (vanilla magnet speed), 8 = Suction+ (2×), 0 = unequipped. */
+APPEND_TEXT u32 EquippedSuctionSpeedShift(void)
 {
-    u8 *gem = gPlayerPtr;
+    u32 idx = EquippedImpactIndex();
+
+    if (idx == IMPACT_SUCTION)
+        return 7;
+    if (idx == IMPACT_SUCTION_PLUS)
+        return 8;
+    return 0;
+}
+
+/* Match vanilla gem magnet math (angle → sintab << shift), no range gate.
+ * ExpGemUpdate tracks the gem in gExpGemPtr (+0x18/+0x1C); LeechGemUpdate
+ * uses gPlayerPtr with actor-style coords (+0x40/+0x4C). */
+APPEND_TEXT void AttractExpGem(u8 *gem, u32 pos_off, u32 speed_shift)
+{
     u8 *player = gActorPool;
     s32 *gx;
     s32 *gy;
@@ -37,7 +50,7 @@ APPEND_TEXT void AttractExpGemAtPlayerPtr(u32 pos_off)
     s32 py;
     u32 angle;
 
-    if (gem == NULL)
+    if (gem == NULL || speed_shift == 0)
         return;
 
     gx = (s32 *)(gem + pos_off);
@@ -45,21 +58,25 @@ APPEND_TEXT void AttractExpGemAtPlayerPtr(u32 pos_off)
     px = *(s32 *)(player + 0x40);
     py = *(s32 *)(player + 0x4C);
     angle = CALC_ANGLE(*gx, *gy, px, py) & 0xFF;
-    *gx += ((s32)SIN_TABLE[angle + 64]) << 7;
-    *gy += ((s32)SIN_TABLE[angle]) << 7;
+    *gx += ((s32)SIN_TABLE[angle + 64]) << speed_shift;
+    *gy += ((s32)SIN_TABLE[angle]) << speed_shift;
 }
 
 APPEND_TEXT void ExpGemUpdate__Replacement(u32 arg)
 {
-    if (EquippedImpactIndex() == IMPACT_SUCTION)
-        AttractExpGemAtPlayerPtr(0x18);
+    u32 shift = EquippedSuctionSpeedShift();
+
+    if (shift != 0)
+        AttractExpGem(gExpGemPtr, 0x18, shift);
     ExpGemUpdate__Continue(arg);
 }
 
 APPEND_TEXT void LeechGemUpdate__Replacement(void)
 {
-    if (EquippedImpactIndex() == IMPACT_SUCTION)
-        AttractExpGemAtPlayerPtr(0x40);
+    u32 shift = EquippedSuctionSpeedShift();
+
+    if (shift != 0)
+        AttractExpGem(gPlayerPtr, 0x40, shift);
     LeechGemUpdate__Continue();
 }
 
@@ -96,8 +113,8 @@ APPEND_TEXT u32 GetArchiveFileSize__Replacement(u32 index)
 }
 
 /*
- * Custom impacts use ANM frames 196/197 (29_suction.png) from the extended
- * gun-icon archive. Vanilla pieces keep the Continue path.
+ * Custom impacts use extended ANM frames 196+ (one locked/owned pair each).
+ * Vanilla pieces keep the Continue path.
  */
 APPEND_TEXT void GetGunDataIconFrame__Replacement(u32 type, u32 local, u32 owned, u16 *out)
 {
@@ -111,7 +128,8 @@ APPEND_TEXT void GetGunDataIconFrame__Replacement(u32 type, u32 local, u32 owned
         {
             if (gCustomImpacts[i].index == (u8)local)
             {
-                *out = (u16)(SUCTION_ICON_FRAME_LOCKED + ((owned & 0xFF) ? 1 : 0));
+                *out = (u16)(SUCTION_ICON_FRAME_BASE + i * 2
+                             + ((owned & 0xFF) ? 1 : 0));
                 return;
             }
         }
