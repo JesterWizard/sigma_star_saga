@@ -1,7 +1,18 @@
 {
   "schema": 1,
-  "description": "Custom Bullet Data pieces appended after the vanilla 20.",
+  "description": "Bullet Data: vanilla overrides (index 0..19) and custom pieces appended after the vanilla 20.",
   "bullets": [
+    {
+      "index": 3,
+      "id": 32,
+      "number": 4,
+      "name": "CHARGE SHOT",
+      "text": "auto-charges, then 10x for 3 seconds",
+      "icon_from": 3,
+      "icon_from_name": "charge_shot",
+      "shot_from": 3,
+      "shot_from_name": "charge_shot"
+    },
     {
       "index": 20,
       "id": 81,

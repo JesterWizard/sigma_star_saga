@@ -149,3 +149,7 @@ _kernel_malloc gHpBarTilesReady, 0x1
 _kernel_malloc gHpBarTileScratchAlignPad, 0x3
 @ Scratch for one-time bar tile encode (9 × 2 × 32 = 0x240).
 _kernel_malloc gHpBarTileScratch, 0x240
+@ Charge Shot rework: 0 = charging, 1 = empowered (10x window).
+_kernel_malloc gChargeShotPhase, 0x1
+@ Frames elapsed in the current charge / empowered phase.
+_kernel_malloc gChargeShotTimer, 0x2

@@ -84,6 +84,8 @@ Method: Thumb `LDR Rd,[PC,#imm]` literal pools only (not raw absolute words). Wo
 | `gCannonOwned` | `0x03007744` | Cannon Gun Data word |
 | `gImpactOwned` | `0x03007748` | Impact Gun Data word |
 | `gVanillaIwramHighWater` | `0x0300775C` | Last pool-backed vanilla global |
+| `gChargeShotPhase` | (free pool) | Charge Shot: 0 = charging, 1 = empowered |
+| `gChargeShotTimer` | (free pool) | Frames in the current charge/empowered phase |
 
 Unknown pool-backed addresses use `gUnk_XXXXXXXX` in the `*_pool.inc` files. Promote to a named symbol in `ram_map_*.s` (+ `KNOWN_*` in the scanner) when the role is identified.
 

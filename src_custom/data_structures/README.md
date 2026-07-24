@@ -12,7 +12,7 @@ gun-icon ANM buffer automatically.
 | [`enemy_exp.json`](enemy_exp.json) | `.custom_enemy_exp` | Remap 2D flight kill EXP |
 | [`impact_data.json`](impact_data.json) | `.custom_gun_data` | Custom Impact Data (text / icon / id / behavior) |
 | [`cannon_data.json`](cannon_data.json) | `.custom_gun_data` | Custom Cannon Data (text / icon / id / firing pattern) |
-| [`bullet_data.json`](bullet_data.json) | `.custom_gun_data` | Custom Bullet Data (text / icon / id / shot pattern) |
+| [`bullet_data.json`](bullet_data.json) | `.custom_gun_data` | Bullet Data overrides + custom appends (text / icon / id / shot) |
 
 ```bash
 make
@@ -81,22 +81,26 @@ follow the impact pairs in the same extended ANM (196 + 2 × impact count + 2 ×
 
 ## `bullet_data.json`
 
-Defines custom Bullet Data pieces after the vanilla 20.
+Defines Bullet Data pieces: **vanilla overrides** (`index` 0..19) and **appended**
+customs (`index` ≥ 20).
 
 | Field | Meaning |
 |-------|---------|
-| `index` | Local bullet index (`20` = 21st) |
-| `id` | Gun Data id (`81`, …) |
+| `index` | Local bullet index (`3` = CHARGE SHOT rework; `20` = 21st piece) |
+| `id` | Gun Data id (`32` = vanilla Charge; `81` = LASER, …) |
 | `number` | Status-screen list number |
 | `name` / `text` | Status blurb → `"NAME : text"` (max 0x46 bytes) |
-| `icon_from` | Vanilla local index whose ANM frames to reuse (`4` = Double Shot) |
-| `shot_from` | Vanilla local index whose OnBullet handler to reuse (`0` = Normal Shot) |
-| `icon_png` | Authored art with badge digits |
+| `icon_from` | Vanilla local index whose ANM frames to reuse (appends; optional on overrides) |
+| `shot_from` | Vanilla local index whose OnBullet handler to reuse (appends; optional on overrides) |
+| `icon_png` | Authored art with badge digits (**required for appends**, omit for overrides) |
 
 | Piece | Effect |
 |-------|--------|
+| **CHARGE SHOT** (override 3) | Auto-charges (~2s), then **10×** fire for 3s, then charges again |
 | **LASER** | Normal Shot stream as a pierce beam (period 2; vanilla 10-shot ring) |
 
-Unlock with `.all_bullet_data` and/or `.custom_gun_data`. Bullet icon frame pairs
+Overrides only replace the status description (and document the rework); they do
+not grow the OnBullet jump table or gun-icon ANM. Appends unlock with
+`.all_bullet_data` and/or `.custom_gun_data`. Bullet icon frame pairs for appends
 follow the cannon pairs in the same extended ANM
 (196 + 2 × (impact count + cannon count) + 2 × i).

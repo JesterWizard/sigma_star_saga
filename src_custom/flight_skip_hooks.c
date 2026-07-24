@@ -108,6 +108,7 @@ APPEND_TEXT void UpdateShooterFrame__Replacement(void)
     TickPhoenixRevivePopup();
     ApplyAutoTarget();
     ApplyLaserBeam();
+    ApplyChargeShot();
     ApplyInventoryCheatsOnce();
 }
 

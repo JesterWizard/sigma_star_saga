@@ -4,7 +4,8 @@
 enemy_exp.json (schema 2): per-enemy catalog → gEnemyExpRemap + gEnemyExpById.
 impact_data.json (schema 1): custom Impact Data → gCustomImpacts + JT/desc/ANM bufs.
 cannon_data.json (schema 1): custom Cannon Data → gCustomCannons + JT/desc bufs.
-bullet_data.json (schema 1): custom Bullet Data → gCustomBullets + JT/desc bufs.
+bullet_data.json (schema 1): Bullet Data overrides (index < 20) + custom
+appends → gCustomBullets + JT/desc bufs (overrides applied by apply_lynjump).
 """
 
 from __future__ import annotations
@@ -205,7 +206,12 @@ def load_custom_cannons(path: Path) -> list[dict]:
     return rows
 
 
-def load_custom_bullets(path: Path) -> list[dict]:
+def load_custom_bullets(path: Path) -> tuple[list[dict], list[dict]]:
+    """Return (appends, overrides).
+
+    index >= 20 → new pieces (JT / owned / icon ANM).
+    index < 20  → vanilla reworks (desc patched by apply_lynjump only).
+    """
     data = json.loads(path.read_text())
     if data.get("schema") != 1:
         raise ValueError(f"{path}: unsupported schema {data.get('schema')!r}")
@@ -213,7 +219,9 @@ def load_custom_bullets(path: Path) -> list[dict]:
     if not isinstance(bullets, list) or not bullets:
         raise ValueError(f"{path}: expected non-empty 'bullets' array")
 
-    rows: list[dict] = []
+    appends: list[dict] = []
+    overrides: list[dict] = []
+    seen: set[int] = set()
     for i, entry in enumerate(bullets):
         if not isinstance(entry, dict):
             raise ValueError(f"bullets[{i}]: expected object")
@@ -221,38 +229,68 @@ def load_custom_bullets(path: Path) -> list[dict]:
             index = int(entry["index"])
             gun_id = int(entry["id"])
             number = int(entry["number"])
-            icon_from = int(entry["icon_from"])
-            shot_from = int(entry["shot_from"])
             name = str(entry["name"]).strip()
             text = str(entry["text"]).strip()
         except (KeyError, TypeError, ValueError) as exc:
             raise ValueError(
-                f"bullets[{i}]: need index, id, number, icon_from, shot_from, "
-                "name, text"
+                f"bullets[{i}]: need index, id, number, name, text"
             ) from exc
 
         if not 0 <= index <= 31 or not 0 <= gun_id <= 255:
             raise ValueError(f"bullets[{i}]: index/id out of range")
-        if index < VANILLA_BULLET_COUNT:
-            raise ValueError(
-                f"bullets[{i}]: index {index} collides with vanilla "
-                f"0..{VANILLA_BULLET_COUNT - 1}"
-            )
-        if not 0 <= icon_from <= 19:
-            raise ValueError(f"bullets[{i}]: icon_from must be a vanilla bullet 0..19")
-        if not 0 <= shot_from <= 19:
-            raise ValueError(f"bullets[{i}]: shot_from must be a vanilla bullet 0..19")
+        if index in seen:
+            raise ValueError(f"bullets[{i}]: duplicate index {index}")
+        seen.add(index)
         if not 1 <= number <= 99:
             raise ValueError(f"bullets[{i}]: number out of range")
-        if not entry.get("icon_png"):
-            raise ValueError(f"bullets[{i}]: need icon_png")
 
         desc = f"{name} : {text} "
         if len(desc) >= BULLET_DESC_STRIDE:
             raise ValueError(
                 f"bullets[{i}]: name+text too long for 0x{BULLET_DESC_STRIDE:X}-byte slot"
             )
-        rows.append(
+
+        is_override = index < VANILLA_BULLET_COUNT
+        if is_override:
+            icon_from = int(entry["icon_from"]) if "icon_from" in entry else index
+            shot_from = int(entry["shot_from"]) if "shot_from" in entry else index
+            if not 0 <= icon_from <= 19:
+                raise ValueError(
+                    f"bullets[{i}]: icon_from must be a vanilla bullet 0..19"
+                )
+            if not 0 <= shot_from <= 19:
+                raise ValueError(
+                    f"bullets[{i}]: shot_from must be a vanilla bullet 0..19"
+                )
+            overrides.append(
+                {
+                    "index": index,
+                    "id": gun_id,
+                    "number": number,
+                    "icon_from": icon_from,
+                    "shot_from": shot_from,
+                    "desc": desc,
+                    "label": name,
+                    "icon_png": str(entry["icon_png"]) if entry.get("icon_png") else "",
+                }
+            )
+            continue
+
+        try:
+            icon_from = int(entry["icon_from"])
+            shot_from = int(entry["shot_from"])
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ValueError(
+                f"bullets[{i}]: appends need icon_from and shot_from"
+            ) from exc
+        if not 0 <= icon_from <= 19:
+            raise ValueError(f"bullets[{i}]: icon_from must be a vanilla bullet 0..19")
+        if not 0 <= shot_from <= 19:
+            raise ValueError(f"bullets[{i}]: shot_from must be a vanilla bullet 0..19")
+        if not entry.get("icon_png"):
+            raise ValueError(f"bullets[{i}]: appends need icon_png")
+
+        appends.append(
             {
                 "index": index,
                 "id": gun_id,
@@ -264,7 +302,9 @@ def load_custom_bullets(path: Path) -> list[dict]:
                 "icon_png": str(entry["icon_png"]),
             }
         )
-    return rows
+    if not appends:
+        raise ValueError(f"{path}: need at least one appended bullet (index >= 20)")
+    return appends, overrides
 
 
 def c_string_bytes(s: str, size: int) -> str:
@@ -438,7 +478,7 @@ def main() -> int:
         remap_rows, by_id_rows = compile_enemy_exp(data)
         impacts = load_custom_impacts(impact_path)
         cannons = load_custom_cannons(cannon_path)
-        bullets = load_custom_bullets(bullet_path)
+        bullets, bullet_overrides = load_custom_bullets(bullet_path)
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
@@ -448,7 +488,8 @@ def main() -> int:
     print(
         f"data_structures: enemy_exp → {len(remap_rows)} remap, "
         f"{len(by_id_rows)} by-id; custom impacts → {len(impacts)}, "
-        f"custom cannons → {len(cannons)}, custom bullets → {len(bullets)}"
+        f"custom cannons → {len(cannons)}, custom bullets → {len(bullets)}, "
+        f"bullet overrides → {len(bullet_overrides)}"
     )
     return 0
 

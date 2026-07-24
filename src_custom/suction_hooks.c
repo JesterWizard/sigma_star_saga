@@ -444,6 +444,11 @@ APPEND_TEXT u32 LaserIsEquipped(void)
     return EquippedBulletIndex() == BULLET_LASER;
 }
 
+APPEND_TEXT u32 ChargeIsEquipped(void)
+{
+    return EquippedBulletIndex() == BULLET_CHARGE;
+}
+
 /*
  * Gun loadout (stride 0x64, slots 0..1). After OnCannon/OnBullet:
  *   +0x10/+0x12 = fire period (clamped up to cannon +0x58/+0x5a)
@@ -462,9 +467,14 @@ APPEND_TEXT u32 LaserIsEquipped(void)
 #define GUN_OFF_SPRITE     0x24
 #define GUN_OFF_SPEED_A    0x2C
 #define GUN_OFF_SPEED_B    0x30
+#define GUN_OFF_RELOAD_CTR 0x5C
 #define GUN_OFF_RELOAD_X   0x58
 #define GUN_OFF_RELOAD_Y   0x5A
+#define GUN_OFF_FLAGS_60   0x60
 #define STEER_FOLLOW_FLAG  0x10000
+/* Charge OnBullet ORs this into +0x0C / +0x60; fire handler then requires
+ * hold-A-without-moving. Cleared so charge runs on its own timer. */
+#define CHARGE_HOLD_FLAG   0x8000
 #define LASER_FIRE_PERIOD  2
 #define LASER_SPRITE       9
 /* ~10 px/frame; with period 2 → ~20 px spacing, ~10 live shots on-screen. */
@@ -474,6 +484,15 @@ APPEND_TEXT u32 LaserIsEquipped(void)
 #define LASER_PIERCE_LOCKOUT 40
 #define SHOT_RING_BASE     0xA
 #define SHOT_RING_COUNT    10
+/* Vanilla Charge Shot max hold (~2s). Auto-charge uses the same length. */
+#define CHARGE_CHARGE_FRAMES 0x78
+/* Empowered 10x window after a full charge. */
+#define CHARGE_EMPOWER_FRAMES (3 * 60)
+#define CHARGE_FIRE_PERIOD 5
+/* Actor+0x58 must match this for the vanilla Charge 10x damage branch. */
+#define CHARGE_DAMAGE_PTR  0x0824FF4C
+#define CHARGE_PHASE_CHARGING  0
+#define CHARGE_PHASE_EMPOWERED 1
 
 /*
  * LASER: poke gun fields only. Spawn copies +0x2C/+0x30 into velocity.
@@ -518,6 +537,92 @@ APPEND_TEXT void ApplyLaserBeam(void)
             continue;
         if ((i & 3) != probe && shot[0x13] == 0)
             shot[0x13] = 2;
+    }
+}
+
+/*
+ * CHARGE SHOT rework: auto-charges independent of ship motion / hold-still,
+ * then fires at vanilla 10x damage for 3 seconds, then charges again.
+ *
+ * Vanilla Charge sets gun+0x60 bit 0x8000 so the fire handler requires holding
+ * A with no d-pad. Clearing that bit restores normal autofire; the charge /
+ * empowered cycle is driven entirely from this per-frame poke.
+ */
+APPEND_TEXT void ApplyChargeShot(void)
+{
+    u8 *gun;
+    u32 slot;
+    u32 i;
+
+    if (!gRuntimeConfig.custom_gun_data)
+        return;
+    if (!ChargeIsEquipped())
+    {
+        gChargeShotPhase = CHARGE_PHASE_CHARGING;
+        gChargeShotTimer = 0;
+        return;
+    }
+
+    gun = (u8 *)&gGunLoadout;
+    for (slot = 0; slot < 2; slot++)
+    {
+        u8 *g = gun + slot * GUN_SLOT_STRIDE;
+
+        /* Drop hold-still charge gate every frame (OnBullet may re-set it). */
+        *(u32 *)(g + GUN_OFF_FLAGS_C) &= ~CHARGE_HOLD_FLAG;
+        *(u32 *)(g + GUN_OFF_FLAGS_60) &= ~CHARGE_HOLD_FLAG;
+    }
+
+    if (gChargeShotPhase == CHARGE_PHASE_CHARGING)
+    {
+        gChargeShotTimer++;
+        if (gChargeShotTimer >= CHARGE_CHARGE_FRAMES)
+        {
+            gChargeShotPhase = CHARGE_PHASE_EMPOWERED;
+            gChargeShotTimer = 0;
+        }
+        else
+        {
+            /* No shots while charging: park reload counters. */
+            for (slot = 0; slot < 2; slot++)
+            {
+                u8 *g = gun + slot * GUN_SLOT_STRIDE;
+
+                *(u16 *)(g + GUN_OFF_RELOAD_CTR) = 0;
+                *(u16 *)(g + GUN_OFF_FIRE_X) = 0x7FFF;
+                *(u16 *)(g + GUN_OFF_FIRE_Y) = 0x7FFF;
+            }
+            return;
+        }
+    }
+
+    /* Empowered: normal Charge fire rate + force the 10x damage marker. */
+    gChargeShotTimer++;
+    for (slot = 0; slot < 2; slot++)
+    {
+        u8 *g = gun + slot * GUN_SLOT_STRIDE;
+
+        *(u16 *)(g + GUN_OFF_FIRE_X) = CHARGE_FIRE_PERIOD;
+        *(u16 *)(g + GUN_OFF_FIRE_Y) = CHARGE_FIRE_PERIOD;
+        *(u16 *)(g + GUN_OFF_RELOAD_X) = CHARGE_FIRE_PERIOD;
+        *(u16 *)(g + GUN_OFF_RELOAD_Y) = CHARGE_FIRE_PERIOD;
+    }
+
+    for (i = 0; i < SHOT_RING_COUNT; i++)
+    {
+        u8 *shot = &gActorPool[(SHOT_RING_BASE + i) * ACTOR_STRIDE];
+
+        if ((*(u16 *)(shot + ACTOR_OFF_FLAGS) & ACTOR_FLAG_ACTIVE) == 0)
+            continue;
+        if (shot[ACTOR_OFF_CLASS] != ACTOR_CLASS_PLAYER_SHOT)
+            continue;
+        *(u32 *)(shot + 0x58) = CHARGE_DAMAGE_PTR;
+    }
+
+    if (gChargeShotTimer >= CHARGE_EMPOWER_FRAMES)
+    {
+        gChargeShotPhase = CHARGE_PHASE_CHARGING;
+        gChargeShotTimer = 0;
     }
 }
 

@@ -499,6 +499,9 @@ def _load_custom_icon_pngs(json_path: pathlib.Path, key: str) -> list[pathlib.Pa
     data = json.loads(json_path.read_text())
     paths: list[pathlib.Path] = []
     for entry in data.get(key) or []:
+        # Vanilla overrides (bullet index < 20) may omit icon_png.
+        if key == "bullets" and int(entry.get("index", 0)) < VANILLA_BULLET_COUNT:
+            continue
         rel = entry.get("icon_png")
         if not rel:
             raise ValueError(f"{json_path}: {key[:-1]} missing icon_png")
@@ -518,11 +521,37 @@ def _load_custom_cannon_fire_from() -> list[int]:
     return [int(entry["fire_from"]) for entry in data.get("cannons") or []]
 
 
-def _load_custom_bullet_shot_from() -> list[int]:
+def _load_bullet_json_entries() -> list[dict]:
     import json
 
     data = json.loads(BULLET_DATA_JSON.read_text())
-    return [int(entry["shot_from"]) for entry in data.get("bullets") or []]
+    return list(data.get("bullets") or [])
+
+
+def _load_custom_bullet_shot_from() -> list[int]:
+    return [
+        int(entry["shot_from"])
+        for entry in _load_bullet_json_entries()
+        if int(entry["index"]) >= VANILLA_BULLET_COUNT
+    ]
+
+
+def _load_bullet_override_descs() -> list[tuple[int, bytes]]:
+    """Vanilla-index reworks from bullet_data.json → (index, padded desc)."""
+    out: list[tuple[int, bytes]] = []
+    for entry in _load_bullet_json_entries():
+        index = int(entry["index"])
+        if index >= VANILLA_BULLET_COUNT:
+            continue
+        name = str(entry["name"]).strip()
+        text = str(entry["text"]).strip()
+        desc = f"{name} : {text} ".encode("ascii")
+        if len(desc) >= BULLET_DESC_STRIDE:
+            raise ValueError(f"bullet override {index}: desc too long")
+        slot = bytearray(BULLET_DESC_STRIDE)
+        slot[: len(desc)] = desc
+        out.append((index, bytes(slot)))
+    return out
 
 
 def build_extended_gun_icon_anm(
@@ -847,6 +876,9 @@ def apply_suction(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
             + VANILLA_BULLET_COUNT * BULLET_DESC_STRIDE
         ]
     )
+    for index, slot_desc in _load_bullet_override_descs():
+        start = index * BULLET_DESC_STRIDE
+        bullet_desc[start : start + BULLET_DESC_STRIDE] = slot_desc
     bullet_desc += b"\0" * (bullet_count * BULLET_DESC_STRIDE)
     for i in range(bullet_count):
         base = custom_bullet_off + i * CUSTOM_BULLET_ENTRY_SIZE
@@ -860,6 +892,11 @@ def apply_suction(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
         )
         if index >= bullet_total:
             raise ValueError(f"custom_gun_data: bullet index {index} out of range")
+        if index < VANILLA_BULLET_COUNT:
+            raise ValueError(
+                f"custom_gun_data: gCustomBullets[{i}] index {index} is vanilla; "
+                "put reworks in bullet_data.json as overrides only"
+            )
         start = index * BULLET_DESC_STRIDE
         bullet_desc[start : start + BULLET_DESC_STRIDE] = slot_desc
     checked_write(

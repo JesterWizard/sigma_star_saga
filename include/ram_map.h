@@ -54,6 +54,8 @@ extern u8 gPhoenixReviveAnmRestore;
 extern u32 gActorMaxHp[];
 extern u8 gHpBarTilesReady;
 extern u32 gHpBarTileScratch[];
+extern u8 gChargeShotPhase;
+extern u16 gChargeShotTimer;
 
 /* Last pool-backed vanilla IWRAM global (0x0300775C); free pool starts at 0x03007780. */
 extern u8 gVanillaIwramHighWater;
