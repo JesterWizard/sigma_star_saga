@@ -42,6 +42,8 @@ KNOWN_IWRAM = {
     0x03007080: "gEnemyRemaining",
     0x0300717C: "gExpToCurrentLevel",
     0x030071F0: "gExpToNextLevel",
+    0x03000020: "gEventFlags",
+    0x03007064: "gEquippedTool",
     0x03007668: "gStageClearFlag",
     0x03007684: "gRandomBattleCooldown",
     0x03007690: "gGunDataBits",

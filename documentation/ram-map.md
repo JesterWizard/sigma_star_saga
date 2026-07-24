@@ -80,6 +80,8 @@ Method: Thumb `LDR Rd,[PC,#imm]` literal pools only (not raw absolute words). Wo
 | `gEnemyRemaining` | `0x03007080` | Flight HUD enemy/quota digit (not HP) |
 | `gExpToCurrentLevel` | `0x0300717C` | Exp floor for current level |
 | `gExpToNextLevel` | `0x030071F0` | Exp to next level |
+| `gEventFlags` | `0x03000020` | Story/tool bitfield (`GetFlag` / `SetFlag`) |
+| `gEquippedTool` | `0x03007064` | Active overworld tool index (0–5) |
 | `gStageClearFlag` | `0x03007668` | Stage-clear latch |
 | `gRandomBattleCooldown` | `0x03007684` | Overworld RNG encounter delay (`0x1DA5C`; CB writes `+1`) |
 | `gStageClearGate` | `0x03007730` | Clear-sequence gate (0 = allow; CB Clear Stage) |

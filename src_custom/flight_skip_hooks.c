@@ -19,12 +19,34 @@
 #define IMPACT_ID_LO 49
 #define IMPACT_ID_HI 76 /* vanilla max; customs unlocked via EnsureCustomImpactsOwned */
 
-/* Item bits in gItemsOwned (see DATA CARD / FLARE / FOSSIL string table). */
-#define KEY_ITEMS_MASK ((u32)0xFFF40001)      /* bit0 DATA CARD; 18+ GENOME/VIRUS/… */
-#define OVERWORLD_ITEMS_MASK ((u32)0x0013FFFE) /* bits 1–17 flares+fossils; bit 20 hint */
+/* CB "Have All Items" writes 0xFFFF to 0x03007740 and 0x03007742. */
+#define ALL_ITEMS_MASK ((u32)0xFFFFFFFFu)
+
+/*
+ * CB "Have All Tools" slide: halfword 0xFFFF at gEventFlags+{2,6,10,14,18}.
+ * That covers tool flags 31/59/88/118/155 and flag 24 (required by 0x1442C
+ * before L/R tool cycling is allowed).
+ */
+static const u8 sToolFlagHalfwordOffs[] = { 2, 6, 10, 14, 18 };
 
 /* Vanilla UpdateShooterFrame @ 0x08014E70: bl 0x14A48; bl 0x1749C */
 typedef void (*VoidFunc)(void);
+
+void OverworldPlayerUpdate__Continue(void);
+
+static void ApplyToolsAndItems(void)
+{
+    u8 i;
+
+    if (gRuntimeConfig.all_key_items)
+        gItemsOwned = ALL_ITEMS_MASK;
+
+    if (gRuntimeConfig.all_tools)
+    {
+        for (i = 0; i < sizeof(sToolFlagHalfwordOffs); i++)
+            *(u16 *)(gEventFlags + sToolFlagHalfwordOffs[i]) = 0xFFFF;
+    }
+}
 
 static void SetGunDataBits(int idLo, int idHi)
 {
@@ -34,11 +56,11 @@ static void SetGunDataBits(int idLo, int idHi)
         gGunDataBits[id >> 5] |= ((u32)1 << (id & 31));
 }
 
-/* Unlock flags are persistent — apply once. Re-writing gun-data bits every
- * frame makes CountGunData() always succeed and trips per-entity "owned"
- * branches that re-init encounter / HUD state.
+/* Gun-data unlocks are persistent — apply once. Re-writing gun bits every
+ * frame trips per-entity "owned" branches. Tools/items re-apply each frame
+ * (like the CodeBreaker continuous write) so save loads cannot clear them.
  * Latch lives in free IWRAM (gInventoryCheatsApplied) — not C static/.bss. */
-static void ApplyInventoryCheatsOnce(void)
+static void ApplyGunDataCheatsOnce(void)
 {
     if (gInventoryCheatsApplied)
         return;
@@ -66,12 +88,6 @@ static void ApplyInventoryCheatsOnce(void)
     EnsureCustomImpactsOwned();
     EnsureCustomCannonsOwned();
     EnsureCustomBulletsOwned();
-
-    if (gRuntimeConfig.all_key_items)
-        gItemsOwned |= KEY_ITEMS_MASK;
-
-    if (gRuntimeConfig.all_overworld_items)
-        gItemsOwned |= OVERWORLD_ITEMS_MASK;
 }
 
 /* 0x03007080 is the flight HUD quota / enemy-remaining digit (vanilla writes
@@ -82,6 +98,14 @@ static void ApplyMaxHealth(void)
 
     if (player != NULL && player[PLAYER_STATE_OFF] == PLAYER_STATE_HURT)
         player[PLAYER_STATE_OFF] = PLAYER_STATE_FLY;
+}
+
+/* Overworld walk update @ 0x0801DC84 — apply unlocks before flight stages. */
+APPEND_TEXT void OverworldPlayerUpdate__Replacement(void)
+{
+    ApplyToolsAndItems();
+    ApplyGunDataCheatsOnce();
+    OverworldPlayerUpdate__Continue();
 }
 
 APPEND_TEXT void UpdateShooterFrame__Replacement(void)
@@ -109,7 +133,8 @@ APPEND_TEXT void UpdateShooterFrame__Replacement(void)
     ApplyAutoTarget();
     ApplyLaserBeam();
     ApplyChargeShot();
-    ApplyInventoryCheatsOnce();
+    ApplyToolsAndItems();
+    ApplyGunDataCheatsOnce();
 }
 
 /* Veneered over AddExperience @ 0x0800FDC4 when exp_multiplier != 1.

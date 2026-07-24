@@ -23,8 +23,8 @@ Toggle `.always_max_health` and `.always_max_bombs` in [`configs/runtime.c`](con
 Toggle the Gun Data and item unlocks in [`configs/runtime.c`](configs/runtime.c):
 
 - `.all_cannon_data` / `.all_bullet_data` / `.all_impact_data` — unlock every piece of that Gun Data type
-- `.all_key_items` — DATA CARD, GENOME, VIRUS SAMPLE, and related key bits
-- `.all_overworld_items` — flares, fossils, hints, and related overworld bits
+- `.all_key_items` — full `gItemsOwned` (CB “Have All Items”: flares, fossils, key bits, …)
+- `.all_tools` — Krill Puck, Krill Boots, Girl Wings, Scanner, Warp Tool (same event-flag slide as CB “Have All Tools”, including flag 24 so L/R cycling works)
 
 ### Custom dialogue (hack)
 

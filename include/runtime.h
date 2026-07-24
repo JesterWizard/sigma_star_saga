@@ -21,8 +21,8 @@ typedef struct {
     u8 all_cannon_data;    /* Unlock every Cannon Data piece */
     u8 all_bullet_data;    /* Unlock every Bullet Data piece */
     u8 all_impact_data;    /* Unlock every Impact Data piece */
-    u8 all_key_items;      /* DATA CARD, GENOME, VIRUS SAMPLE, … */
-    u8 all_overworld_items; /* Flares, fossils, hints, … */
+    u8 all_key_items;      /* Full gItemsOwned (CB Have All Items) */
+    u8 all_tools;          /* Krill Puck / Boots / Girl Wings / Scanner / Warp */
     u8 exp_multiplier;     /* Scale AddExperience amount (1 = vanilla) */
     u8 custom_enemy_exp;   /* Build enemy_exp.json by-id catalog (not amount remap) */
     u8 custom_dialogue;    /* Use src_custom/dialogue banks (append + ptr redirect) */

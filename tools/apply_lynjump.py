@@ -14,7 +14,7 @@ POIN_RE = re.compile(r"POIN\s+(\w+)")
 BOOL_RE = re.compile(
     r"\.(skip_flight_battle|always_run|always_max_health|always_max_bombs|"
     r"all_cannon_data|all_bullet_data|all_impact_data|"
-    r"all_key_items|all_overworld_items|custom_enemy_exp|custom_dialogue|"
+    r"all_key_items|all_tools|custom_enemy_exp|custom_dialogue|"
     r"custom_gun_data|enemy_hp_bars|disable_random_battles)\s*=\s*(TRUE|FALSE|true|false|1|0)",
     re.IGNORECASE,
 )
@@ -31,9 +31,16 @@ SHOOTER_CHEAT_FLAGS = (
     "all_bullet_data",
     "all_impact_data",
     "all_key_items",
-    "all_overworld_items",
+    "all_tools",
     "custom_gun_data",  # Phoenix per-frame revive via UpdateShooterFrame
 )
+
+# Overworld unlocks (tools / items) — ApplyInventoryCheatsOnce before flight.
+OVERWORLD_UNLOCK_FLAGS = (
+    "all_key_items",
+    "all_tools",
+)
+OVERWORLD_PLAYER_UPDATE_OFF = 0x1DC84
 
 FLIGHT_SKIP_OFF = 0x1749C
 FLIGHT_SKIP_LEN = 0x5E
@@ -238,7 +245,7 @@ def load_runtime_flags() -> dict[str, bool]:
         "all_bullet_data": False,
         "all_impact_data": False,
         "all_key_items": False,
-        "all_overworld_items": False,
+        "all_tools": False,
         "custom_enemy_exp": False,
         "custom_dialogue": False,
         "custom_gun_data": True,
@@ -313,6 +320,41 @@ def apply_shooter_cheats(rom: bytearray, owners: dict, symbols: dict, flags: dic
     )
     on = [n for n in SHOOTER_CHEAT_FLAGS if flags[n]]
     print(f"runtime: shooter/inventory cheats ({', '.join(on)}) → 0x{hook:08X}")
+
+
+def apply_overworld_unlocks(rom: bytearray, owners: dict, symbols: dict, flags: dict):
+    """OverworldPlayerUpdate @ 0x1DC84 — apply tools/items before any flight stage."""
+    baserom = (ROOT / "baserom.gba").read_bytes()
+    enabled = any(flags[name] for name in OVERWORLD_UNLOCK_FLAGS)
+    if not enabled:
+        checked_write(
+            rom,
+            OVERWORLD_PLAYER_UPDATE_OFF,
+            baserom[
+                OVERWORLD_PLAYER_UPDATE_OFF : OVERWORLD_PLAYER_UPDATE_OFF
+                + VENEER_LEN
+            ],
+            owners,
+            "runtime:overworld_unlocks=FALSE",
+        )
+        print("runtime: overworld unlocks=FALSE (vanilla 0x1DC84)")
+        return
+
+    name = "OverworldPlayerUpdate__Replacement"
+    if name not in symbols:
+        raise KeyError(f"symbol {name} not found (needed for overworld unlocks)")
+    apply_veneer(
+        rom,
+        owners,
+        OVERWORLD_PLAYER_UPDATE_OFF,
+        symbols[name],
+        "runtime:overworld_unlocks",
+    )
+    on = [n for n in OVERWORLD_UNLOCK_FLAGS if flags[n]]
+    print(
+        f"runtime: overworld unlocks ({', '.join(on)}) → "
+        f"0x{symbols[name]:08X}"
+    )
 
 
 def apply_custom_dialogue(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
@@ -1153,6 +1195,7 @@ def main():
     apply_flight_skip_gate(rom, owners, flags["skip_flight_battle"])
     apply_always_run(rom, owners, flags["always_run"])
     apply_shooter_cheats(rom, owners, symbols, flags)
+    apply_overworld_unlocks(rom, owners, symbols, flags)
     apply_exp_hooks(
         rom, owners, symbols, exp_multiplier, flags["custom_enemy_exp"]
     )

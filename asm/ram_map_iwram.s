@@ -104,6 +104,11 @@ SET_DATA gStageClearFlag, 0x03007668
 @ Overworld random-encounter cooldown (TryStartRandomBattle @ 0x1DA5C).
 @ Non-zero → decrement and skip. CB "no random battles" forces byte @ +1 = 1.
 SET_DATA gRandomBattleCooldown, 0x03007684
+@ Event / tool ownership bitfield (GetFlag/SetFlag). CB "all tools" fills
+@ halfwords that cover flags 31, 59, 88, 118, 155.
+SET_DATA gEventFlags, 0x03000020
+@ Currently selected overworld tool (0..5).
+SET_DATA gEquippedTool, 0x03007064
 @ Clear-sequence gate: 1 while battle active, 0 allows clear (CB Clear Stage).
 SET_DATA gStageClearGate, 0x03007730
 

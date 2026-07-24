@@ -31,6 +31,8 @@ extern u32 gExpToCurrentLevel;
 extern u32 gExpToNextLevel;
 extern u8 gStageClearFlag;
 extern u32 gRandomBattleCooldown; /* Overworld RNG encounter delay @ 0x1DA5C */
+extern u8 gEventFlags[]; /* Story/tool bitfield @ 0x03000020 (GetFlag/SetFlag) */
+extern u8 gEquippedTool; /* Active overworld tool index 0..5 @ 0x03007064 */
 extern u8 gStageClearGate; /* 0 = allow clear (CB Clear Stage target) */
 
 /* IWRAM — inventory / gun loadout */

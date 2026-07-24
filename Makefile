@@ -124,6 +124,7 @@ ASM_SRCS := \
 	$(ASM_SUBDIR)/suction_trampoline.s \
 	$(ASM_SUBDIR)/enemy_hp_bar_trampoline.s \
 	$(ASM_SUBDIR)/random_battle_trampoline.s \
+	$(ASM_SUBDIR)/overworld_trampoline.s \
 	$(ASM_SUBDIR)/ram_map.s
 DATA_ASM_SRCS :=
 
