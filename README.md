@@ -36,7 +36,7 @@ JSON tables under [`src_custom/data_structures/`](src_custom/data_structures/) c
 
 ### Suction Impact Data (hack)
 
-Toggle `.custom_gun_data` in [`configs/runtime.c`](configs/runtime.c). When `TRUE` (default), loads custom Impact Data from [`impact_data.json`](src_custom/data_structures/impact_data.json) (e.g. **Suction** / **Suction+** magnets, **Phoenix** one revive per battle). Unlocked with `.all_impact_data` / `.custom_gun_data`. Note: `.always_max_health` prevents death, so Phoenix will not trigger while that cheat is on.
+Toggle `.custom_gun_data` in [`configs/runtime.c`](configs/runtime.c). When `TRUE` (default), loads custom Gun Data from JSON: Impact ([`impact_data.json`](src_custom/data_structures/impact_data.json) — **Suction** / **Suction+** / **Phoenix**), Cannon ([`cannon_data.json`](src_custom/data_structures/cannon_data.json) — **AUTO TARGET**), Bullet ([`bullet_data.json`](src_custom/data_structures/bullet_data.json) — **LASER** pierce). Unlocked with `.all_*_data` / `.custom_gun_data`. Note: `.always_max_health` prevents death, so Phoenix will not trigger while that cheat is on.
 
 ### Enemy HP bars (hack)
 

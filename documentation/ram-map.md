@@ -57,6 +57,7 @@ Method: Thumb `LDR Rd,[PC,#imm]` literal pools only (not raw absolute words). Wo
 |--------|---------|------|
 | `gMode` | `0x03001630` | Main-loop mode |
 | `gGunLoadout` | `0x03000720` | Active gun loadout block |
+| `gGunLoadoutBullet` | `0x03000724` | Equipped bullet index |
 | `gGunLoadoutImpact` | `0x03000728` | Primary equipped impact index |
 | `gGunLoadoutImpactAlt` | `0x0300078C` | Alternate equipped impact index |
 | `gGunLoadoutPrimaryFlag` | `0x030007EE` | Non-zero → primary impact |

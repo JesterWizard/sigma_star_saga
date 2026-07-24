@@ -140,6 +140,18 @@ DeleteActor__Continue:
 	bx r3
 	.pool
 
+@ AbsorbShot @ 0x0802F58C — 8-byte veneer; resume at 0x0802F594.
+@ Clears ACTOR_FLAG_ACTIVE on the hit shot; LASER skips this path.
+	.global AbsorbShot__Continue
+	.thumb_func
+AbsorbShot__Continue:
+	push {r4, lr}
+	lsls r0, r0, #24
+	lsrs r0, r0, #24
+	ldr r3, =0x0802F595
+	bx r3
+	.pool
+
 	.section .append_text, "ax", %progbits
 	.thumb
 	.align 2

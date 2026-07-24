@@ -68,6 +68,23 @@ APPEND_TEXT void EnsureCustomCannonsOwned(void)
     }
 }
 
+APPEND_TEXT void EnsureCustomBulletsOwned(void)
+{
+    u16 i;
+
+    if (!gRuntimeConfig.custom_gun_data)
+        return;
+
+    for (i = 0; i < gCustomBulletCount; i++)
+    {
+        u8 index = gCustomBullets[i].index;
+        u8 id = gCustomBullets[i].id;
+
+        gBulletOwned |= ((u32)1 << index);
+        gGunDataBits[id >> 5] |= ((u32)1 << (id & 31));
+    }
+}
+
 APPEND_TEXT void EnsureCustomImpactsOwned(void)
 {
     u16 i;
@@ -84,7 +101,8 @@ APPEND_TEXT void EnsureCustomImpactsOwned(void)
         gGunDataBits[id >> 5] |= ((u32)1 << (id & 31));
     }
 
-    /* Cannon ids are outside the 49..76 impact sync loop, so unlock them on the
-     * same status-screen entry paths that unlock impacts. */
+    /* Cannon / bullet ids are outside the 49..76 impact sync loop, so unlock
+     * them on the same status-screen entry paths that unlock impacts. */
     EnsureCustomCannonsOwned();
+    EnsureCustomBulletsOwned();
 }

@@ -28,6 +28,7 @@ extern u8 gStageClearGate; /* 0 = allow clear (CB Clear Stage target) */
 
 /* IWRAM — inventory / gun loadout */
 extern u32 gGunLoadout;
+extern u32 gGunLoadoutBullet;
 extern u32 gGunLoadoutImpact;
 extern u32 gGunLoadoutImpactAlt;
 extern u8 gGunLoadoutPrimaryFlag;

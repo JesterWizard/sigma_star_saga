@@ -52,7 +52,7 @@ static void ApplyInventoryCheatsOnce(void)
 
     if (gRuntimeConfig.all_bullet_data)
     {
-        gBulletOwned |= 0x000FFFFFu; /* 20 pieces */
+        gBulletOwned |= 0x000FFFFFu; /* vanilla 20 pieces */
         SetGunDataBits(BULLET_ID_LO, BULLET_ID_HI);
     }
 
@@ -62,9 +62,10 @@ static void ApplyInventoryCheatsOnce(void)
         SetGunDataBits(IMPACT_ID_LO, IMPACT_ID_HI);
     }
 
-    /* Append pieces from impact_data.json (Suction, …) and cannon_data.json. */
+    /* Append pieces from impact / cannon / bullet JSON. */
     EnsureCustomImpactsOwned();
     EnsureCustomCannonsOwned();
+    EnsureCustomBulletsOwned();
 
     if (gRuntimeConfig.all_key_items)
         gItemsOwned |= KEY_ITEMS_MASK;

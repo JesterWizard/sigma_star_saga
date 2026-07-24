@@ -17,8 +17,14 @@
 #define CANNON_ID_AUTO_TARGET 80
 #define CANNON_NUM_AUTO_TARGET 29
 
+/* Custom Bullet Data (local index / Gun Data id / badge number). */
+#define BULLET_LASER 20
+#define BULLET_ID_LASER 81
+#define BULLET_NUM_LASER 21
+
 /* Extended gun-icon ANM frames: custom impact i → 196+2*i (+1 if owned);
- * custom cannon i follows the impacts at 196+2*gCustomImpactCount+2*i. */
+ * custom cannon i follows the impacts at 196+2*gCustomImpactCount+2*i;
+ * custom bullet i follows the cannons. */
 #define SUCTION_ICON_FRAME_BASE 196
 
 u32 EquippedImpactIndex(void);
@@ -26,6 +32,9 @@ u32 PhoenixIsEquipped(void);
 u32 EquippedCannonIndex(void);
 u32 AutoTargetIsEquipped(void);
 void ApplyAutoTarget(void);
+u32 EquippedBulletIndex(void);
+u32 LaserIsEquipped(void);
+void AbsorbShot__Replacement(u32 shot_index);
 /* 0 = not a suction impact; else sintab shift (7 = 1x, 8 = 2x). */
 u32 EquippedSuctionSpeedShift(void);
 void AttractExpGem(u8 *gem, u32 pos_off, u32 speed_shift);

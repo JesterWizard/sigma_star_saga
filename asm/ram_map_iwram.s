@@ -93,6 +93,7 @@ SET_DATA gStageClearGate, 0x03007730
 
 @ Active loadout block (cannon @+0, bullet @+4, impact @+8; alt impact @+0x6C).
 SET_DATA gGunLoadout, 0x03000720
+SET_DATA gGunLoadoutBullet, 0x03000724
 SET_DATA gGunLoadoutImpact, 0x03000728
 SET_DATA gGunLoadoutImpactAlt, 0x0300078C
 @ Non-zero → use primary impact at +8; zero → alt at +0x6C.

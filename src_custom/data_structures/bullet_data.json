@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "description": "Custom Bullet Data pieces appended after the vanilla 20.",
+  "bullets": [
+    {
+      "index": 20,
+      "id": 81,
+      "number": 21,
+      "name": "LASER",
+      "text": "a solid beam that shoots through enemies",
+      "icon_from": 4,
+      "icon_from_name": "double_shot",
+      "shot_from": 1,
+      "shot_from_name": "normal_shot",
+      "icon_png": "graphics/gun_data/bullet/21_laser.png"
+    }
+  ]
+}

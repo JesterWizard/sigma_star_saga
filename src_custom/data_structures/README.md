@@ -2,16 +2,17 @@
 
 Edit JSON files in this folder. `make` compiles them into append-ROM tables
 that custom hooks read at runtime (same append/`APPEND_RODATA` pattern as
-dialogue). Adding or removing pieces in [`impact_data.json`](impact_data.json)
-or [`cannon_data.json`](cannon_data.json) also resizes the matching dispatch
-jump table, description table, and the shared gun-icon ANM buffer
-automatically.
+dialogue). Adding or removing pieces in [`impact_data.json`](impact_data.json),
+[`cannon_data.json`](cannon_data.json), or [`bullet_data.json`](bullet_data.json)
+also resizes the matching dispatch jump table, description table, and the shared
+gun-icon ANM buffer automatically.
 
 | File | Toggle (`configs/runtime.c`) | Effect |
 |------|------------------------------|--------|
 | [`enemy_exp.json`](enemy_exp.json) | `.custom_enemy_exp` | Remap 2D flight kill EXP |
 | [`impact_data.json`](impact_data.json) | `.custom_gun_data` | Custom Impact Data (text / icon / id / behavior) |
 | [`cannon_data.json`](cannon_data.json) | `.custom_gun_data` | Custom Cannon Data (text / icon / id / firing pattern) |
+| [`bullet_data.json`](bullet_data.json) | `.custom_gun_data` | Custom Bullet Data (text / icon / id / shot pattern) |
 
 ```bash
 make
@@ -77,3 +78,25 @@ Defines custom Cannon Data pieces after the vanilla 28.
 
 Unlock with `.all_cannon_data` and/or `.custom_gun_data`. Cannon icon frame pairs
 follow the impact pairs in the same extended ANM (196 + 2 × impact count + 2 × i).
+
+## `bullet_data.json`
+
+Defines custom Bullet Data pieces after the vanilla 20.
+
+| Field | Meaning |
+|-------|---------|
+| `index` | Local bullet index (`20` = 21st) |
+| `id` | Gun Data id (`81`, …) |
+| `number` | Status-screen list number |
+| `name` / `text` | Status blurb → `"NAME : text"` (max 0x46 bytes) |
+| `icon_from` | Vanilla local index whose ANM frames to reuse (`4` = Double Shot) |
+| `shot_from` | Vanilla local index whose OnBullet handler to reuse (`1` = Normal Shot) |
+| `icon_png` | Authored art with badge digits |
+
+| Piece | Effect |
+|-------|--------|
+| **LASER** | Fires the Normal Shot pattern; shots pierce enemies (skips AbsorbShot) |
+
+Unlock with `.all_bullet_data` and/or `.custom_gun_data`. Bullet icon frame pairs
+follow the cannon pairs in the same extended ANM
+(196 + 2 × (impact count + cannon count) + 2 × i).

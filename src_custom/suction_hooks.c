@@ -41,6 +41,7 @@ void ExpGemUpdate__Continue(u32 arg);
 void LeechGemUpdate__Continue(void);
 void GetGunDataIconFrame__Continue(u32 type, u32 local, u32 owned, u16 *out);
 u32 IsGunDataOwned__Continue(u32 type, u32 local);
+void AbsorbShot__Continue(u32 shot_index);
 
 /*
  * Green "REVIVE" popup — same ANM layout as shooter file 0x71 ("+ EXP").
@@ -432,6 +433,37 @@ APPEND_TEXT u32 AutoTargetIsEquipped(void)
     return EquippedCannonIndex() == CANNON_AUTO_TARGET;
 }
 
+/* OnBullet @ 0x0802E240 reads the equipped bullet from gGunLoadout+4. */
+APPEND_TEXT u32 EquippedBulletIndex(void)
+{
+    return gGunLoadoutBullet & 0xFF;
+}
+
+APPEND_TEXT u32 LaserIsEquipped(void)
+{
+    return EquippedBulletIndex() == BULLET_LASER;
+}
+
+/*
+ * AbsorbShot @ 0x0802F58C — vanilla Pass Through skips this to keep the shot
+ * alive after a hit. LASER does the same for any equipped Impact Data.
+ */
+APPEND_TEXT void AbsorbShot__Replacement(u32 shot_index)
+{
+    u8 *actor;
+
+    if (gRuntimeConfig.custom_gun_data && LaserIsEquipped())
+    {
+        actor = &gActorPool[(shot_index & 0xFF) * ACTOR_STRIDE];
+        if (actor[ACTOR_OFF_CLASS] == ACTOR_CLASS_PLAYER_SHOT)
+        {
+            actor[0x13] = 2; /* same marker Pass Through writes */
+            return;
+        }
+    }
+    AbsorbShot__Continue(shot_index);
+}
+
 /* Nearest live enemy to (x, y), using the same actor class the vanilla
  * target search @ 0x0802EF1A matches. Distance is compared in whole pixels
  * so dx*dx + dy*dy cannot overflow the 16.16 world coords. */
@@ -569,10 +601,11 @@ APPEND_RODATA static const u8 sGunIconTypeBase[GUN_DATA_TYPE_MAX] = { 0, 28, 48,
 
 /*
  * Custom impacts use extended ANM frames 196+ (one locked/owned pair each),
- * custom cannons the pairs right after them. Vanilla pieces keep the Continue
- * path — except out-of-range locals, which vanilla would resolve to another
- * type's frames (an equipped index past the live count rendered as a red
- * bullet icon). Clamp those to the type's own first frame instead.
+ * custom cannons the pairs right after them, then custom bullets. Vanilla
+ * pieces keep the Continue path — except out-of-range locals, which vanilla
+ * would resolve to another type's frames (an equipped index past the live
+ * count rendered as a red bullet icon). Clamp those to the type's own first
+ * frame instead.
  */
 APPEND_TEXT void GetGunDataIconFrame__Replacement(u32 type, u32 local, u32 owned, u16 *out)
 {
@@ -602,6 +635,20 @@ APPEND_TEXT void GetGunDataIconFrame__Replacement(u32 type, u32 local, u32 owned
             {
                 *out = (u16)(SUCTION_ICON_FRAME_BASE + gCustomImpactCount * 2
                              + i * 2 + ((owned & 0xFF) ? 1 : 0));
+                return;
+            }
+        }
+    }
+
+    if (kind == 1)
+    {
+        for (i = 0; i < gCustomBulletCount; i++)
+        {
+            if (gCustomBullets[i].index == (u8)local)
+            {
+                *out = (u16)(SUCTION_ICON_FRAME_BASE + gCustomImpactCount * 2
+                             + gCustomCannonCount * 2 + i * 2
+                             + ((owned & 0xFF) ? 1 : 0));
                 return;
             }
         }
