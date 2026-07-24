@@ -38,7 +38,13 @@ def load_enemy_exp(path: Path) -> dict:
 def compile_enemy_exp(
     data: dict,
 ) -> tuple[list[tuple[int, int, str]], list[tuple[int, int, str]]]:
-    """Return (remap_rows, by_id_rows)."""
+    """Return (remap_rows, by_id_rows).
+
+    exp is the full AddExperience amount (= actor+0x3C pool on the gem).
+    Schema 1: optional amount remap vanilla→exp.
+    Schema 2: by-id catalog only (no amount remap — that wrongly treated
+    pool/10 keys as awards and could not distinguish shared pools).
+    """
     schema = data["schema"]
     remap: dict[int, tuple[int, str]] = {}
     by_id: dict[int, tuple[int, str]] = {}
@@ -55,27 +61,19 @@ def compile_enemy_exp(
                 raise ValueError(f"enemies[{i}]: need integer vanilla and exp") from exc
             label = str(entry.get("label", f"{key}_exp"))
             eid = None
+            if not 0 <= key <= 0xFFFF or not 0 <= exp <= 0xFFFF:
+                raise ValueError(f"enemies[{i}]: values out of u16 range")
+            if key not in remap:
+                remap[key] = (exp, label)
         else:
             try:
                 exp = int(entry["exp"])
-            except (KeyError, TypeError, ValueError) as exc:
-                raise ValueError(f"enemies[{i}]: need integer exp") from exc
-            key = exp
-            label = str(entry.get("name") or f"type_{entry.get('id', i)}")
-            try:
                 eid = int(entry["id"])
             except (KeyError, TypeError, ValueError) as exc:
-                raise ValueError(f"enemies[{i}]: need integer id") from exc
-
-        if not 0 <= key <= 0xFFFF or not 0 <= exp <= 0xFFFF:
-            raise ValueError(f"enemies[{i}]: values out of u16 range")
-
-        if key not in remap:
-            remap[key] = (exp, label)
-
-        if eid is not None:
-            if not 0 <= eid <= 0xFFFF:
-                raise ValueError(f"enemies[{i}]: id out of u16 range")
+                raise ValueError(f"enemies[{i}]: need integer id and exp") from exc
+            label = str(entry.get("name") or f"type_{eid}")
+            if not 0 <= eid <= 0xFFFF or not 0 <= exp <= 0xFFFF:
+                raise ValueError(f"enemies[{i}]: values out of u16 range")
             if eid not in by_id:
                 by_id[eid] = (exp, label)
 

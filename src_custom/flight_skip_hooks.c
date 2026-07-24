@@ -109,17 +109,15 @@ APPEND_TEXT void UpdateShooterFrame__Replacement(void)
     ApplyInventoryCheatsOnce();
 }
 
-/* Veneered over AddExperience @ 0x0800FDC4 when custom_enemy_exp or
- * exp_multiplier != 1. Remap uses src_custom/data_structures/enemy_exp.json. */
+/* Veneered over AddExperience @ 0x0800FDC4 when exp_multiplier != 1.
+ * Must match vanilla level-up control flow — gems already pass the full
+ * actor EXP pool (actor+0x3C), not pool/10. Do not amount-remap here. */
 APPEND_TEXT bool8 AddExperience__Replacement(u32 amount)
 {
     u8 level = gPlayerLevel;
 
     if (level > MAX_PLAYER_LEVEL - 1)
         return FALSE;
-
-    if (gRuntimeConfig.custom_enemy_exp)
-        amount = RemapEnemyExpAmount(amount);
 
     amount *= gRuntimeConfig.exp_multiplier;
 

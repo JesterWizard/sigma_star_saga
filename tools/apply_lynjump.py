@@ -349,8 +349,14 @@ def apply_custom_dialogue(rom: bytearray, owners: dict, symbols: dict, enabled: 
 def apply_exp_hooks(
     rom: bytearray, owners: dict, symbols: dict, multiplier: int, custom_enemy_exp: bool
 ):
+    """Veneer AddExperience only for exp_multiplier.
+
+    custom_enemy_exp is catalog / by-id data for tools and future hooks — it must
+    not rewrite gem awards by amount (gems already carry the full actor+0x3C pool).
+    """
+    del custom_enemy_exp  # kept in signature for call-site compatibility
     baserom = (ROOT / "baserom.gba").read_bytes()
-    if multiplier == 1 and not custom_enemy_exp:
+    if multiplier == 1:
         checked_write(
             rom,
             ADD_EXPERIENCE_OFF,
@@ -358,7 +364,7 @@ def apply_exp_hooks(
             owners,
             "runtime:exp_hooks=off",
         )
-        print("runtime: AddExperience vanilla (exp_multiplier=1, custom_enemy_exp=FALSE)")
+        print("runtime: AddExperience vanilla (exp_multiplier=1)")
         return
 
     name = "AddExperience__Replacement"
@@ -372,10 +378,7 @@ def apply_exp_hooks(
         owners,
         "runtime:exp_hooks",
     )
-    parts = [f"exp_multiplier={multiplier}"]
-    if custom_enemy_exp:
-        parts.append("custom_enemy_exp")
-    print(f"runtime: {' + '.join(parts)} → 0x{hook:08X}")
+    print(f"runtime: exp_multiplier={multiplier} → 0x{hook:08X}")
 
 
 def _sym_file_off(symbols: dict, name: str) -> int:
@@ -854,6 +857,7 @@ def apply_suction(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
 
 
 def apply_enemy_hp_bars(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
+    """DrawActors: plain veneer. InitActorParams: icon veneer (preserves r3=expPool)."""
     baserom = (ROOT / "baserom.gba").read_bytes()
     if not enabled:
         checked_write(
@@ -866,24 +870,38 @@ def apply_enemy_hp_bars(rom: bytearray, owners: dict, symbols: dict, enabled: bo
         checked_write(
             rom,
             INIT_ACTOR_PARAMS_OFF,
-            baserom[INIT_ACTOR_PARAMS_OFF : INIT_ACTOR_PARAMS_OFF + VENEER_LEN],
+            baserom[INIT_ACTOR_PARAMS_OFF : INIT_ACTOR_PARAMS_OFF + ICON_VENEER_LEN],
             owners,
             "runtime:enemy_hp_bars=FALSE:init",
         )
         print("runtime: enemy_hp_bars=FALSE (vanilla DrawActors / InitActorParams)")
         return
 
-    for sym, off, tag in (
-        ("DrawActors__Replacement", DRAW_ACTORS_OFF, "draw"),
-        ("InitActorParams__Replacement", INIT_ACTOR_PARAMS_OFF, "init"),
-    ):
+    for sym in ("DrawActors__Replacement", "InitActorParams__Replacement"):
         if sym not in symbols:
             raise KeyError(f"symbol {sym} not found (needed for enemy_hp_bars)")
-        apply_veneer(rom, owners, off, symbols[sym], f"runtime:enemy_hp_bars:{tag}")
+
+    apply_veneer(
+        rom,
+        owners,
+        DRAW_ACTORS_OFF,
+        symbols["DrawActors__Replacement"],
+        "runtime:enemy_hp_bars:draw",
+    )
+    # Plain ldr r3 / bx r3 would clobber expPool (4th arg) → gems award the hook
+    # address as EXP and the HUD digit writer overflows into NEXT:.
+    apply_icon_veneer(
+        rom,
+        owners,
+        INIT_ACTOR_PARAMS_OFF,
+        symbols["InitActorParams__Replacement"],
+        "runtime:enemy_hp_bars:init",
+    )
     print(
         "runtime: enemy_hp_bars=TRUE → "
         f"DrawActors 0x{symbols['DrawActors__Replacement']:08X}, "
-        f"InitActorParams 0x{symbols['InitActorParams__Replacement']:08X}"
+        f"InitActorParams 0x{symbols['InitActorParams__Replacement']:08X} "
+        "(r0-r3 preserved)"
     )
 
 

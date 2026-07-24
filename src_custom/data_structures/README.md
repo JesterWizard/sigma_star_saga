@@ -19,16 +19,19 @@ make
 
 ## `enemy_exp.json`
 
-Catalog of flight / side-scroller enemies extracted from `SpawnActor` +
-`InitActorParams` (EXP pool at actor `+0x3C`, gem award = pool / 10).
+Catalog of flight / side-scroller enemies from `SpawnActor` + `InitActorParams`.
+The gem stores the full EXP pool at actor `+0x3C` and `AddExperience` receives
+that same value (not pool/10).
 
 | Field | Meaning |
 |-------|---------|
 | `id` | SpawnActor type id (r2) |
 | `anim` | ANM / label id |
 | `name` | ROM label when known (`MB_*`, `B_*`, `EARTH_*`) |
-| `exp` | Per-gem amount passed to `AddExperience` (edit to rebalance) |
+| `exp` | Full pool / `AddExperience` amount (must match actor `+0x3C`) |
 
+`.custom_enemy_exp` builds the by-id catalog only. Award scaling at runtime is
+`.exp_multiplier` alone — do not treat this JSON as an amount remap table.
 Some type ids appear more than once with different `exp` (spawn variants).
 
 ## `impact_data.json`

@@ -139,5 +139,7 @@ _kernel_malloc gActorMaxHpAlignPad, 0x3
 _kernel_malloc gActorMaxHp, 0xA0
 @ 1 = HP-bar tiles queued into OBJ VRAM this session.
 _kernel_malloc gHpBarTilesReady, 0x1
+@ Pad so gHpBarTileScratch is word-aligned (u32 encode + DMA src).
+_kernel_malloc gHpBarTileScratchAlignPad, 0x3
 @ Scratch for one-time bar tile encode (9 × 2 × 32 = 0x240).
 _kernel_malloc gHpBarTileScratch, 0x240

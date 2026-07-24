@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "description": "2D flight/side-scroller enemies. id = SpawnActor type (r2); anim = ANM id; exp = per-gem AddExperience amount (= actor+0x3C / 10). Edit exp to override; runtime remaps matching award amounts then applies exp_multiplier. Names from ROM label table (MB_/B_/EARTH_*).",
+  "description": "2D flight/side-scroller enemies. id = SpawnActor type (r2); anim = ANM id; exp = full AddExperience amount (= actor+0x3C pool on the gem, NOT pool/10). Catalog / by-id only — runtime award scaling is exp_multiplier. Names from ROM label table (MB_/B_/EARTH_*).",
   "enemies": [
     {
       "id": 14,

@@ -11,7 +11,7 @@ const RuntimeConfig gRuntimeConfigRom __attribute__((section(".runtime_config"))
     .all_impact_data = TRUE,
     .all_key_items = TRUE,
     .all_overworld_items = TRUE,
-    .exp_multiplier = 10,
+    .exp_multiplier = 1,
     .custom_enemy_exp = TRUE,
     .custom_dialogue = TRUE,
     .custom_gun_data = TRUE,

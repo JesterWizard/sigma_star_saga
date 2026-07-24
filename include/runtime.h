@@ -24,7 +24,7 @@ typedef struct {
     u8 all_key_items;      /* DATA CARD, GENOME, VIRUS SAMPLE, … */
     u8 all_overworld_items; /* Flares, fossils, hints, … */
     u8 exp_multiplier;     /* Scale AddExperience amount (1 = vanilla) */
-    u8 custom_enemy_exp;   /* Remap kill EXP via data_structures/enemy_exp.json */
+    u8 custom_enemy_exp;   /* Build enemy_exp.json by-id catalog (not amount remap) */
     u8 custom_dialogue;    /* Use src_custom/dialogue banks (append + ptr redirect) */
     u8 custom_gun_data; /* Custom Impact Data from impact_data.json */
     u8 enemy_hp_bars;   /* Flight: HP bars under enemies (soft OAM only) */
