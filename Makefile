@@ -98,14 +98,16 @@ DATA_ASM_BUILDDIR = $(OBJ_DIR)/$(DATA_ASM_SUBDIR)
 C_SRCS := \
 	$(C_SUBDIR)/level_up.c \
 	$(C_SUBDIR)/actor.c \
-	$(C_SUBDIR)/actor_draw.c
+	$(C_SUBDIR)/actor_draw.c \
+	$(C_SUBDIR)/overworld_encounters.c
 CUSTOM_C_SRCS := \
 	$(CUSTOM_C_SUBDIR)/nocash.c \
 	$(CUSTOM_C_SUBDIR)/flight_skip_hooks.c \
 	$(CUSTOM_C_SUBDIR)/data_structures.c \
 	$(CUSTOM_C_SUBDIR)/suction_hooks.c \
 	$(CUSTOM_C_SUBDIR)/player_hit_hooks.c \
-	$(CUSTOM_C_SUBDIR)/enemy_hp_bar_hooks.c
+	$(CUSTOM_C_SUBDIR)/enemy_hp_bar_hooks.c \
+	$(CUSTOM_C_SUBDIR)/random_battle_hooks.c
 CONFIG_SRCS := $(CONFIG_SUBDIR)/runtime.c
 # Region fragments + pool inventories are .included by ram_map.s (not assembled alone).
 RAM_MAP_FRAGMENTS := \
@@ -121,6 +123,7 @@ ASM_SRCS := \
 	$(ASM_SUBDIR)/rom_after_b.s \
 	$(ASM_SUBDIR)/suction_trampoline.s \
 	$(ASM_SUBDIR)/enemy_hp_bar_trampoline.s \
+	$(ASM_SUBDIR)/random_battle_trampoline.s \
 	$(ASM_SUBDIR)/ram_map.s
 DATA_ASM_SRCS :=
 

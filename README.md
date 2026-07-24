@@ -42,6 +42,10 @@ Toggle `.custom_gun_data` in [`configs/runtime.c`](configs/runtime.c). When `TRU
 
 Toggle `.enemy_hp_bars` in [`configs/runtime.c`](configs/runtime.c). When `TRUE` (default), draws HP bars under flight enemies via soft OAM after `DrawActors`. Max HP is snapshotted in `InitActorParams`. Decomps: [`src/actor.c`](src/actor.c), [`src/actor_draw.c`](src/actor_draw.c).
 
+### Disable random battles (hack)
+
+Toggle `.disable_random_battles` in [`configs/runtime.c`](configs/runtime.c). When `TRUE` (default), no-ops `TryStartRandomBattle` (`0x1DA5C`) — the same path the CodeBreaker “no random battles” cheat gates via `gRandomBattleCooldown` (`0x03007684`). Lure circles (`ScanEncounters`) and scripted battles stay vanilla.
+
 ## Quick start
 
 See [INSTALL.md](INSTALL.md).

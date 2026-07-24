@@ -15,7 +15,7 @@ BOOL_RE = re.compile(
     r"\.(skip_flight_battle|always_run|always_max_health|always_max_bombs|"
     r"all_cannon_data|all_bullet_data|all_impact_data|"
     r"all_key_items|all_overworld_items|custom_enemy_exp|custom_dialogue|"
-    r"custom_gun_data|enemy_hp_bars)\s*=\s*(TRUE|FALSE|true|false|1|0)",
+    r"custom_gun_data|enemy_hp_bars|disable_random_battles)\s*=\s*(TRUE|FALSE|true|false|1|0)",
     re.IGNORECASE,
 )
 
@@ -77,6 +77,18 @@ PLAYER_DEATH_FX_OFF = 0x1BA4C
 DELETE_ACTOR_OFF = 0x6310
 DRAW_ACTORS_OFF = 0x6C0C
 INIT_ACTOR_PARAMS_OFF = 0x318B4
+# True random-encounter starter @ 0x1DA5C (not ScanEncounters / lure circles).
+# CodeBreaker "no random battles" writes 0x01 to IWRAM 0x03007685 (byte1 of the
+# cooldown word at 0x03007684); non-zero cooldown makes 0x1DA5C early-out.
+RANDOM_BATTLE_START_OFF = 0x1DA5C
+RANDOM_BATTLE_START_DISABLE = bytes((0x70, 0x47))  # bx lr
+# Cleanup: prior mistaken ScanEncounters patches (entry + internal BLs).
+SCAN_ENCOUNTERS_OFF = 0x146B4
+SCAN_ENCOUNTERS_CLEANUP_SITES = [
+    (0x146B4, 8),
+    (0x147B2, 6),
+    (0x147CA, 6),
+]
 EXP_GEM_UPDATE_OFF = 0x4ABEC
 LEECH_GEM_UPDATE_OFF = 0x4B188
 GUN_ICON_FRAME_OFF = 0x39F30
@@ -231,6 +243,7 @@ def load_runtime_flags() -> dict[str, bool]:
         "custom_dialogue": False,
         "custom_gun_data": True,
         "enemy_hp_bars": False,
+        "disable_random_battles": False,
     }
     for match in BOOL_RE.finditer(text):
         name = match.group(1)
@@ -1072,6 +1085,53 @@ def apply_enemy_hp_bars(rom: bytearray, owners: dict, symbols: dict, enabled: bo
     )
 
 
+def apply_disable_random_battles(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
+    """No-op TryStartRandomBattle @ 0x1DA5C when enabled.
+
+    Matches CodeBreaker cheat B581C8AEE38E → write 0x01 @ 0x03007685 (cooldown).
+    Lure / ScanEncounters / EnterLureZone stay vanilla.
+    """
+    del symbols  # kept in signature for call-site uniformity
+    baserom = (ROOT / "baserom.gba").read_bytes()
+    owner = "runtime:disable_random_battles"
+
+    # Always undo any older ScanEncounters patches from earlier attempts.
+    for off, length in SCAN_ENCOUNTERS_CLEANUP_SITES:
+        checked_write(
+            rom,
+            off,
+            baserom[off : off + length],
+            owners,
+            f"{owner}:scan_cleanup@{off:X}",
+        )
+
+    if not enabled:
+        checked_write(
+            rom,
+            RANDOM_BATTLE_START_OFF,
+            baserom[
+                RANDOM_BATTLE_START_OFF : RANDOM_BATTLE_START_OFF
+                + len(RANDOM_BATTLE_START_DISABLE)
+            ],
+            owners,
+            f"{owner}=FALSE",
+        )
+        print("runtime: disable_random_battles=FALSE (vanilla TryStartRandomBattle)")
+        return
+
+    checked_write(
+        rom,
+        RANDOM_BATTLE_START_OFF,
+        RANDOM_BATTLE_START_DISABLE,
+        owners,
+        owner,
+    )
+    print(
+        "runtime: disable_random_battles=TRUE → "
+        "TryStartRandomBattle 0x1DA5C bx lr (CB cooldown gate)"
+    )
+
+
 def main():
     if len(sys.argv) != 3:
         print(f"usage: {sys.argv[0]} <elf> <rom>", file=sys.stderr)
@@ -1099,6 +1159,7 @@ def main():
     apply_custom_dialogue(rom, owners, symbols, flags["custom_dialogue"])
     apply_suction(rom, owners, symbols, flags["custom_gun_data"])
     apply_enemy_hp_bars(rom, owners, symbols, flags["enemy_hp_bars"])
+    apply_disable_random_battles(rom, owners, symbols, flags["disable_random_battles"])
 
     rom_path.write_bytes(rom)
     print(f"patches: {len(owners)} bytes written")

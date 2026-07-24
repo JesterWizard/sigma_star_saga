@@ -8,6 +8,12 @@
 /* IWRAM — engine / player */
 extern u8 gMode;
 extern u8 *gPlayerPtr;
+extern u16 gHeldKeys;
+extern u16 gLastEncounterBattleId;
+extern u8 *gMapObjBasePtr;
+extern u8 gEncounterObjCount;
+extern u8 gPlayerMapObjIndex;
+extern u8 gEncounterObjIndices[];
 extern u8 *gExpGemPtr; /* Current gem in ExpGemUpdate (@ +0x18/+0x1C) */
 extern u8 gActorPool[]; /* Flight actors, stride 0x60; [0] = ship */
 extern u16 gSoftOam[]; /* Soft OAM @ 0x03001F70 (8 bytes/entry) */
@@ -24,6 +30,7 @@ extern u8 gEnemyRemaining; /* Flight HUD quota / enemies left (not HP) */
 extern u32 gExpToCurrentLevel;
 extern u32 gExpToNextLevel;
 extern u8 gStageClearFlag;
+extern u32 gRandomBattleCooldown; /* Overworld RNG encounter delay @ 0x1DA5C */
 extern u8 gStageClearGate; /* 0 = allow clear (CB Clear Stage target) */
 
 /* IWRAM — inventory / gun loadout */

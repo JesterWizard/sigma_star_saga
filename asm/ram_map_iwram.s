@@ -74,6 +74,21 @@ SET_DATA gUseYSorting, 0x03001658
 @ Camera array (stride 0x84; X @ +0x2C, Y @ +0x30, both 16.16).
 SET_DATA gCameras, 0x030009C0
 
+@ -- Overworld encounters / input ----------------------------------------------
+
+@ Dedup latch for ScanEncounters mode 0 (last walk-into battle ID).
+SET_DATA gLastEncounterBattleId, 0x03000040
+@ Mirrored key input (KEY_A=1, KEY_B=2, …).
+SET_DATA gHeldKeys, 0x03002774
+@ Pointer to map-object array (16-byte records).
+SET_DATA gMapObjBasePtr, 0x03006FF0
+@ Count of indices in gEncounterObjIndices.
+SET_DATA gEncounterObjCount, 0x03007034
+@ Player's own map-object index (byte).
+SET_DATA gPlayerMapObjIndex, 0x0300704C
+@ Indices of encounter-capable map objects (byte each).
+SET_DATA gEncounterObjIndices, 0x03007070
+
 @ -- Player RPG / flight combat state ------------------------------------------
 
 SET_DATA gPlayerBombs, 0x03007014
@@ -86,6 +101,9 @@ SET_DATA gExpToNextLevel, 0x030071F0
 
 @ Stage-clear latch checked by planet flight handlers / TriggerStageClear.
 SET_DATA gStageClearFlag, 0x03007668
+@ Overworld random-encounter cooldown (TryStartRandomBattle @ 0x1DA5C).
+@ Non-zero → decrement and skip. CB "no random battles" forces byte @ +1 = 1.
+SET_DATA gRandomBattleCooldown, 0x03007684
 @ Clear-sequence gate: 1 while battle active, 0 allows clear (CB Clear Stage).
 SET_DATA gStageClearGate, 0x03007730
 

@@ -62,6 +62,12 @@ Method: Thumb `LDR Rd,[PC,#imm]` literal pools only (not raw absolute words). Wo
 | `gGunLoadoutImpactAlt` | `0x0300078C` | Alternate equipped impact index |
 | `gGunLoadoutPrimaryFlag` | `0x030007EE` | Non-zero → primary impact |
 | `gPlayerPtr` | `0x03000DB8` | Flight player object pointer |
+| `gHeldKeys` | `0x03002774` | Mirrored key input |
+| `gLastEncounterBattleId` | `0x03000040` | `ScanEncounters` mode-0 dedup latch |
+| `gMapObjBasePtr` | `0x03006FF0` | Pointer to map-object array |
+| `gEncounterObjCount` | `0x03007034` | Encounter object index count |
+| `gPlayerMapObjIndex` | `0x0300704C` | Player map-object index |
+| `gEncounterObjIndices` | `0x03007070` | Encounter object index list |
 | `gExpGemPtr` | `0x03006FE0` | Current EXP gem during `ExpGemUpdate` |
 | `gActorPool` | `0x03002780` | Flight actor pool (stride `0x60`) |
 | `gSoftOam` | `0x03001F70` | Soft OAM shadow (128 × 8 bytes) |
@@ -75,6 +81,7 @@ Method: Thumb `LDR Rd,[PC,#imm]` literal pools only (not raw absolute words). Wo
 | `gExpToCurrentLevel` | `0x0300717C` | Exp floor for current level |
 | `gExpToNextLevel` | `0x030071F0` | Exp to next level |
 | `gStageClearFlag` | `0x03007668` | Stage-clear latch |
+| `gRandomBattleCooldown` | `0x03007684` | Overworld RNG encounter delay (`0x1DA5C`; CB writes `+1`) |
 | `gStageClearGate` | `0x03007730` | Clear-sequence gate (0 = allow; CB Clear Stage) |
 | `gGunDataBits` | `0x03007690` | Gun Data ownership bits |
 | `gBulletOwned` | `0x0300773C` | Bullet Gun Data word |
