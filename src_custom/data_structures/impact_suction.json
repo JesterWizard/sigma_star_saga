@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "description": "Custom Impact Data pieces appended after the vanilla 28. Edit name/text/icon_from; rebuild with make.",
+  "impacts": [
+    {
+      "index": 28,
+      "id": 77,
+      "number": 29,
+      "name": "SUCTION",
+      "text": "pulls all EXP gems to the ship",
+      "icon_from": 27,
+      "icon_from_name": "exp_miner_plus",
+      "icon_png": "graphics/gun_data/impact/29_suction.png"
+    }
+  ]
+}

@@ -8,6 +8,7 @@
 /* IWRAM — engine / player */
 extern u8 gMode;
 extern u8 *gPlayerPtr;
+extern u8 gActorPool[]; /* Flight actors, stride 0x60; [0] = ship */
 extern u8 gPlayerBombs;
 extern u8 gPlayerLevel;
 extern u32 gPlayerExp;
@@ -17,7 +18,11 @@ extern u32 gExpToNextLevel;
 extern u8 gStageClearFlag;
 extern u8 gStageClearGate; /* 0 = allow clear (CB Clear Stage target) */
 
-/* IWRAM — inventory */
+/* IWRAM — inventory / gun loadout */
+extern u32 gGunLoadout;
+extern u32 gGunLoadoutImpact;
+extern u32 gGunLoadoutImpactAlt;
+extern u8 gGunLoadoutPrimaryFlag;
 extern u32 gGunDataBits[];
 extern u32 gBulletOwned;
 extern u32 gItemsOwned;

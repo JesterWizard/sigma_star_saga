@@ -14,4 +14,5 @@ const RuntimeConfig gRuntimeConfigRom __attribute__((section(".runtime_config"))
     .exp_multiplier = 10,
     .custom_enemy_exp = TRUE,
     .custom_dialogue = TRUE,
+    .custom_suction_impact = TRUE,
 };

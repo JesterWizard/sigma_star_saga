@@ -98,7 +98,9 @@ DATA_ASM_BUILDDIR = $(OBJ_DIR)/$(DATA_ASM_SUBDIR)
 C_SRCS := $(C_SUBDIR)/level_up.c
 CUSTOM_C_SRCS := \
 	$(CUSTOM_C_SUBDIR)/flight_skip_hooks.c \
-	$(CUSTOM_C_SUBDIR)/data_structures.c
+	$(CUSTOM_C_SUBDIR)/data_structures.c \
+	$(CUSTOM_C_SUBDIR)/suction_hooks.c \
+	$(CUSTOM_C_SUBDIR)/suction_data.c
 CONFIG_SRCS := $(CONFIG_SUBDIR)/runtime.c
 # Region fragments + pool inventories are .included by ram_map.s (not assembled alone).
 RAM_MAP_FRAGMENTS := \
@@ -112,6 +114,7 @@ ASM_SRCS := \
 	$(ASM_SUBDIR)/rom_after_a.s \
 	$(ASM_SUBDIR)/flight_skip.s \
 	$(ASM_SUBDIR)/rom_after_b.s \
+	$(ASM_SUBDIR)/suction_trampoline.s \
 	$(ASM_SUBDIR)/ram_map.s
 DATA_ASM_SRCS :=
 

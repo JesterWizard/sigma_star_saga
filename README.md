@@ -34,6 +34,10 @@ Toggle `.custom_dialogue` in [`configs/runtime.c`](configs/runtime.c). When `TRU
 
 JSON tables under [`src_custom/data_structures/`](src_custom/data_structures/) compile into append ROM. Toggle `.custom_enemy_exp` in [`configs/runtime.c`](configs/runtime.c) to remap 2D flight kill EXP tiers via [`enemy_exp.json`](src_custom/data_structures/enemy_exp.json) (applied before `.exp_multiplier`).
 
+### Suction Impact Data (hack)
+
+Toggle `.custom_suction_impact` in [`configs/runtime.c`](configs/runtime.c). When `TRUE` (default), adds a 29th Impact Data piece **Suction** that pulls every EXP gem on screen to the ship. Unlocked with `.all_impact_data`.
+
 ## Quick start
 
 See [INSTALL.md](INSTALL.md).

@@ -15,7 +15,7 @@
 #define BULLET_ID_LO 29
 #define BULLET_ID_HI 48
 #define IMPACT_ID_LO 49
-#define IMPACT_ID_HI 76
+#define IMPACT_ID_HI 77 /* includes custom Suction */
 
 /* Item bits in gItemsOwned (see DATA CARD / FLARE / FOSSIL string table). */
 #define KEY_ITEMS_MASK ((u32)0xFFF40001)      /* bit0 DATA CARD; 18+ GENOME/VIRUS/… */
@@ -57,7 +57,7 @@ static void ApplyInventoryCheatsOnce(void)
 
     if (gRuntimeConfig.all_impact_data)
     {
-        gImpactOwned |= 0x0FFFFFFFu; /* 28 pieces */
+        gImpactOwned |= 0x1FFFFFFFu; /* 29 pieces (vanilla 28 + Suction) */
         SetGunDataBits(IMPACT_ID_LO, IMPACT_ID_HI);
     }
 

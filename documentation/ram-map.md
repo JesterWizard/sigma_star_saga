@@ -56,7 +56,12 @@ Method: Thumb `LDR Rd,[PC,#imm]` literal pools only (not raw absolute words). Wo
 | Symbol | Address | Role |
 |--------|---------|------|
 | `gMode` | `0x03001630` | Main-loop mode |
+| `gGunLoadout` | `0x03000720` | Active gun loadout block |
+| `gGunLoadoutImpact` | `0x03000728` | Primary equipped impact index |
+| `gGunLoadoutImpactAlt` | `0x0300078C` | Alternate equipped impact index |
+| `gGunLoadoutPrimaryFlag` | `0x030007EE` | Non-zero → primary impact |
 | `gPlayerPtr` | `0x03000DB8` | Flight player object pointer |
+| `gActorPool` | `0x03002780` | Flight actor pool (stride `0x60`) |
 | `gPlayerBombs` | `0x03007014` | Smart bomb count |
 | `gPlayerLevel` | `0x0300702C` | RPG level |
 | `gPlayerExp` | `0x0300705C` | Experience |

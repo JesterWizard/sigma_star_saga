@@ -13,15 +13,33 @@ typedef struct {
     u16 exp;
 } EnemyExpIdEntry;
 
+/* One appended Impact Data piece (see impact_suction.json). */
+typedef struct {
+    u8 index;     /* local impact index (28 = 29th piece) */
+    u8 id;        /* Gun Data id (77) */
+    u8 number;    /* status-screen badge number (29) */
+    u8 icon_from; /* vanilla local index whose ANM frames to reuse */
+    char desc[0x5A]; /* "NAME : text" status blurb */
+} CustomImpactEntry;
+
 extern const EnemyExpRemapEntry gEnemyExpRemap[];
 extern const u16 gEnemyExpRemapCount;
 extern const EnemyExpIdEntry gEnemyExpById[];
 extern const u16 gEnemyExpByIdCount;
+
+extern const CustomImpactEntry gCustomImpacts[];
+extern const u16 gCustomImpactCount;
 
 /* Remap a vanilla flight-enemy gem amount using enemy_exp.json. */
 u32 RemapEnemyExpAmount(u32 vanilla_amount);
 
 /* Lookup by SpawnActor type id; returns vanilla_amount if missing. */
 u32 LookupEnemyExpById(u16 enemy_id, u32 vanilla_amount);
+
+/* If local is a custom impact, return icon_from; else local. */
+u8 RemapCustomImpactIcon(u8 type, u8 local);
+
+/* Mark JSON custom impacts owned (status screen does not run flight cheats). */
+void EnsureCustomImpactsOwned(void);
 
 #endif /* GUARD_DATA_STRUCTURES_H */

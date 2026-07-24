@@ -57,6 +57,9 @@ SET_DATA gMode, 0x03001630
 @ Pointer to the active 2D-flight player object.
 SET_DATA gPlayerPtr, 0x03000DB8
 
+@ Flight actor pool base (stride 0x60; index 0 = player ship).
+SET_DATA gActorPool, 0x03002780
+
 @ -- Player RPG / flight combat state ------------------------------------------
 
 SET_DATA gPlayerBombs, 0x03007014
@@ -74,7 +77,14 @@ SET_DATA gStageClearGate, 0x03007730
 
 @ -- Inventory / Gun Data ------------------------------------------------------
 
-@ Owned Gun Data bit array (IDs 1..76), packed u32 words.
+@ Active loadout block (cannon @+0, bullet @+4, impact @+8; alt impact @+0x6C).
+SET_DATA gGunLoadout, 0x03000720
+SET_DATA gGunLoadoutImpact, 0x03000728
+SET_DATA gGunLoadoutImpactAlt, 0x0300078C
+@ Non-zero → use primary impact at +8; zero → alt at +0x6C.
+SET_DATA gGunLoadoutPrimaryFlag, 0x030007EE
+
+@ Owned Gun Data bit array (IDs 1..77 with Suction), packed u32 words.
 SET_DATA gGunDataBits, 0x03007690
 
 @ Per-type ownership words (bits 0..N-1).
