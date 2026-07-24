@@ -41,11 +41,11 @@ SET_DATA gUnk_030002DC, 0x030002DC  @ pool hits=2
 SET_DATA gUnk_030002E0, 0x030002E0  @ pool hits=9
 SET_DATA gUnk_030002E4, 0x030002E4  @ pool hits=4
 SET_DATA gUnk_030002E8, 0x030002E8  @ pool hits=4
-SET_DATA gUnk_030002F0, 0x030002F0  @ pool hits=2
+@ gShotSlotCounter (0x030002F0) promoted — see ram_map_iwram.s
 SET_DATA gUnk_030002F8, 0x030002F8  @ pool hits=5
 SET_DATA gUnk_03000398, 0x03000398  @ pool hits=40
 SET_DATA gUnk_03000410, 0x03000410  @ pool hits=1
-SET_DATA gUnk_030004A0, 0x030004A0  @ pool hits=14
+@ gShotAuxPool (0x030004A0) promoted — see ram_map_iwram.s
 SET_DATA gUnk_0300072C, 0x0300072C  @ pool hits=1
 SET_DATA gUnk_030007E8, 0x030007E8  @ pool hits=7
 SET_DATA gUnk_030007EC, 0x030007EC  @ pool hits=6

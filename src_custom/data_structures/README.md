@@ -90,12 +90,12 @@ Defines custom Bullet Data pieces after the vanilla 20.
 | `number` | Status-screen list number |
 | `name` / `text` | Status blurb → `"NAME : text"` (max 0x46 bytes) |
 | `icon_from` | Vanilla local index whose ANM frames to reuse (`4` = Double Shot) |
-| `shot_from` | Vanilla local index whose OnBullet handler to reuse (`1` = Normal Shot) |
+| `shot_from` | Vanilla local index whose OnBullet handler to reuse (`0` = Normal Shot) |
 | `icon_png` | Authored art with badge digits |
 
 | Piece | Effect |
 |-------|--------|
-| **LASER** | Fires the Normal Shot pattern; shots pierce enemies (skips AbsorbShot) |
+| **LASER** | Normal Shot stream as a pierce beam (period 2; vanilla 10-shot ring) |
 
 Unlock with `.all_bullet_data` and/or `.custom_gun_data`. Bullet icon frame pairs
 follow the cannon pairs in the same extended ANM

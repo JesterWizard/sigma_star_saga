@@ -78,6 +78,8 @@ Method: Thumb `LDR Rd,[PC,#imm]` literal pools only (not raw absolute words). Wo
 | `gStageClearGate` | `0x03007730` | Clear-sequence gate (0 = allow; CB Clear Stage) |
 | `gGunDataBits` | `0x03007690` | Gun Data ownership bits |
 | `gBulletOwned` | `0x0300773C` | Bullet Gun Data word |
+| `gShotAuxPool` | `0x030004A0` | Flight shot aux (stride `0x40`, vanilla 10 slots) |
+| `gShotSlotCounter` | `0x030002F0` | `AllocShotSlot` ring index |
 | `gItemsOwned` | `0x03007740` | Key / overworld items |
 | `gCannonOwned` | `0x03007744` | Cannon Gun Data word |
 | `gImpactOwned` | `0x03007748` | Impact Gun Data word |

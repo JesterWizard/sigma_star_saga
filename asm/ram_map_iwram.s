@@ -108,6 +108,11 @@ SET_DATA gItemsOwned, 0x03007740
 SET_DATA gCannonOwned, 0x03007744
 SET_DATA gImpactOwned, 0x03007748
 
+@ Flight shot aux pool (stride 0x40; hitbox at +0x10/+0x12).
+SET_DATA gShotAuxPool, 0x030004A0
+@ AllocShotSlot ring counter (vanilla wraps at 10).
+SET_DATA gShotSlotCounter, 0x030002F0
+
 @ -- Pool-backed unknowns (auto-generated) -------------------------------------
 .include "ram_map_iwram_pool.inc"
 

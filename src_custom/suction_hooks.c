@@ -445,6 +445,83 @@ APPEND_TEXT u32 LaserIsEquipped(void)
 }
 
 /*
+ * Gun loadout (stride 0x64, slots 0..1). After OnCannon/OnBullet:
+ *   +0x10/+0x12 = fire period (clamped up to cannon +0x58/+0x5a)
+ *   +0x24       = sprite/anim size byte (Normal=9, Heavy/Steer=0xC)
+ *   +0x2C/+0x30 = shot speed components
+ *   +0x0C       = behavior flags (Steer sets 0x10000 = follow ship motion)
+ *   +0x58/+0x5a = cannon reload floors used by that clamp
+ *
+ * Stay on the vanilla 10-shot ring: an 18-wide beam was mostly draw/AABB cost.
+ * Period 2 + Normal body keeps a dense line without saturating the actor pool.
+ */
+#define GUN_SLOT_STRIDE    0x64
+#define GUN_OFF_FLAGS_C    0x0C
+#define GUN_OFF_FIRE_X     0x10
+#define GUN_OFF_FIRE_Y     0x12
+#define GUN_OFF_SPRITE     0x24
+#define GUN_OFF_SPEED_A    0x2C
+#define GUN_OFF_SPEED_B    0x30
+#define GUN_OFF_RELOAD_X   0x58
+#define GUN_OFF_RELOAD_Y   0x5A
+#define STEER_FOLLOW_FLAG  0x10000
+#define LASER_FIRE_PERIOD  2
+#define LASER_SPRITE       9
+/* ~10 px/frame; with period 2 → ~20 px spacing, ~10 live shots on-screen. */
+#define LASER_SPEED        0xA0000
+/* Collision skips OnImpact when +0x13 != 0 (after AABB). Long lockout avoids
+ * re-hit thrash while the beam is overlapping an enemy. */
+#define LASER_PIERCE_LOCKOUT 40
+#define SHOT_RING_BASE     0xA
+#define SHOT_RING_COUNT    10
+
+/*
+ * LASER: poke gun fields only. Spawn copies +0x2C/+0x30 into velocity.
+ * Body shots keep a non-zero +0x13 so only every 4th segment pays OnImpact.
+ */
+APPEND_TEXT void ApplyLaserBeam(void)
+{
+    u8 *gun;
+    u32 slot;
+    u32 i;
+    u32 probe;
+
+    if (!gRuntimeConfig.custom_gun_data)
+        return;
+    if (!LaserIsEquipped())
+        return;
+
+    gun = (u8 *)&gGunLoadout;
+    for (slot = 0; slot < 2; slot++)
+    {
+        u8 *g = gun + slot * GUN_SLOT_STRIDE;
+
+        *(u16 *)(g + GUN_OFF_FIRE_X) = LASER_FIRE_PERIOD;
+        *(u16 *)(g + GUN_OFF_FIRE_Y) = LASER_FIRE_PERIOD;
+        *(u16 *)(g + GUN_OFF_RELOAD_X) = LASER_FIRE_PERIOD;
+        *(u16 *)(g + GUN_OFF_RELOAD_Y) = LASER_FIRE_PERIOD;
+        g[GUN_OFF_SPRITE] = LASER_SPRITE;
+        *(u32 *)(g + GUN_OFF_FLAGS_C) &= ~STEER_FOLLOW_FLAG;
+        *(s32 *)(g + GUN_OFF_SPEED_A) = LASER_SPEED;
+        *(s32 *)(g + GUN_OFF_SPEED_B) = LASER_SPEED;
+    }
+
+    /* Only one ring lane is a damage probe each frame; others skip OnImpact. */
+    probe = gShotSlotCounter & 3;
+    for (i = 0; i < SHOT_RING_COUNT; i++)
+    {
+        u8 *shot = &gActorPool[(SHOT_RING_BASE + i) * ACTOR_STRIDE];
+
+        if ((*(u16 *)(shot + ACTOR_OFF_FLAGS) & ACTOR_FLAG_ACTIVE) == 0)
+            continue;
+        if (shot[ACTOR_OFF_CLASS] != ACTOR_CLASS_PLAYER_SHOT)
+            continue;
+        if ((i & 3) != probe && shot[0x13] == 0)
+            shot[0x13] = 2;
+    }
+}
+
+/*
  * AbsorbShot @ 0x0802F58C — vanilla Pass Through skips this to keep the shot
  * alive after a hit. LASER does the same for any equipped Impact Data.
  */
@@ -457,7 +534,7 @@ APPEND_TEXT void AbsorbShot__Replacement(u32 shot_index)
         actor = &gActorPool[(shot_index & 0xFF) * ACTOR_STRIDE];
         if (actor[ACTOR_OFF_CLASS] == ACTOR_CLASS_PLAYER_SHOT)
         {
-            actor[0x13] = 2; /* same marker Pass Through writes */
+            actor[0x13] = LASER_PIERCE_LOCKOUT;
             return;
         }
     }
@@ -512,6 +589,9 @@ APPEND_TEXT void ApplyAutoTarget(void)
     if (!gRuntimeConfig.custom_gun_data || gPlayerPtr == NULL)
         return;
     if (!AutoTargetIsEquipped())
+        return;
+    /* Laser already saturates the shot ring; per-shot seek is too expensive. */
+    if (LaserIsEquipped())
         return;
 
     for (i = 1; i < ACTOR_COUNT; i++)

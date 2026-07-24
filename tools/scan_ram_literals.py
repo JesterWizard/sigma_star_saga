@@ -19,6 +19,8 @@ ROM_BASE = 0x08000000
 
 # Known symbols (address -> name). Keep in sync with asm/ram_map_*.s named entries.
 KNOWN_IWRAM = {
+    0x030004A0: "gShotAuxPool",
+    0x030002F0: "gShotSlotCounter",
     0x03000720: "gGunLoadout",
     0x03000724: "gGunLoadoutBullet",
     0x03000728: "gGunLoadoutImpact",

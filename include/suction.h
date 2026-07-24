@@ -34,6 +34,7 @@ u32 AutoTargetIsEquipped(void);
 void ApplyAutoTarget(void);
 u32 EquippedBulletIndex(void);
 u32 LaserIsEquipped(void);
+void ApplyLaserBeam(void);
 void AbsorbShot__Replacement(u32 shot_index);
 /* 0 = not a suction impact; else sintab shift (7 = 1x, 8 = 2x). */
 u32 EquippedSuctionSpeedShift(void);

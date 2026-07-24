@@ -37,6 +37,8 @@ extern u32 gBulletOwned;
 extern u32 gItemsOwned;
 extern u32 gCannonOwned;
 extern u32 gImpactOwned;
+extern u8 gShotAuxPool[]; /* Flight shot aux, stride 0x40 (vanilla 10 slots) */
+extern u8 gShotSlotCounter; /* AllocShotSlot ring @ 0x030002F0 */
 
 /* Custom free-pool (via _kernel_malloc in ram_map_iwram.s). */
 extern u8 gPhoenixReviveUsed;
