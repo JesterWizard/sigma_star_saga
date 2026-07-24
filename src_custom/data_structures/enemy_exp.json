@@ -1,0 +1,418 @@
+{
+  "schema": 2,
+  "description": "2D flight/side-scroller enemies. id = SpawnActor type (r2); anim = ANM id; exp = per-gem AddExperience amount (= actor+0x3C / 10). Edit exp to override; runtime remaps matching award amounts then applies exp_multiplier. Names from ROM label table (MB_/B_/EARTH_*).",
+  "enemies": [
+    {
+      "id": 14,
+      "anim": 224,
+      "exp": 200
+    },
+    {
+      "id": 23,
+      "anim": 20,
+      "exp": 5
+    },
+    {
+      "id": 27,
+      "anim": 103,
+      "exp": 5
+    },
+    {
+      "id": 27,
+      "anim": 103,
+      "exp": 10
+    },
+    {
+      "id": 28,
+      "anim": 43,
+      "exp": 20
+    },
+    {
+      "id": 30,
+      "anim": 46,
+      "exp": 10
+    },
+    {
+      "id": 31,
+      "anim": 49,
+      "exp": 3
+    },
+    {
+      "id": 32,
+      "anim": 45,
+      "exp": 10
+    },
+    {
+      "id": 33,
+      "anim": 57,
+      "exp": 4
+    },
+    {
+      "id": 34,
+      "anim": 104,
+      "exp": 1
+    },
+    {
+      "id": 34,
+      "anim": 104,
+      "exp": 2
+    },
+    {
+      "id": 35,
+      "anim": 55,
+      "exp": 2
+    },
+    {
+      "id": 36,
+      "anim": 56,
+      "exp": 2
+    },
+    {
+      "id": 37,
+      "anim": 66,
+      "exp": 3
+    },
+    {
+      "id": 38,
+      "anim": 1,
+      "exp": 5
+    },
+    {
+      "id": 41,
+      "anim": 62,
+      "exp": 1
+    },
+    {
+      "id": 42,
+      "anim": 59,
+      "exp": 6
+    },
+    {
+      "id": 44,
+      "anim": 68,
+      "exp": 6
+    },
+    {
+      "id": 45,
+      "anim": 72,
+      "exp": 30
+    },
+    {
+      "id": 46,
+      "anim": 64,
+      "exp": 15
+    },
+    {
+      "id": 51,
+      "anim": 53,
+      "exp": 5
+    },
+    {
+      "id": 52,
+      "anim": 63,
+      "exp": 2
+    },
+    {
+      "id": 53,
+      "anim": 70,
+      "exp": 30
+    },
+    {
+      "id": 54,
+      "anim": 58,
+      "exp": 1
+    },
+    {
+      "id": 55,
+      "anim": 96,
+      "exp": 1
+    },
+    {
+      "id": 55,
+      "anim": 96,
+      "exp": 15
+    },
+    {
+      "id": 56,
+      "anim": 99,
+      "exp": 1
+    },
+    {
+      "id": 60,
+      "anim": 98,
+      "exp": 1
+    },
+    {
+      "id": 61,
+      "anim": 102,
+      "exp": 1
+    },
+    {
+      "id": 62,
+      "anim": 85,
+      "exp": 45
+    },
+    {
+      "id": 63,
+      "anim": 52,
+      "exp": 9
+    },
+    {
+      "id": 64,
+      "anim": 84,
+      "exp": 9
+    },
+    {
+      "id": 66,
+      "anim": 78,
+      "exp": 36
+    },
+    {
+      "id": 70,
+      "anim": 105,
+      "exp": 4
+    },
+    {
+      "id": 70,
+      "anim": 105,
+      "exp": 8
+    },
+    {
+      "id": 71,
+      "anim": 106,
+      "exp": 10
+    },
+    {
+      "id": 71,
+      "anim": 106,
+      "exp": 20
+    },
+    {
+      "id": 72,
+      "anim": 80,
+      "exp": 16
+    },
+    {
+      "id": 73,
+      "anim": 79,
+      "exp": 6
+    },
+    {
+      "id": 74,
+      "anim": 86,
+      "exp": 6
+    },
+    {
+      "id": 75,
+      "anim": 76,
+      "exp": 2
+    },
+    {
+      "id": 76,
+      "anim": 82,
+      "exp": 40
+    },
+    {
+      "id": 77,
+      "anim": 87,
+      "exp": 5
+    },
+    {
+      "id": 78,
+      "anim": 95,
+      "exp": 15
+    },
+    {
+      "id": 80,
+      "anim": 88,
+      "exp": 20
+    },
+    {
+      "id": 82,
+      "anim": 92,
+      "exp": 7
+    },
+    {
+      "id": 83,
+      "anim": 93,
+      "exp": 7
+    },
+    {
+      "id": 84,
+      "anim": 90,
+      "exp": 35
+    },
+    {
+      "id": 85,
+      "anim": 91,
+      "exp": 40
+    },
+    {
+      "id": 86,
+      "anim": 2,
+      "exp": 15
+    },
+    {
+      "id": 87,
+      "anim": 3,
+      "exp": 15
+    },
+    {
+      "id": 90,
+      "anim": 7,
+      "exp": 1
+    },
+    {
+      "id": 90,
+      "anim": 7,
+      "exp": 40
+    },
+    {
+      "id": 90,
+      "anim": 7,
+      "exp": 50
+    },
+    {
+      "id": 94,
+      "anim": 12,
+      "exp": 10
+    },
+    {
+      "id": 96,
+      "anim": 18,
+      "exp": 9
+    },
+    {
+      "id": 97,
+      "anim": 19,
+      "exp": 5
+    },
+    {
+      "id": 97,
+      "anim": 19,
+      "exp": 12
+    },
+    {
+      "id": 110,
+      "anim": 27,
+      "exp": 45
+    },
+    {
+      "id": 121,
+      "anim": 135,
+      "exp": 4
+    },
+    {
+      "id": 121,
+      "anim": 135,
+      "exp": 6
+    },
+    {
+      "id": 122,
+      "anim": 135,
+      "exp": 3
+    },
+    {
+      "id": 127,
+      "anim": 139,
+      "exp": 20
+    },
+    {
+      "id": 130,
+      "anim": 141,
+      "exp": 240
+    },
+    {
+      "id": 131,
+      "anim": 151,
+      "exp": 100
+    },
+    {
+      "id": 132,
+      "anim": 150,
+      "exp": 100
+    },
+    {
+      "id": 133,
+      "anim": 155,
+      "exp": 10
+    },
+    {
+      "id": 140,
+      "anim": 158,
+      "exp": 3
+    },
+    {
+      "id": 140,
+      "anim": 158,
+      "exp": 50
+    },
+    {
+      "id": 142,
+      "anim": 162,
+      "exp": 200
+    },
+    {
+      "id": 143,
+      "anim": 160,
+      "exp": 200
+    },
+    {
+      "id": 145,
+      "anim": 166,
+      "exp": 140
+    },
+    {
+      "id": 146,
+      "anim": 164,
+      "exp": 90
+    },
+    {
+      "id": 147,
+      "anim": 169,
+      "exp": 120
+    },
+    {
+      "id": 168,
+      "anim": 229,
+      "exp": 900,
+      "name": "MB_FLICE"
+    },
+    {
+      "id": 177,
+      "anim": 234,
+      "exp": 60,
+      "name": "MB_INNEREYE"
+    },
+    {
+      "id": 178,
+      "anim": 236,
+      "exp": 60,
+      "name": "MB_DOPPELGANGER"
+    },
+    {
+      "id": 185,
+      "anim": 240,
+      "exp": 120,
+      "name": "MB_FLOWER"
+    },
+    {
+      "id": 310,
+      "anim": 251,
+      "exp": 90,
+      "name": "B_MEATHEAD"
+    },
+    {
+      "id": 318,
+      "anim": 252,
+      "exp": 180,
+      "name": "B_BATTLEWORM"
+    },
+    {
+      "id": 321,
+      "anim": 257,
+      "exp": 180,
+      "name": "EARTH_KF"
+    }
+  ]
+}

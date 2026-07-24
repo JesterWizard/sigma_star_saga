@@ -96,7 +96,9 @@ ASM_BUILDDIR = $(OBJ_DIR)/$(ASM_SUBDIR)
 DATA_ASM_BUILDDIR = $(OBJ_DIR)/$(DATA_ASM_SUBDIR)
 
 C_SRCS := $(C_SUBDIR)/level_up.c
-CUSTOM_C_SRCS := $(CUSTOM_C_SUBDIR)/flight_skip_hooks.c
+CUSTOM_C_SRCS := \
+	$(CUSTOM_C_SUBDIR)/flight_skip_hooks.c \
+	$(CUSTOM_C_SUBDIR)/data_structures.c
 CONFIG_SRCS := $(CONFIG_SUBDIR)/runtime.c
 # Region fragments + pool inventories are .included by ram_map.s (not assembled alone).
 RAM_MAP_FRAGMENTS := \
@@ -119,13 +121,19 @@ DIALOGUE_BANKS_C := $(OBJ_DIR)/dialogue_banks.c
 DIALOGUE_BANKS_O := $(OBJ_DIR)/dialogue_banks.o
 COMPILE_DIALOGUE := $(TOOLS_DIR)/compile_dialogue.py
 
+DATA_STRUCT_SRC_DIR := $(CUSTOM_C_SUBDIR)/data_structures
+DATA_STRUCT_JSON := $(wildcard $(DATA_STRUCT_SRC_DIR)/*.json)
+DATA_STRUCT_TABLES_C := $(OBJ_DIR)/data_structures_tables.c
+DATA_STRUCT_TABLES_O := $(OBJ_DIR)/data_structures_tables.o
+COMPILE_DATA_STRUCTS := $(TOOLS_DIR)/compile_data_structures.py
+
 C_OBJS := $(patsubst $(C_SUBDIR)/%.c,$(C_BUILDDIR)/%.o,$(C_SRCS))
 CUSTOM_C_OBJS := $(patsubst $(CUSTOM_C_SUBDIR)/%.c,$(CUSTOM_C_BUILDDIR)/%.o,$(CUSTOM_C_SRCS))
 CONFIG_OBJS := $(patsubst $(CONFIG_SUBDIR)/%.c,$(CONFIG_BUILDDIR)/%.o,$(CONFIG_SRCS))
 ASM_OBJS := $(patsubst $(ASM_SUBDIR)/%.s,$(ASM_BUILDDIR)/%.o,$(ASM_SRCS))
 DATA_ASM_OBJS := $(patsubst $(DATA_ASM_SUBDIR)/%.s,$(DATA_ASM_BUILDDIR)/%.o,$(DATA_ASM_SRCS))
 
-OBJS := $(C_OBJS) $(CUSTOM_C_OBJS) $(CONFIG_OBJS) $(DIALOGUE_BANKS_O) $(ASM_OBJS) $(DATA_ASM_OBJS)
+OBJS := $(C_OBJS) $(CUSTOM_C_OBJS) $(CONFIG_OBJS) $(DIALOGUE_BANKS_O) $(DATA_STRUCT_TABLES_O) $(ASM_OBJS) $(DATA_ASM_OBJS)
 OBJS_REL := $(patsubst $(OBJ_DIR)/%,%,$(OBJS))
 
 LYNJUMP_EVENT := $(CUSTOM_C_SUBDIR)/LynJump.event
@@ -195,6 +203,16 @@ $(DIALOGUE_BANKS_C): $(COMPILE_DIALOGUE) $(DIALOGUE_SCENE_SRCS) $(DIALOGUE_SRC_D
 	python3 $(COMPILE_DIALOGUE) --src $(DIALOGUE_SRC_DIR) --out $@
 
 $(DIALOGUE_BANKS_O): $(DIALOGUE_BANKS_C)
+	$(PREFIX)gcc -c -mcpu=arm7tdmi -mthumb -mthumb-interwork -O2 \
+		-fno-toplevel-reorder -iquote include -I include \
+		-o $@ $<
+
+# Compile src_custom/data_structures/*.json → APPEND_RODATA tables.
+$(DATA_STRUCT_TABLES_C): $(COMPILE_DATA_STRUCTS) $(DATA_STRUCT_JSON) $(DATA_STRUCT_SRC_DIR)/README.md
+	@mkdir -p $(dir $@)
+	python3 $(COMPILE_DATA_STRUCTS) --src $(DATA_STRUCT_SRC_DIR) --out $@
+
+$(DATA_STRUCT_TABLES_O): $(DATA_STRUCT_TABLES_C)
 	$(PREFIX)gcc -c -mcpu=arm7tdmi -mthumb -mthumb-interwork -O2 \
 		-fno-toplevel-reorder -iquote include -I include \
 		-o $@ $<

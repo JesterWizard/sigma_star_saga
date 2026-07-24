@@ -30,6 +30,10 @@ Toggle the Gun Data and item unlocks in [`configs/runtime.c`](configs/runtime.c)
 
 Toggle `.custom_dialogue` in [`configs/runtime.c`](configs/runtime.c). When `TRUE` (default), edit scenes under [`src_custom/dialogue/`](src_custom/dialogue/) and `make` — talk banks are compiled into append ROM and the vanilla bank pointer table is redirected. See [`documentation/dialogue/`](documentation/dialogue/).
 
+### Data structures / enemy EXP (hack)
+
+JSON tables under [`src_custom/data_structures/`](src_custom/data_structures/) compile into append ROM. Toggle `.custom_enemy_exp` in [`configs/runtime.c`](configs/runtime.c) to remap 2D flight kill EXP tiers via [`enemy_exp.json`](src_custom/data_structures/enemy_exp.json) (applied before `.exp_multiplier`).
+
 ## Quick start
 
 See [INSTALL.md](INSTALL.md).
@@ -48,7 +52,7 @@ make compare
 | `asm/` | Hand-written / disassembled ARM/Thumb + baserom peels |
 | `asm/ram_map*.s` | IWRAM / EWRAM / save address registry ([ygodm8](https://github.com/JesterWizard/ygodm8/blob/master/asm/ram_map.s)-style) |
 | `src/` | Decompiled vanilla C |
-| `src_custom/` | Hack hooks (`*_hooks.c`) + `LynJump.event` + editable `dialogue/` |
+| `src_custom/` | Hack hooks (`*_hooks.c`) + `LynJump.event` + editable `dialogue/` / `data_structures/` |
 | `configs/runtime.c` | Boolean / value toggles for hacks |
 | `data/dialogue/` | Vanilla talk-script dump (regenerable reference) |
 | `documentation/` | Feature docs (`ram-map.md`, `dialogue/`, …) |

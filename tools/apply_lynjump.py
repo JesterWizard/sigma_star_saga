@@ -14,7 +14,7 @@ POIN_RE = re.compile(r"POIN\s+(\w+)")
 BOOL_RE = re.compile(
     r"\.(skip_flight_battle|always_run|always_max_health|always_max_bombs|"
     r"all_cannon_data|all_bullet_data|all_impact_data|"
-    r"all_key_items|all_overworld_items|custom_dialogue)\s*=\s*(TRUE|FALSE|true|false|1|0)",
+    r"all_key_items|all_overworld_items|custom_enemy_exp|custom_dialogue)\s*=\s*(TRUE|FALSE|true|false|1|0)",
     re.IGNORECASE,
 )
 
@@ -53,7 +53,8 @@ ALWAYS_RUN_ANDS_SITES = [
 ANDS_R0_R1 = bytes((0x08, 0x40))  # 0x4008
 MOVS_R0_2 = bytes((0x02, 0x20))  # 0x2002
 
-# AddExperience @ 0xFDC4 — long-jump veneer when exp_multiplier != 1.
+# AddExperience @ 0xFDC4 — long-jump veneer when exp_multiplier != 1
+# or custom_enemy_exp is enabled.
 ADD_EXPERIENCE_OFF = 0xFDC4
 ADD_EXPERIENCE_VENEER_LEN = 8
 EXP_MULT_RE = re.compile(r"\.exp_multiplier\s*=\s*(\d+)")
@@ -152,6 +153,7 @@ def load_runtime_flags() -> dict[str, bool]:
         "all_impact_data": False,
         "all_key_items": False,
         "all_overworld_items": False,
+        "custom_enemy_exp": False,
         "custom_dialogue": False,
     }
     for match in BOOL_RE.finditer(text):
@@ -282,31 +284,36 @@ def apply_custom_dialogue(rom: bytearray, owners: dict, symbols: dict, enabled: 
     )
 
 
-def apply_exp_multiplier(rom: bytearray, owners: dict, symbols: dict, multiplier: int):
+def apply_exp_hooks(
+    rom: bytearray, owners: dict, symbols: dict, multiplier: int, custom_enemy_exp: bool
+):
     baserom = (ROOT / "baserom.gba").read_bytes()
-    if multiplier == 1:
+    if multiplier == 1 and not custom_enemy_exp:
         checked_write(
             rom,
             ADD_EXPERIENCE_OFF,
             baserom[ADD_EXPERIENCE_OFF : ADD_EXPERIENCE_OFF + ADD_EXPERIENCE_VENEER_LEN],
             owners,
-            "runtime:exp_multiplier=1",
+            "runtime:exp_hooks=off",
         )
-        print("runtime: exp_multiplier=1 (vanilla AddExperience)")
+        print("runtime: AddExperience vanilla (exp_multiplier=1, custom_enemy_exp=FALSE)")
         return
 
     name = "AddExperience__Replacement"
     if name not in symbols:
-        raise KeyError(f"symbol {name} not found (needed for exp_multiplier)")
+        raise KeyError(f"symbol {name} not found (needed for exp hooks)")
     hook = symbols[name]
     checked_write(
         rom,
         ADD_EXPERIENCE_OFF,
         SHOOTER_FRAME_VENEER_HEAD + struct.pack("<I", hook),
         owners,
-        "runtime:exp_multiplier",
+        "runtime:exp_hooks",
     )
-    print(f"runtime: exp_multiplier={multiplier} → 0x{hook:08X}")
+    parts = [f"exp_multiplier={multiplier}"]
+    if custom_enemy_exp:
+        parts.append("custom_enemy_exp")
+    print(f"runtime: {' + '.join(parts)} → 0x{hook:08X}")
 
 
 def main():
@@ -330,7 +337,9 @@ def main():
     apply_flight_skip_gate(rom, owners, flags["skip_flight_battle"])
     apply_always_run(rom, owners, flags["always_run"])
     apply_shooter_cheats(rom, owners, symbols, flags)
-    apply_exp_multiplier(rom, owners, symbols, exp_multiplier)
+    apply_exp_hooks(
+        rom, owners, symbols, exp_multiplier, flags["custom_enemy_exp"]
+    )
     apply_custom_dialogue(rom, owners, symbols, flags["custom_dialogue"])
 
     rom_path.write_bytes(rom)

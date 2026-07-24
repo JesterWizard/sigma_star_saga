@@ -2,6 +2,7 @@
 #include "runtime.h"
 #include "ram_map.h"
 #include "level_up.h"
+#include "data_structures.h"
 
 #define MAX_BOMBS 7
 
@@ -92,13 +93,17 @@ APPEND_TEXT void UpdateShooterFrame__Replacement(void)
     ApplyInventoryCheatsOnce();
 }
 
-/* Veneered over AddExperience @ 0x0800FDC4 when exp_multiplier != 1. */
+/* Veneered over AddExperience @ 0x0800FDC4 when custom_enemy_exp or
+ * exp_multiplier != 1. Remap uses src_custom/data_structures/enemy_exp.json. */
 APPEND_TEXT bool8 AddExperience__Replacement(u32 amount)
 {
     u8 level = gPlayerLevel;
 
     if (level > MAX_PLAYER_LEVEL - 1)
         return FALSE;
+
+    if (gRuntimeConfig.custom_enemy_exp)
+        amount = RemapEnemyExpAmount(amount);
 
     amount *= gRuntimeConfig.exp_multiplier;
 
