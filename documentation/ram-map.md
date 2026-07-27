@@ -56,6 +56,7 @@ Method: Thumb `LDR Rd,[PC,#imm]` literal pools only (not raw absolute words). Wo
 | Symbol | Address | Role |
 |--------|---------|------|
 | `gMode` | `0x03001630` | Main-loop mode |
+| `gCurrentActorIndex` | `0x03001634` | Current actor for AI / fauna death-drop |
 | `gGunLoadout` | `0x03000720` | Active gun loadout block |
 | `gGunLoadoutBullet` | `0x03000724` | Equipped bullet index |
 | `gGunLoadoutImpact` | `0x03000728` | Primary equipped impact index |
@@ -76,7 +77,8 @@ Method: Thumb `LDR Rd,[PC,#imm]` literal pools only (not raw absolute words). Wo
 | `gCameras` | `0x030009C0` | Camera array (stride `0x84`) |
 | `gPlayerBombs` | `0x03007014` | Smart bomb count |
 | `gPlayerLevel` | `0x0300702C` | RPG level |
-| `gPlayerExp` | `0x0300705C` | Experience |
+| `gPlayerExp` | `0x0300705C` | Experience (canonical / save) |
+| `gPlayerExpDisplay` | `0x03007144` | Status/HUD EXP mirror (`HudSync` copies from `gPlayerExp`) |
 | `gEnemyRemaining` | `0x03007080` | Flight HUD enemy/quota digit (not HP) |
 | `gExpToCurrentLevel` | `0x0300717C` | Exp floor for current level |
 | `gExpToNextLevel` | `0x030071F0` | Exp to next level |

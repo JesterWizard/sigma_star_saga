@@ -2,6 +2,7 @@
 """Compile src_custom/data_structures/*.json into APPEND_RODATA C tables.
 
 enemy_exp.json (schema 2): per-enemy catalog → gEnemyExpRemap + gEnemyExpById.
+overworld_enemy_exp.json (schema 1): overworld fauna → gOverworldEnemyExp.
 impact_data.json (schema 1): custom Impact Data → gCustomImpacts + JT/desc/ANM bufs.
 cannon_data.json (schema 1): custom Cannon Data → gCustomCannons + JT/desc bufs.
 bullet_data.json (schema 1): Bullet Data overrides (index < 20) + custom
@@ -12,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -85,6 +87,85 @@ def compile_enemy_exp(
     remap_rows = sorted((k, e, lab) for k, (e, lab) in remap.items())
     by_id_rows = sorted((i, e, lab) for i, (e, lab) in by_id.items())
     return remap_rows, by_id_rows
+
+
+OW_ENEMY_IDS_H = REPO / "include" / "overworld_enemy_ids.h"
+OW_ENUM_RE = re.compile(
+    r"\b(OVERWORLD_(?:TYPE|ANIM)_([A-Z0-9_]+))\s*=\s*(\d+)\b"
+)
+
+
+def load_overworld_enemy_id_enums(path: Path = OW_ENEMY_IDS_H) -> dict[str, dict[str, tuple[str, int]]]:
+    """Parse OVERWORLD_TYPE_* / OVERWORLD_ANIM_* from overworld_enemy_ids.h."""
+    text = path.read_text()
+    tables: dict[str, dict[str, tuple[str, int]]] = {"TYPE": {}, "ANIM": {}}
+    for full, short, value in OW_ENUM_RE.findall(text):
+        kind = "TYPE" if full.startswith("OVERWORLD_TYPE_") else "ANIM"
+        tables[kind][short] = (full, int(value))
+        tables[kind][full] = (full, int(value))
+    if not tables["TYPE"] or not tables["ANIM"]:
+        raise ValueError(
+            f"{path}: no OVERWORLD_TYPE_* / OVERWORLD_ANIM_* enumerators found"
+        )
+    return tables
+
+
+def resolve_overworld_id(raw, kind: str, enums: dict, where: str) -> tuple[str, int]:
+    """Resolve JSON id/anim: integer, or name from overworld_enemy_ids.h."""
+    table = enums[kind]
+    if isinstance(raw, bool):
+        raise ValueError(f"{where}: invalid {kind.lower()} {raw!r}")
+    if isinstance(raw, int):
+        for full, value in table.values():
+            if value == raw:
+                return full, value
+        return str(raw), raw
+    if isinstance(raw, str):
+        key = raw.strip()
+        if key in table:
+            return table[key]
+        raise ValueError(
+            f"{where}: unknown {kind.lower()} {raw!r} "
+            f"(add OVERWORLD_{kind}_{key} to include/overworld_enemy_ids.h)"
+        )
+    raise ValueError(f"{where}: {kind.lower()} must be int or name string")
+
+
+def load_overworld_enemy_exp(path: Path) -> list[tuple[str, str, int, int, int, str]]:
+    """Return rows: (type_sym, anim_sym, type_val, anim_val, exp, label)."""
+    enums = load_overworld_enemy_id_enums()
+    data = json.loads(path.read_text())
+    if data.get("schema") != 1:
+        raise ValueError(f"{path}: unsupported schema {data.get('schema')!r}")
+    enemies = data.get("enemies")
+    if not isinstance(enemies, list) or not enemies:
+        raise ValueError(f"{path}: expected non-empty 'enemies' array")
+
+    rows: list[tuple[str, str, int, int, int, str]] = []
+    seen: set[tuple[int, int]] = set()
+    for i, entry in enumerate(enemies):
+        if not isinstance(entry, dict):
+            raise ValueError(f"enemies[{i}]: expected object")
+        where = f"enemies[{i}]"
+        try:
+            type_sym, eid = resolve_overworld_id(entry["id"], "TYPE", enums, where)
+            anim_sym, anim = resolve_overworld_id(entry["anim"], "ANIM", enums, where)
+            exp = int(entry["exp"])
+        except KeyError as exc:
+            raise ValueError(f"{where}: need id, anim, and exp") from exc
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"{where}: {exc}") from exc
+        if not 0 <= eid <= 0xFFFF or not 0 <= anim <= 0xFFFF or not 0 <= exp <= 0xFFFF:
+            raise ValueError(f"{where}: values out of u16 range")
+        key = (eid, anim)
+        if key in seen:
+            raise ValueError(f"{where}: duplicate id={eid} anim={anim}")
+        seen.add(key)
+        label = str(entry.get("name") or type_sym)
+        rows.append((type_sym, anim_sym, eid, anim, exp, label))
+    rows.sort(key=lambda r: (r[2], r[3]))
+    return rows
+
 
 
 def load_custom_impacts(path: Path) -> list[dict]:
@@ -324,6 +405,7 @@ def gun_icon_anm_ext_max(custom_count: int) -> int:
 def emit_c(
     remap_rows: list[tuple[int, int, str]],
     by_id_rows: list[tuple[int, int, str]],
+    overworld_rows: list[tuple[int, int, int, str]],
     impacts: list[dict],
     cannons: list[dict],
     bullets: list[dict],
@@ -341,6 +423,7 @@ def emit_c(
         "",
         '#include "runtime.h"',
         '#include "data_structures.h"',
+        '#include "overworld_enemy_ids.h"',
         "",
         "APPEND_RODATA const EnemyExpRemapEntry gEnemyExpRemap[] = {",
     ]
@@ -358,6 +441,19 @@ def emit_c(
         lines.append("    { 0, 0 },")
     lines.append("};")
     lines.append(f"APPEND_RODATA const u16 gEnemyExpByIdCount = {len(by_id_rows)};")
+    lines.append("")
+    lines.append("APPEND_RODATA const OverworldEnemyExpEntry gOverworldEnemyExp[] = {")
+    for type_sym, anim_sym, eid, anim, exp, label in overworld_rows:
+        lines.append(
+            f"    {{ {type_sym}, {anim_sym}, {exp}, 0 }}, "
+            f"/* {label} ({eid}/{anim}) */"
+        )
+    if not overworld_rows:
+        lines.append("    { 0, 0, 0, 0 },")
+    lines.append("};")
+    lines.append(
+        f"APPEND_RODATA const u16 gOverworldEnemyExpCount = {len(overworld_rows)};"
+    )
     lines.append("")
     lines.append("APPEND_RODATA const CustomImpactEntry gCustomImpacts[] = {")
     if not impacts:
@@ -465,10 +561,11 @@ def main() -> int:
     args = parser.parse_args()
 
     enemy_path = args.src / "enemy_exp.json"
+    overworld_path = args.src / "overworld_enemy_exp.json"
     impact_path = args.src / "impact_data.json"
     cannon_path = args.src / "cannon_data.json"
     bullet_path = args.src / "bullet_data.json"
-    for path in (enemy_path, impact_path, cannon_path, bullet_path):
+    for path in (enemy_path, overworld_path, impact_path, cannon_path, bullet_path):
         if not path.is_file():
             print(f"error: missing {path}", file=sys.stderr)
             return 1
@@ -476,6 +573,7 @@ def main() -> int:
     try:
         data = load_enemy_exp(enemy_path)
         remap_rows, by_id_rows = compile_enemy_exp(data)
+        overworld_rows = load_overworld_enemy_exp(overworld_path)
         impacts = load_custom_impacts(impact_path)
         cannons = load_custom_cannons(cannon_path)
         bullets, bullet_overrides = load_custom_bullets(bullet_path)
@@ -484,10 +582,13 @@ def main() -> int:
         return 1
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(emit_c(remap_rows, by_id_rows, impacts, cannons, bullets))
+    args.out.write_text(
+        emit_c(remap_rows, by_id_rows, overworld_rows, impacts, cannons, bullets)
+    )
     print(
         f"data_structures: enemy_exp → {len(remap_rows)} remap, "
-        f"{len(by_id_rows)} by-id; custom impacts → {len(impacts)}, "
+        f"{len(by_id_rows)} by-id; overworld_enemy_exp → {len(overworld_rows)}; "
+        f"custom impacts → {len(impacts)}, "
         f"custom cannons → {len(cannons)}, custom bullets → {len(bullets)}, "
         f"bullet overrides → {len(bullet_overrides)}"
     )

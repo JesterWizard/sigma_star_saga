@@ -54,6 +54,8 @@ SET_DATA gVanillaIwramHighWater, 0x0300775C
 
 @ Main-loop mode byte (dispatch table @ ROM 0xBC04).
 SET_DATA gMode, 0x03001630
+@ Current actor index while AI / death-drop helpers run.
+SET_DATA gCurrentActorIndex, 0x03001634
 
 @ Pointer to the active 2D-flight player object.
 SET_DATA gPlayerPtr, 0x03000DB8
@@ -94,6 +96,9 @@ SET_DATA gEncounterObjIndices, 0x03007070
 SET_DATA gPlayerBombs, 0x03007014
 SET_DATA gPlayerLevel, 0x0300702C
 SET_DATA gPlayerExp, 0x0300705C
+@ Status / flight HUD display mirror of gPlayerExp (HudSync @ 0x080110B6).
+@ Status stats page draws (*gPlayerExpDisplay - gExpToCurrentLevel).
+SET_DATA gPlayerExpDisplay, 0x03007144
 @ Flight HUD decimal (enemy/quota remaining). NOT ship HP — vanilla stores 6/13/30/…
 SET_DATA gEnemyRemaining, 0x03007080
 SET_DATA gExpToCurrentLevel, 0x0300717C

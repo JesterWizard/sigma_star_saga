@@ -13,6 +13,14 @@ typedef struct {
     u16 exp;
 } EnemyExpIdEntry;
 
+/* Overworld fauna catalog entry (overworld_enemy_exp.json). */
+typedef struct {
+    u16 id;   /* SpawnActor type (actor+0x20) */
+    u16 anim; /* ANM / model (actor+0x22) */
+    u16 exp;
+    u16 pad;
+} OverworldEnemyExpEntry;
+
 /* One appended Impact Data piece (see impact_data.json).
  * Trailing pad keeps sizeof == 0x60 (agbcc aligns array elements). */
 typedef struct {
@@ -65,6 +73,9 @@ extern const u16 gEnemyExpRemapCount;
 extern const EnemyExpIdEntry gEnemyExpById[];
 extern const u16 gEnemyExpByIdCount;
 
+extern const OverworldEnemyExpEntry gOverworldEnemyExp[];
+extern const u16 gOverworldEnemyExpCount;
+
 extern const CustomImpactEntry gCustomImpacts[];
 extern const u16 gCustomImpactCount;
 
@@ -91,6 +102,9 @@ u32 RemapEnemyExpAmount(u32 vanilla_amount);
 
 /* Lookup by SpawnActor type id; returns vanilla_amount if missing. */
 u32 LookupEnemyExpById(u16 enemy_id, u32 vanilla_amount);
+
+/* Overworld fauna: match type+anim; returns 0 if not in catalog. */
+u32 LookupOverworldEnemyExp(u16 enemy_id, u16 anim);
 
 /* If local is a custom impact, return icon_from; else local. */
 u8 RemapCustomImpactIcon(u8 type, u8 local);

@@ -10,6 +10,7 @@ gun-icon ANM buffer automatically.
 | File | Toggle (`configs/runtime.c`) | Effect |
 |------|------------------------------|--------|
 | [`enemy_exp.json`](enemy_exp.json) | `.custom_enemy_exp` | Remap 2D flight kill EXP |
+| [`overworld_enemy_exp.json`](overworld_enemy_exp.json) | `.overworld_enemy_exp` | Award EXP for overworld fauna kills |
 | [`impact_data.json`](impact_data.json) | `.custom_gun_data` | Custom Impact Data (text / icon / id / behavior) |
 | [`cannon_data.json`](cannon_data.json) | `.custom_gun_data` | Custom Cannon Data (text / icon / id / firing pattern) |
 | [`bullet_data.json`](bullet_data.json) | `.custom_gun_data` | Bullet Data overrides + custom appends (text / icon / id / shot) |
@@ -34,6 +35,23 @@ that same value (not pool/10).
 `.custom_enemy_exp` builds the by-id catalog only. Award scaling at runtime is
 `.exp_multiplier` alone — do not treat this JSON as an amount remap table.
 Some type ids appear more than once with different `exp` (spawn variants).
+
+## `overworld_enemy_exp.json`
+
+EXP awarded when fauna die on the top-down overworld (gun / Krill Puck), not
+during 2D flight stages. Hook: fauna death-drop helper `PlayerDeathFx`
+`@ 0x0801BA4C` (once per kill; shared with Phoenix). Gated by
+`.overworld_enemy_exp` and overworld field `gMode` (4–9 / 15–23).
+
+| Field | Meaning |
+|-------|---------|
+| `id` | `OVERWORLD_TYPE_*` name from [`overworld_enemy_ids.h`](../../../include/overworld_enemy_ids.h) (or integer) |
+| `anim` | `OVERWORLD_ANIM_*` name from the same header (or integer) |
+| `name` | Label for editors |
+| `exp` | `AddExperience` amount (also scaled by `.exp_multiplier`) |
+
+Lookup tries exact `(id, anim)`, then anim-only. Forest jumping spiders are
+`JUMPING_SPIDER` (`type=64`, `anim=36`).
 
 ## `impact_data.json`
 

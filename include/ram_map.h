@@ -7,6 +7,7 @@
 
 /* IWRAM — engine / player */
 extern u8 gMode;
+extern u8 gCurrentActorIndex;
 extern u8 *gPlayerPtr;
 extern u16 gHeldKeys;
 extern u16 gLastEncounterBattleId;
@@ -26,6 +27,7 @@ extern u8 gCameras[]; /* Camera array, stride 0x84 */
 extern u8 gPlayerBombs;
 extern u8 gPlayerLevel;
 extern u32 gPlayerExp;
+extern u32 gPlayerExpDisplay; /* Status/HUD mirror; HudSync copies from gPlayerExp */
 extern u8 gEnemyRemaining; /* Flight HUD quota / enemies left (not HP) */
 extern u32 gExpToCurrentLevel;
 extern u32 gExpToNextLevel;

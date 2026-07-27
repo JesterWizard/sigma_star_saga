@@ -2,8 +2,9 @@
 """Verify Phoenix revive hooks in the built ROM.
 
 Phoenix revives inside PlayerDeathFx, then PhoenixDeathFxSkipReturn remaps LR
-past the caller's DeleteActor. Do not veneer DeleteActor globally — a leftover
-skip softlocks overworld transitions (save plug).
+past the caller's DeleteActor. DeleteActor may be veneered for overworld EXP
+awards, but the replacement must always Continue — skipping softlocks the
+overworld (save plug).
 """
 
 from __future__ import annotations
@@ -106,11 +107,41 @@ def main() -> int:
         raise AssertionError(f"missing symbols: {', '.join(missing)}")
 
     assert_veneer(data, DEATH_FX_OFF, symbols["PlayerDeathFx__Replacement"], "PlayerDeathFx")
-    # DeleteActor must stay vanilla (no global skip veneer).
+    # DeleteActor may be veneered for overworld fauna EXP, but must always
+    # Continue (never skip) — skipping softlocks overworld transitions.
     baserom = (ROOT / "baserom.gba").read_bytes()
-    if data[DELETE_ACTOR_OFF : DELETE_ACTOR_OFF + 8] != baserom[DELETE_ACTOR_OFF : DELETE_ACTOR_OFF + 8]:
-        raise AssertionError("DeleteActor was patched; must remain vanilla for overworld safety")
-    print(f"PASS DeleteActor: vanilla prologue at 0x{DELETE_ACTOR_OFF:06X}")
+    delete_bytes = data[DELETE_ACTOR_OFF : DELETE_ACTOR_OFF + 8]
+    if delete_bytes == baserom[DELETE_ACTOR_OFF : DELETE_ACTOR_OFF + 8]:
+        print(f"PASS DeleteActor: vanilla prologue at 0x{DELETE_ACTOR_OFF:06X}")
+    else:
+        assert_veneer(
+            data,
+            DELETE_ACTOR_OFF,
+            symbols["DeleteActor__Replacement"],
+            "DeleteActor (overworld EXP)",
+        )
+        # Replacement must call Continue (relative BL is fine — no literal pool).
+        repl = symbols["DeleteActor__Replacement"] - 0x08000000
+        cont = symbols["DeleteActor__Continue"] - 0x08000000
+        blob = data[repl : repl + 0x40]
+        # Thumb BL encoding to Continue within the replacement body.
+        found_bl = False
+        for i in range(0, len(blob) - 3, 2):
+            hw1 = struct.unpack_from("<H", blob, i)[0]
+            hw2 = struct.unpack_from("<H", blob, i + 2)[0]
+            if (hw1 & 0xF800) != 0xF000 or (hw2 & 0xF800) != 0xF800:
+                continue
+            imm = ((hw1 & 0x7FF) << 12) | ((hw2 & 0x7FF) << 1)
+            if imm & (1 << 22):
+                imm -= 1 << 23
+            if (repl + i + 4 + imm) & ~1 == cont:
+                found_bl = True
+                break
+        if not found_bl:
+            raise AssertionError(
+                "DeleteActor__Replacement does not BL DeleteActor__Continue"
+            )
+        print("PASS DeleteActor__Replacement: BL DeleteActor__Continue")
 
     assert_word_ref(data, symbols, "DoPhoenixRevive", "gPhoenixReviveTailSkips")
     assert_word_ref(data, symbols, "PhoenixIsEquipped", "gGunLoadoutImpact")

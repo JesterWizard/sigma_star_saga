@@ -226,6 +226,7 @@ APPEND_TEXT void ClearPhoenixCrashLogLatch(void)
 APPEND_TEXT u32 DoPhoenixRevive(void)
 {
     u8 *player = gPlayerPtr;
+    u8 mode;
     u32 log = !gPhoenixCrashLogged;
 
     /* At most one TTY dump per crash (Apply may call this every frame). */
@@ -246,6 +247,18 @@ APPEND_TEXT u32 DoPhoenixRevive(void)
     {
         if (log)
             NoCashGBAPrint("PHX reject: no player");
+        return 0;
+    }
+    /*
+     * PlayerDeathFx is also the overworld fauna death-drop helper. While a
+     * fauna AI runs, gPlayerPtr is that fauna — never treat it as the ship.
+     * Mirror IsOverworldMode @ 0x080092F0 (modes 4–9 or 15–23).
+     */
+    mode = gMode;
+    if ((mode >= 4 && mode <= 9) || (mode >= 15 && mode <= 23))
+    {
+        if (log)
+            NoCashGBAPrint("PHX reject: overworld");
         return 0;
     }
     if (!PhoenixIsEquipped())

@@ -25,6 +25,7 @@ typedef struct {
     u8 all_tools;          /* Krill Puck / Boots / Girl Wings / Scanner / Warp */
     u8 exp_multiplier;     /* Scale AddExperience amount (1 = vanilla) */
     u8 custom_enemy_exp;   /* Build enemy_exp.json by-id catalog (not amount remap) */
+    u8 overworld_enemy_exp; /* Award EXP on overworld fauna kills (JSON catalog) */
     u8 custom_dialogue;    /* Use src_custom/dialogue banks (append + ptr redirect) */
     u8 custom_gun_data; /* Custom Impact Data from impact_data.json */
     u8 enemy_hp_bars;   /* Flight: HP bars under enemies (soft OAM only) */

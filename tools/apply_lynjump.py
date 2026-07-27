@@ -14,7 +14,7 @@ POIN_RE = re.compile(r"POIN\s+(\w+)")
 BOOL_RE = re.compile(
     r"\.(skip_flight_battle|always_run|always_max_health|always_max_bombs|"
     r"all_cannon_data|all_bullet_data|all_impact_data|"
-    r"all_key_items|all_tools|custom_enemy_exp|custom_dialogue|"
+    r"all_key_items|all_tools|custom_enemy_exp|overworld_enemy_exp|custom_dialogue|"
     r"custom_gun_data|enemy_hp_bars|disable_random_battles)\s*=\s*(TRUE|FALSE|true|false|1|0)",
     re.IGNORECASE,
 )
@@ -80,10 +80,12 @@ IMPACT_OWN_SYNC_END_OFF = 0x25996  # cmp r2, #0x4C (Gun ID 76)
 PLAYER_STATE_MACHINE_OFF = 0x25DB4
 PLAYER_HIT_UPDATE_OFF = 0x24E24
 PLAYER_SHIP_UPDATE_OFF = 0x15F34
+DAMAGE_APPLY_OFF = 0x5350
 PLAYER_DEATH_FX_OFF = 0x1BA4C
 DELETE_ACTOR_OFF = 0x6310
 DRAW_ACTORS_OFF = 0x6C0C
 INIT_ACTOR_PARAMS_OFF = 0x318B4
+ACTOR_DEATH_AWARD_OFF = 0x319B0
 # True random-encounter starter @ 0x1DA5C (not ScanEncounters / lure circles).
 # CodeBreaker "no random battles" writes 0x01 to IWRAM 0x03007685 (byte1 of the
 # cooldown word at 0x03007684); non-zero cooldown makes 0x1DA5C early-out.
@@ -247,6 +249,7 @@ def load_runtime_flags() -> dict[str, bool]:
         "all_key_items": False,
         "all_tools": False,
         "custom_enemy_exp": False,
+        "overworld_enemy_exp": False,
         "custom_dialogue": False,
         "custom_gun_data": True,
         "enemy_hp_bars": False,
@@ -1127,6 +1130,88 @@ def apply_enemy_hp_bars(rom: bytearray, owners: dict, symbols: dict, enabled: bo
     )
 
 
+def apply_overworld_enemy_exp(
+    rom: bytearray, owners: dict, symbols: dict, enabled: bool, gun_data: bool
+):
+    """Award EXP on overworld fauna kills.
+
+    Primary: DamageApply @ 0x5350 when HP drops to <=0 (HitScan/tool hits).
+    Fallback: PlayerDeathFx @ 0x1BA4C (fauna AI death-drop), piggybacked when
+    .custom_gun_data already veneered it for Phoenix.
+
+    Never veneer DeleteActor (too hot / Phoenix softlock history).
+    """
+    baserom = (ROOT / "baserom.gba").read_bytes()
+
+    def restore(off: int, length: int, tag: str) -> None:
+        for offset in range(off, off + length):
+            owners.pop(offset, None)
+        checked_write(
+            rom,
+            off,
+            baserom[off : off + length],
+            owners,
+            tag,
+        )
+
+    # Undo any prior hot DeleteActor / ActorDeathAward hooks from older builds.
+    restore(DELETE_ACTOR_OFF, VENEER_LEN, "runtime:overworld_enemy_exp:restore_delete")
+    restore(
+        ACTOR_DEATH_AWARD_OFF,
+        VENEER_LEN,
+        "runtime:overworld_enemy_exp:restore_death_award",
+    )
+
+    if not enabled:
+        restore(DAMAGE_APPLY_OFF, VENEER_LEN, "runtime:overworld_enemy_exp:restore_dmg")
+        print("runtime: overworld_enemy_exp=FALSE")
+        return
+
+    dmg_name = "DamageApply__Replacement"
+    if dmg_name not in symbols:
+        raise KeyError(f"symbol {dmg_name} not found (needed for overworld_enemy_exp)")
+    for offset in range(DAMAGE_APPLY_OFF, DAMAGE_APPLY_OFF + VENEER_LEN):
+        owners.pop(offset, None)
+    apply_veneer(
+        rom,
+        owners,
+        DAMAGE_APPLY_OFF,
+        symbols[dmg_name],
+        "runtime:overworld_enemy_exp:damage_apply",
+    )
+    print(
+        f"runtime: overworld_enemy_exp=TRUE → DamageApply 0x{symbols[dmg_name]:08X}"
+    )
+
+    death_name = "PlayerDeathFx__Replacement"
+    if death_name not in symbols:
+        raise KeyError(f"symbol {death_name} not found (needed for overworld_enemy_exp)")
+
+    hook = symbols[death_name] | 1
+    expected = SHOOTER_FRAME_VENEER_HEAD + struct.pack("<I", hook)
+    cur = bytes(rom[PLAYER_DEATH_FX_OFF : PLAYER_DEATH_FX_OFF + VENEER_LEN])
+    if cur == expected:
+        print(
+            "runtime: overworld_enemy_exp=TRUE → piggyback PlayerDeathFx "
+            f"0x{symbols[death_name]:08X}"
+        )
+    else:
+        for offset in range(PLAYER_DEATH_FX_OFF, PLAYER_DEATH_FX_OFF + VENEER_LEN):
+            owners.pop(offset, None)
+        apply_veneer(
+            rom,
+            owners,
+            PLAYER_DEATH_FX_OFF,
+            symbols[death_name],
+            "runtime:overworld_enemy_exp:death_fx",
+        )
+        print(
+            "runtime: overworld_enemy_exp=TRUE → PlayerDeathFx "
+            f"0x{symbols[death_name]:08X}"
+        )
+    del gun_data  # reserved for call-site symmetry / future gating
+
+
 def apply_disable_random_battles(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
     """No-op TryStartRandomBattle @ 0x1DA5C when enabled.
 
@@ -1202,6 +1287,13 @@ def main():
     apply_custom_dialogue(rom, owners, symbols, flags["custom_dialogue"])
     apply_suction(rom, owners, symbols, flags["custom_gun_data"])
     apply_enemy_hp_bars(rom, owners, symbols, flags["enemy_hp_bars"])
+    apply_overworld_enemy_exp(
+        rom,
+        owners,
+        symbols,
+        flags["overworld_enemy_exp"],
+        flags["custom_gun_data"],
+    )
     apply_disable_random_battles(rom, owners, symbols, flags["disable_random_battles"])
 
     rom_path.write_bytes(rom)

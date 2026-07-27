@@ -36,6 +36,28 @@ APPEND_TEXT u32 LookupEnemyExpById(u16 enemy_id, u32 vanilla_amount)
     return vanilla_amount;
 }
 
+APPEND_TEXT u32 LookupOverworldEnemyExp(u16 enemy_id, u16 anim)
+{
+    u16 i;
+    u16 count = gOverworldEnemyExpCount;
+    u32 by_anim = 0;
+
+    for (i = 0; i < count; i++)
+    {
+        u16 id = gOverworldEnemyExp[i].id;
+        u16 a = gOverworldEnemyExp[i].anim;
+        u16 exp = gOverworldEnemyExp[i].exp;
+
+        if (id == enemy_id && a == anim)
+            return exp;
+        /* Anim-only fallback for fauna models (avoids projectile type collisions). */
+        if (by_anim == 0 && a == anim && anim != 0)
+            by_anim = exp;
+    }
+
+    return by_anim;
+}
+
 APPEND_TEXT u8 RemapCustomImpactIcon(u8 type, u8 local)
 {
     u16 i;

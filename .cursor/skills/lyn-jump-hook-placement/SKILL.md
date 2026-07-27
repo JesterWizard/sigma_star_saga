@@ -17,6 +17,10 @@ replacements, runtime-gated behavior).
 Decompile the touched vanilla functions into `src/`, then put the hack body
 here under `src_custom/`. Do not LynJump opaque ROM without a decomp.
 
+**Language:** read `.cursor/skills/prefer-c-over-asm/SKILL.md`. Implement hook
+logic in C; use ASM only for unavoidable fixed-address glue (veneers,
+`__Continue` trampolines, tiny gated patches).
+
 ## Core Rule
 
 - Do not put new hack bodies in vanilla `src/*.c` or by rewriting large peels in
@@ -25,8 +29,8 @@ here under `src_custom/`. Do not LynJump opaque ROM without a decomp.
   - `src_custom/<feature>_hooks.c` — `APPEND_TEXT` replacements / helpers
   - `src_custom/<feature>_data.c` — `APPEND_RODATA` / `APPEND_DATA` tables when needed
   - optional `include/<feature>.h` for shared constants and prototypes
-- Keep vanilla / peel asm as the call site only when an in-place stub or
-  trampoline must live at a fixed ROM address.
+- Prefer a C `__Replacement` over new hand-written `.s` logic. Keep peel /
+  trampoline asm only when an in-place stub must live at a fixed ROM address.
 - Gate behavior with `configs/runtime.c` + `include/runtime.h` whenever the
   feature should be toggleable.
 
@@ -65,7 +69,7 @@ mention the entrypoint.
 | Long-jump veneer | Replace a whole Thumb function (or first 8–16 bytes) with `Name__Replacement` | `UpdateShooterFrame__Replacement` @ `0x14E70`; gem updates via `apply_veneer` |
 | Icon / special veneer | Prolog must preserve extra args (e.g. out-ptr in `r3`) | `GetGunDataIconFrame__Replacement` + `apply_icon_veneer` |
 | Replacement + `__Continue` | Steal prologue, run custom code, resume vanilla | `ExpGemUpdate__Replacement` → `ExpGemUpdate__Continue` |
-| In-place asm | Tiny fixed-site patch that stays in the 8MB image | `asm/flight_skip.s` @ `0x1749C`, gated by restore-from-baserom |
+| In-place asm (last resort) | Only if a C replacement cannot fit; tiny fixed-site patch in the 8MB image | `asm/flight_skip.s` @ `0x1749C`, gated by restore-from-baserom |
 | Pointer / table redirect | Relocate or extend a ROM table in append space | Suction `gImpactJumpTable` / `gImpactDescTable` |
 | Dialogue / JSON tables | Content banks, not function hooks | `custom_dialogue`, `custom_enemy_exp` |
 
@@ -90,7 +94,7 @@ Default veneer (Thumb): `ldr r3, [pc, #0]; bx r3; .word hook|1` — see
 ## Workflow
 
 1. Identify the vanilla entrypoint (ROM offset + Thumb signature).
-2. Decide pattern: veneer, continue-trampoline, in-place asm, or table redirect.
+2. Decide pattern: prefer C veneer / `__Continue`; in-place asm only as last resort; or table redirect.
 3. Place the body in `src_custom/<feature>_hooks.c` (one feature / related
    cluster per file; reuse an existing file if the same subsystem already owns
    the hook).

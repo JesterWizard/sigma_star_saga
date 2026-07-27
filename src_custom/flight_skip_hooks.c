@@ -138,8 +138,8 @@ APPEND_TEXT void UpdateShooterFrame__Replacement(void)
 }
 
 /* Veneered over AddExperience @ 0x0800FDC4 when exp_multiplier != 1.
- * Must match vanilla level-up control flow — gems already pass the full
- * actor EXP pool (actor+0x3C), not pool/10. Do not amount-remap here. */
+ * Must match vanilla: only mutate gPlayerExp / level. Do NOT write
+ * gPlayerExpDisplay — HudSync copies + RebuildExpDigits when they differ. */
 APPEND_TEXT bool8 AddExperience__Replacement(u32 amount)
 {
     u8 level = gPlayerLevel;

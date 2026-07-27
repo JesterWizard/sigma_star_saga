@@ -156,12 +156,13 @@ AbsorbShot__Continue:
 	.thumb
 	.align 2
 
-@ PlayerDeathFx replacement: log crash entry, revive (or skip if already
-@ revived this map), then remap LR past the caller's DeleteActor tail.
+@ PlayerDeathFx / overworld fauna death-drop @ 0x0801BA4C.
+@ Award overworld kill EXP first, then Phoenix revive / vanilla drop.
 	.global PlayerDeathFx__Replacement
 	.thumb_func
 PlayerDeathFx__Replacement:
 	push {lr}
+	bl TryAwardOverworldFaunaKillExp
 	bl LogPhoenixDeathFxEntry
 	bl PhoenixDeathFxShouldSkip
 	cmp r0, #0

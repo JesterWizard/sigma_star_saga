@@ -52,6 +52,9 @@ void TickPhoenixRevivePopup(void);
 u32 PlayerLooksCrashed(u8 *player);
 void LogPhoenixDeathFxEntry(void);
 void LogPhoenixCrashProbe(const char *tag);
+/* Overworld fauna kill EXP (DamageApply primary + PlayerDeathFx fallback). */
+void TryAwardOverworldFaunaKillExp(void);
+bool8 DamageApply__Replacement(u8 index, s32 damage, u16 flags);
 void PlayerStateMachine__Replacement(void);
 void PlayerHitUpdate__Replacement(void);
 void PlayerShipUpdate__Replacement(void);

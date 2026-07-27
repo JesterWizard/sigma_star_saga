@@ -16,6 +16,7 @@ hooks against opaque absolute addresses. That caused soft-OAM / VRAM corruption
 and frame-rate collapse when HP bars were added without decomping `DrawActors`.
 
 Also read and follow:
+- `.cursor/skills/prefer-c-over-asm/SKILL.md` — implement in C; avoid new ASM
 - `.cursor/skills/lyn-jump-hook-placement/SKILL.md` — where hook bodies go
 - `.cursor/skills/ram-map/SKILL.md` — when new RAM is needed
 
@@ -44,6 +45,8 @@ and linked at their vanilla addresses. Still implement the hack in `src_custom/`
 ## Step 2 — Decompile Into `src/`
 
 - Write readable C under `src/<area>.c` (and `include/<area>.h` as needed).
+- **C, not ASM** — do not leave or rewrite the target as a hand-maintained `.s`
+  body; peels exist so the function lives in C.
 - Match pret/pokeemerald style used by existing peels (see `src/level_up.c`).
 - Name globals via the ram-map skill; do not hard-code `0x03…` / `0x02…` in new C.
 - Prefer accurate control flow and types over byte-identical matching on the first

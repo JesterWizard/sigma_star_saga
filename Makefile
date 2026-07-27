@@ -99,6 +99,8 @@ C_SRCS := \
 	$(C_SUBDIR)/level_up.c \
 	$(C_SUBDIR)/actor.c \
 	$(C_SUBDIR)/actor_draw.c \
+	$(C_SUBDIR)/actor_death.c \
+	$(C_SUBDIR)/damage.c \
 	$(C_SUBDIR)/overworld_encounters.c
 CUSTOM_C_SRCS := \
 	$(CUSTOM_C_SUBDIR)/nocash.c \
@@ -107,7 +109,8 @@ CUSTOM_C_SRCS := \
 	$(CUSTOM_C_SUBDIR)/suction_hooks.c \
 	$(CUSTOM_C_SUBDIR)/player_hit_hooks.c \
 	$(CUSTOM_C_SUBDIR)/enemy_hp_bar_hooks.c \
-	$(CUSTOM_C_SUBDIR)/random_battle_hooks.c
+	$(CUSTOM_C_SUBDIR)/random_battle_hooks.c \
+	$(CUSTOM_C_SUBDIR)/overworld_enemy_exp_hooks.c
 CONFIG_SRCS := $(CONFIG_SUBDIR)/runtime.c
 # Region fragments + pool inventories are .included by ram_map.s (not assembled alone).
 RAM_MAP_FRAGMENTS := \

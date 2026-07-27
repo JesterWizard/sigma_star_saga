@@ -109,8 +109,8 @@ APPEND_TEXT u32 PhoenixDeathFxSkipReturn(u32 lr)
     }
 }
 
-/* Pass-through: ship deletion is skipped via PhoenixDeathFxSkipReturn remaps.
- * Never suppress arbitrary actors — that softlocks overworld transitions. */
+/* DeleteActor__Replacement kept as a pass-through symbol for Phoenix verify.
+ * Overworld EXP no longer veneers DeleteActor (too hot). */
 APPEND_TEXT void DeleteActor__Replacement(u32 actor)
 {
     DeleteActor__Continue(actor);
