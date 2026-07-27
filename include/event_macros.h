@@ -125,6 +125,17 @@
 /* Helper_09070 — screen fade / transition. */
 #define FADE_SCREEN(...)
 
+/* --- Audio (GAX; requires .custom_gax_audio) -------------------------------- */
+
+/* Play catalog BGM id (sound/music/*.json). */
+#define PLAY_BGM(...)
+#define STOP_BGM()
+
+/* Play catalog voice id via GAX_SPEECH (sound/voice/*.json). */
+#define PLAY_VOICE(...)
+#define PLAY_VOICE_PAN(...)
+#define STOP_VOICE()
+
 /* gUnk_03000BF4 &= mask (palette / FX bits). */
 #define PALETTE_AND(...)
 

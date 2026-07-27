@@ -23,6 +23,8 @@ EVENT_SCRIPT_REPLACEMENT(0x0805C9E1, scene_05C9E1)
   /* === step 0 — enable control, wait counter, kick scroll vel ========= */
   SET_ACTOR_CTRL(1, 0)
   WAIT_COUNTER_GT(0x2C)
+  PLAY_BGM(0)
+  PLAY_VOICE(0)
   SET_SCROLL_VEL(0x40000, 0)
   FADE_SCREEN(0, 2, 1, 0)
   SET_CUTSCENE_STEP(1)

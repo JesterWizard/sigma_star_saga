@@ -1,20 +1,56 @@
 #include "global.h"
 #include "dialogue.h"
+#include "gax.h"
 #include "ram_map.h"
 
 /*
- * Talk bank helpers — decompiled from baserom @ 0x08010808–0x080109CC.
+ * Talk bank helpers — decompiled from baserom @ 0x080102BC–0x080109CC.
  *
  * Linked into append (.text). Vanilla ROM still owns the original bytes until
  * a LynJump redirects callers; custom / cutscene peels can call these by name.
  */
 
 typedef void (*TalkHelperFunc)(void);
-typedef const u8 *(*TalkAdvanceFunc)(const u8 *stream);
 
 #define TalkHelper_10248 ((TalkHelperFunc)0x08010249)
-#define TalkAdvance_102BC ((TalkAdvanceFunc)0x080102BD)
 #define TalkHelper_10364 ((TalkHelperFunc)0x08010365)
+
+/* EXPR_ALT (expr != 0): optional SFX keyed by speaker id 6..20 (vanilla table). */
+static const u8 sTalkExprSfx[15] = {
+    0x7A, 0x7B, 0x00, 0x00, 0x00, 0x00, 0x00, 0x85, 0x85, 0x85, 0x85, 0x00, 0x76, 0x75,
+    0x83,
+};
+
+/* Vanilla @ 0x080102BC — portrait header consume. */
+const u8 *TalkAdvance(const u8 *stream)
+{
+    u8 speaker;
+    u8 side;
+    u8 expr;
+    u8 sfx;
+
+    speaker = stream[1];
+    side = stream[2];
+    expr = stream[3];
+
+    gTalkExtra = speaker;
+    gTalkPortraitSide = side;
+    gTalkPortraitExpr = expr;
+
+    stream += 5;
+
+    if (expr == 0)
+        return stream;
+
+    if (speaker >= 6 && speaker <= 20)
+    {
+        sfx = sTalkExprSfx[speaker - 6];
+        if (sfx != 0)
+            PlaySfx(sfx, 3);
+    }
+
+    return stream;
+}
 
 void StartTalkPtr(const u8 *stream, u8 paramA, u8 paramB)
 {
@@ -40,7 +76,7 @@ void StartTalkPtr(const u8 *stream, u8 paramA, u8 paramB)
 
     if (gTalkStreamPtr[0] == 7)
     {
-        gTalkStreamPtr = TalkAdvance_102BC(gTalkStreamPtr);
+        gTalkStreamPtr = TalkAdvance(gTalkStreamPtr);
         TalkHelper_10364();
     }
 

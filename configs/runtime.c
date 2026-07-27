@@ -14,12 +14,13 @@ const RuntimeConfig gRuntimeConfigRom __attribute__((section(".runtime_config"))
     .exp_multiplier = 3,
     .custom_enemy_exp = FALSE,
     .overworld_enemy_exp = TRUE,
-    .custom_dialogue = FALSE,
+    .custom_dialogue = TRUE, /* needed for TALK VOICE(...) cues in custom banks */
     .custom_gun_data = TRUE,
     .enemy_hp_bars = FALSE,
     .disable_random_battles = TRUE,
     .custom_cutscene_ch1 = TRUE,
     .custom_cutscene_stage = TRUE,
     .custom_talk_helpers = FALSE,
-    .custom_event_runner = FALSE, /* interpret compile_events opcode tables */
+    .custom_event_runner = TRUE, /* interpret compile_events opcode tables */
+    .custom_gax_audio = TRUE, /* GAX_SPEECH + sound/ catalogs + PLAY_BGM/VOICE */
 };

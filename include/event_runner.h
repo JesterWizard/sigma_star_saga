@@ -45,6 +45,10 @@ enum {
     EVOP_WALK_ACTOR_DIR = 37,   /* arg0 = index|(dir<<8), arg1 = speed */
     EVOP_MOVE_ACTOR = 38,       /* arg0 = index, arg1 = x|(y<<16) */
     EVOP_WALK_ACTOR = 39,       /* arg0 = index|(speed packed), arg1 = x|y */
+    EVOP_PLAY_BGM = 40,         /* arg0 = catalog music id */
+    EVOP_STOP_BGM = 41,
+    EVOP_PLAY_VOICE = 42,       /* arg0 = catalog voice id, arg1 = pan */
+    EVOP_STOP_VOICE = 43,
 };
 
 typedef struct {

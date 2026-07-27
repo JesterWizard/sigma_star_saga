@@ -4,6 +4,7 @@
 #include "cutscene_ch1.h"
 #include "dialogue.h"
 #include "event_runner.h"
+#include "gax_audio.h"
 #include "ram_map.h"
 #include "runtime.h"
 
@@ -342,6 +343,22 @@ static u8 Runner_ExecSegment(const EventScript *script, u16 start)
                 (u16)(op->arg1 & 0xFFFF),
                 (u16)((op->arg1 >> 16) & 0xFFFF),
                 op->arg0 & ~0xFF);
+            break;
+
+        case EVOP_PLAY_BGM:
+            GaxPlayMusic((u16)op->arg0);
+            break;
+
+        case EVOP_STOP_BGM:
+            GaxStopMusic();
+            break;
+
+        case EVOP_PLAY_VOICE:
+            GaxPlayVoice((u16)op->arg0, (s16)op->arg1);
+            break;
+
+        case EVOP_STOP_VOICE:
+            GaxStopVoice();
             break;
 
         default:

@@ -10,20 +10,21 @@
  * No sprite cutscene FSM in vanilla — actors are already on the map;
  * talk records (0x22/0x26) carry no x/y. Do not invent SPAWN/WALK coords.
  * compile_dialogue.py packs TALK only.
+ *
+ * Voice: per-line VOICE(id) / VOICE_STOP on TALK (needs custom_dialogue +
+ * custom_gax_audio). Catalog: GAX_VOICE_TIERNEY_BRIEFING / id 1.
  */
 
 EVENT_SCRIPT_REPLACEMENT(0x0805D06C, scene_05D06C)
-  /* Vanilla: StartTalkById(67, 4, 3) */
-
-  TALK(SPEAKER_RECKER, SIDE_LEFT, EXPR_NEUTRAL,
+  TALK(SPEAKER_RECKER, SIDE_LEFT, EXPR_NEUTRAL, VOICE(GAX_VOICE_TIERNEY_BRIEFING),
       "Commander Tierney, Sir!")
-  TALK(SPEAKER_TIERNEY, SIDE_RIGHT, EXPR_NEUTRAL,
+  TALK(SPEAKER_TIERNEY, SIDE_RIGHT, EXPR_NEUTRAL, VOICE_STOP,
       "At ease Recker.\nYou know I like to keep things informal.")
   TALK(SPEAKER_RECKER, SIDE_LEFT, EXPR_NEUTRAL,
       "Yes sir.")
-  TALK(SPEAKER_TIERNEY, SIDE_RIGHT, EXPR_NEUTRAL,
+  TALK(SPEAKER_TIERNEY, SIDE_RIGHT, EXPR_NEUTRAL, VOICE(1),
       "Let me be the first to congratulate you on a job well done. Those Krill monsters'll think twice after today.")
-  TALK(SPEAKER_RECKER, SIDE_LEFT, EXPR_NEUTRAL,
+  TALK(SPEAKER_RECKER, SIDE_LEFT, EXPR_NEUTRAL, VOICE_STOP,
       "Thank you sir.\nBut we lost good men.",
       "Some were old friends."
   )

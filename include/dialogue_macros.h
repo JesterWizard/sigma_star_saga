@@ -16,8 +16,13 @@
 #define DIALOGUE_SCRIPT(rom_addr, name)
 #define END_DIALOGUE_SCRIPT()
 
-/* TALK(speaker, side, expr, "page", "page", ...) */
+/* TALK(speaker, side, expr[, VOICE(id)|VOICE_STOP], "page", ...) */
 #define TALK(...)
+
+/* Optional voice cue after expr — catalog id from sound/voice/*.json.
+ * Requires .custom_dialogue + .custom_gax_audio. Omit = leave audio unchanged. */
+#define VOICE(...)
+#define VOICE_STOP
 
 /* System / UI line with no portrait header. */
 #define TEXT(...)

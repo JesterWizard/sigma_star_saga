@@ -5,6 +5,14 @@
 
 /* Absolute addresses from asm/ram_map*.s (ygodm8-style). */
 
+/* IWRAM — GAX */
+#include "gax.h"
+extern Gax2Params gGaxParams; /* @ 0x030008C0 */
+extern void *gGaxCurrentSong; /* @ 0x030008B0 */
+extern u8 gGaxMixBuffer[]; /* @ 0x03005910, 0x1000 bytes (IWRAM) */
+extern void *gGaxWorkspacePtr; /* @ 0x0300775C — pointer slot, not the buffer */
+extern u16 gGaxMusicVol; /* @ 0x030011FC */
+
 /* IWRAM — engine / player */
 extern u8 gMode;
 extern u8 gCurrentActorIndex;
@@ -49,7 +57,9 @@ extern u8 gTalkPagePos2;
 extern u8 gTalkLayoutCmp;
 extern u8 gTalkActive;
 extern u8 gTalkGate;
-extern u8 gTalkExtra; /* StartTalkByIdEx latch @ 0x0300001C */
+extern u8 gTalkExtra; /* StartTalkByIdEx latch / TalkAdvance speaker @ 0x0300001C */
+extern u8 gTalkPortraitSide; /* TalkAdvance side @ 0x0300001D */
+extern u8 gTalkPortraitExpr; /* TalkAdvance expr @ 0x0300001E */
 extern u8 gPlayerBombs;
 extern u8 gPlayerLevel;
 extern u32 gPlayerExp;
@@ -93,8 +103,9 @@ extern u8 gHpBarTilesReady;
 extern u32 gHpBarTileScratch[];
 extern u8 gChargeShotPhase;
 extern u16 gChargeShotTimer;
+extern u8 gGaxSpeechInstalled;
 
-/* Last pool-backed vanilla IWRAM global (0x0300775C); free pool starts at 0x03007780. */
+/* Last pool-backed vanilla IWRAM global before free pool (see gGaxWorkspacePtr). */
 extern u8 gVanillaIwramHighWater;
 
 /* Region free-space cursors (assembly .set symbols). */

@@ -18,6 +18,8 @@ tools/gbafix/
 tools/ramscrgen/
 tools/gbagfx/
 tools/src/
+tools/bin/
+
 .DS_Store
 .idea/
 Thumbs.db

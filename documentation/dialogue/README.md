@@ -68,7 +68,8 @@ Each `scene_XXXXXX.c` is one `#` entry (`XXXXXX` = vanilla file offset). `EMPTY(
 |-------|---------|
 | `EVENT_SCRIPT_REPLACEMENT(rom_addr, name)` / `END_EVENT_SCRIPT()` | Scene wrapper (preferred; includes event macros via `event_macros.h`) |
 | `DIALOGUE_SCRIPT(rom_addr, name)` / `END_DIALOGUE_SCRIPT()` | Legacy talk-only wrapper (still accepted by `compile_dialogue.py`) |
-| `TALK(speaker, side, expr, "page", …)` | Portrait line; one string per page |
+| `TALK(speaker, side, expr[, VOICE(id)\|VOICE_STOP], "page", …)` | Portrait line; optional voice cue |
+| `VOICE(id)` / `VOICE_STOP` | Play / stop GAX speech when that `TALK` starts (needs `custom_gax_audio`) |
 | `TEXT("…")` | System / UI line (no talk header) |
 | `CHOICE()` | Yes/No prompt after a `TEXT` page (emits `\x0c?`) |
 | `CHAPTER_TITLE("…")` | Chapter title card |

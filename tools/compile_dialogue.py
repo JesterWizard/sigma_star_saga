@@ -4,6 +4,9 @@
 Emits a C file with gDialogueBank0..6 (each ending in '#~\\0') for linking past
 8MB. apply_lynjump.py redirects the vanilla bank pointer table when
 runtime.custom_dialogue is TRUE.
+
+Optional TALK voice cues (VOICE(id) / VOICE_STOP) emit gTalkVoiceCues[] for
+TalkAdvance hooks when .custom_gax_audio is on.
 """
 
 from __future__ import annotations
@@ -72,11 +75,23 @@ SCRIPT_RE = re.compile(
     r"(?:END_DIALOGUE_SCRIPT|END_EVENT_SCRIPT)\s*\(\s*\)",
     re.DOTALL,
 )
-# Macro call: NAME( ... ) with nested parens only in strings — keep simple.
 # Event choreography macros are ignored; only talk-bank ops emit bytes.
 CALL_RE = re.compile(
     r"\b(TALK|TEXT|CHAPTER_TITLE|CHOICE|EMPTY)\s*\(",
 )
+VOICE_CALL_RE = re.compile(r"^VOICE\s*\(\s*(.+)\s*\)$")
+VOICE_STOP_ID = 0xFFFF
+
+
+def load_voice_name_map() -> dict[str, int]:
+    """GAX_VOICE_* from include/gax_catalog.h (may be empty before first catalog build)."""
+    path = REPO / "include" / "gax_catalog.h"
+    names: dict[str, int] = {"VOICE_STOP": VOICE_STOP_ID}
+    if not path.is_file():
+        return names
+    for m in re.finditer(r"#define\s+(GAX_VOICE_\w+)\s+(\d+)", path.read_text()):
+        names[m.group(1)] = int(m.group(2))
+    return names
 
 
 def decode_c_string(s: str) -> bytes:
@@ -156,6 +171,11 @@ def parse_string_arg(token: str) -> bytes:
     return decode_c_string(token[1:-1])
 
 
+def is_string_arg(token: str) -> bool:
+    t = token.strip()
+    return len(t) >= 2 and t[0] == '"' and t[-1] == '"'
+
+
 def resolve_speaker(token: str) -> int:
     token = token.strip()
     if token in SPEAKER_BY_NAME:
@@ -181,6 +201,21 @@ def resolve_expr(token: str) -> int:
     if token in EXPR_BY_NAME:
         return EXPR_BY_NAME[token]
     return int(token, 0)
+
+
+def resolve_voice_arg(token: str, voice_names: dict[str, int]) -> int:
+    token = token.strip()
+    if token == "VOICE_STOP":
+        return VOICE_STOP_ID
+    m = VOICE_CALL_RE.match(token)
+    if not m:
+        raise ValueError(f"expected VOICE(id) or VOICE_STOP, got {token!r}")
+    inner = m.group(1).strip()
+    if inner in voice_names:
+        return voice_names[inner]
+    if inner.startswith("0x") or inner.isdigit():
+        return int(inner, 0) & 0xFFFF
+    raise ValueError(f"unknown voice id {inner!r}")
 
 
 def find_matching_paren(text: str, open_idx: int) -> int:
@@ -210,14 +245,18 @@ def find_matching_paren(text: str, open_idx: int) -> int:
     raise ValueError("unbalanced parentheses in dialogue macro")
 
 
-def encode_events(body: str) -> bytes:
-    """Compile macro body (between SCRIPT and END) to entry bytes
-    including the leading '#'. Event choreography macros are skipped."""
-    # Strip C comments.
+def encode_events(
+    body: str, voice_names: dict[str, int]
+) -> tuple[bytes, list[tuple[int, int]]]:
+    """Compile macro body to entry bytes (leading '#') + voice cues.
+
+    Each cue is (offset_within_entry, voice_id) pointing at the TALK header 0x07.
+    """
     body = re.sub(r"/\*.*?\*/", "", body, flags=re.DOTALL)
     body = re.sub(r"//.*?$", "", body, flags=re.MULTILINE)
 
     out = bytearray(b"#")
+    cues: list[tuple[int, int]] = []
     pos = 0
     saw_content = False
     while True:
@@ -232,9 +271,7 @@ def encode_events(body: str) -> bytes:
 
         if name == "EMPTY":
             saw_content = True
-            # bare '#' already written; nothing else
         elif name == "CHOICE":
-            # Yes/No prompt opcode: must follow a page-end `\x0c`.
             if not out.endswith(b"\x0c"):
                 out.append(0x0C)
             out.append(ord("?"))
@@ -243,36 +280,48 @@ def encode_events(body: str) -> bytes:
             if len(args) < 1:
                 raise ValueError(f"{name} needs at least one string")
             pages = [parse_string_arg(a) for a in args]
-            for i, page in enumerate(pages):
+            for page in pages:
                 out.extend(page)
                 out.append(0x0C)
             saw_content = True
         elif name == "TALK":
             if len(args) < 4:
-                raise ValueError("TALK needs speaker, side, expr, and ≥1 page")
+                raise ValueError(
+                    "TALK needs speaker, side, expr, optional VOICE(...), and ≥1 page"
+                )
             speaker = resolve_speaker(args[0])
             side = resolve_side(args[1])
             expr = resolve_expr(args[2])
-            pages = [parse_string_arg(a) for a in args[3:]]
+            i = 3
+            voice: int | None = None
+            while i < len(args) and not is_string_arg(args[i]):
+                voice = resolve_voice_arg(args[i], voice_names)
+                i += 1
+            if i >= len(args):
+                raise ValueError("TALK needs ≥1 page string")
+            pages = [parse_string_arg(a) for a in args[i:]]
+            header_off = len(out)
             out.append(0x07)
             out.append(speaker & 0xFF)
             out.append(side & 0xFF)
             out.append(expr & 0xFF)
             out.append(0x07)
-            for i, page in enumerate(pages):
-                if i:
+            for pi, page in enumerate(pages):
+                if pi:
                     out.append(0x0C)
                 out.extend(page)
+            if voice is not None:
+                cues.append((header_off, voice))
             saw_content = True
         pos = close + 1
 
-    if not saw_content:
-        # Truly empty body → EMPTY stub
-        pass
-    return bytes(out)
+    del saw_content  # kept for symmetry with prior EMPTY handling
+    return bytes(out), cues
 
 
-def parse_scene_file(path: Path) -> tuple[int, bytes]:
+def parse_scene_file(
+    path: Path, voice_names: dict[str, int]
+) -> tuple[int, bytes, list[tuple[int, int]]]:
     text = path.read_text(encoding="utf-8")
     m = SCRIPT_RE.search(text)
     if not m:
@@ -280,31 +329,38 @@ def parse_scene_file(path: Path) -> tuple[int, bytes]:
             f"{path}: no DIALOGUE_SCRIPT/EVENT_SCRIPT_REPLACEMENT … END_* block"
         )
     addr = int(m.group(1), 16)
-    body = m.group(3)
-    return addr, encode_events(body)
+    blob, cues = encode_events(m.group(3), voice_names)
+    return addr, blob, cues
 
 
-def collect_banks(src_dir: Path) -> list[bytes]:
+def collect_banks(
+    src_dir: Path, voice_names: dict[str, int]
+) -> tuple[list[bytes], list[tuple[int, int, int]]]:
+    """Returns banks and cues as (bank_index, byte_offset, voice_id)."""
     banks: list[bytes] = []
-    for dirname in CHAPTER_DIRS:
+    all_cues: list[tuple[int, int, int]] = []
+    for bank_i, dirname in enumerate(CHAPTER_DIRS):
         chapter = src_dir / dirname
         if not chapter.is_dir():
             raise FileNotFoundError(f"missing chapter dir: {chapter}")
         scenes = sorted(chapter.glob("scene_*.c"))
         if not scenes:
             raise ValueError(f"no scenes in {chapter}")
-        parts: list[tuple[int, bytes]] = []
+        parts: list[tuple[int, bytes, list[tuple[int, int]]]] = []
         for path in scenes:
-            addr, blob = parse_scene_file(path)
-            parts.append((addr, blob))
+            addr, blob, cues = parse_scene_file(path, voice_names)
+            parts.append((addr, blob, cues))
         parts.sort(key=lambda t: t[0])
         bank = bytearray()
-        for _, blob in parts:
+        for _, blob, cues in parts:
+            base = len(bank)
             bank.extend(blob)
+            for off, vid in cues:
+                all_cues.append((bank_i, base + off, vid))
         bank.extend(b"#~\x00")
         banks.append(bytes(bank))
         print(f"  {dirname}: {len(parts)} scenes, {len(bank)} bytes")
-    return banks
+    return banks, all_cues
 
 
 def c_byte_array(name: str, data: bytes) -> str:
@@ -318,11 +374,20 @@ def c_byte_array(name: str, data: bytes) -> str:
     return "\n".join(lines)
 
 
-def emit_c(banks: list[bytes]) -> str:
+def emit_c(banks: list[bytes], cues: list[tuple[int, int, int]]) -> str:
     parts = [
         "/* Auto-generated by tools/compile_dialogue.py — do not edit. */",
         '#include "gba/types.h"',
         '#include "runtime.h"',
+        "",
+        "/* Mirrors TalkVoiceCue in include/dialogue.h (avoid gDialogueIdRanges macro). */",
+        "typedef struct {",
+        "    const u8 *header;",
+        "    u16 voiceId;",
+        "} TalkVoiceCue;",
+        "",
+        "extern const TalkVoiceCue gTalkVoiceCues[];",
+        "extern const u16 gTalkVoiceCueCount;",
         "",
     ]
     for i, bank in enumerate(banks):
@@ -333,15 +398,25 @@ def emit_c(banks: list[bytes]) -> str:
         parts.append(f"    gDialogueBank{i},")
     parts.append("};")
     parts.append("")
-    # Script-ID ranges for optional range-table patch (lo/hi inclusive).
     parts.append("APPEND_RODATA const u32 gDialogueIdRanges[14] = {")
     lo = 0
     for bank in banks:
-        # Count '#' entries excluding terminator '#~'
         n = bank.count(ord("#")) - 1
         hi = lo + n - 1
         parts.append(f"    {lo}, {hi},")
         lo = hi + 1
+    parts.append("};")
+    parts.append("")
+
+    parts.append(f"APPEND_RODATA const u16 gTalkVoiceCueCount = {len(cues)};")
+    parts.append("APPEND_RODATA const TalkVoiceCue gTalkVoiceCues[] = {")
+    if not cues:
+        parts.append("    {0, 0},")
+    else:
+        for bank_i, off, vid in cues:
+            parts.append(
+                f"    {{ &gDialogueBank{bank_i}[{off}], 0x{vid:04X} }},"
+            )
     parts.append("};")
     parts.append("")
     return "\n".join(parts)
@@ -367,13 +442,14 @@ def main() -> int:
         print(f"error: {args.src} not found", file=sys.stderr)
         return 1
 
+    voice_names = load_voice_name_map()
     print(f"Compiling dialogue from {args.src}")
-    banks = collect_banks(args.src)
-    text = emit_c(banks)
+    banks, cues = collect_banks(args.src, voice_names)
+    text = emit_c(banks, cues)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(text, encoding="utf-8")
     total = sum(len(b) for b in banks)
-    print(f"Wrote {args.out} ({total} bytes across 7 banks)")
+    print(f"Wrote {args.out} ({total} bytes across 7 banks, {len(cues)} voice cues)")
     return 0
 
 

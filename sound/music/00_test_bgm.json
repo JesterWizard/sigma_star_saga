@@ -1,0 +1,6 @@
+{
+  "id": 0,
+  "name": "test_bgm",
+  "vanilla_module": "0x081310F0",
+  "note": "Vanilla song module pointer for reliable demo playback"
+}

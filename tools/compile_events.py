@@ -38,6 +38,7 @@ CHOREO_RE = re.compile(
     r"SET_ACTOR_VEL_X|SET_ACTOR_VEL_Y|WALK_ACTOR_DIR|WALK_ACTOR|"
     r"CUTSCENE_TICK_A|CUTSCENE_TICK_B|CUTSCENE_FX|FADE_SCREEN|"
     r"PALETTE_AND|WAIT_RAND_CLEAR|SCROLL_VEL_FROM_DPAD|APPLY_CAMERA_DELTA|"
+    r"PLAY_BGM|STOP_BGM|PLAY_VOICE|PLAY_VOICE_PAN|STOP_VOICE|"
     r"FALLTHROUGH|END|TALK|TEXT|CHAPTER_TITLE|CHOICE|EMPTY"
     r")\s*\(",
 )
@@ -83,6 +84,11 @@ OP_ENUM = {
     "WALK_ACTOR_DIR": 37,
     "MOVE_ACTOR": 38,
     "WALK_ACTOR": 39,
+    "PLAY_BGM": 40,
+    "STOP_BGM": 41,
+    "PLAY_VOICE": 42,
+    "PLAY_VOICE_PAN": 42,  # same op; pan in arg1
+    "STOP_VOICE": 43,
 }
 
 KNOWN_CUTSCENE_SCENES = {
@@ -292,6 +298,29 @@ def encode_op(name: str, args: list[str], talk_id: int | None) -> dict | None:
             "op": OP_ENUM[name],
             "arg0": (index & 0xFF) | ((direction & 0xFF) << 8),
             "arg1": speed,
+            "name": name,
+        }
+    if name == "PLAY_BGM":
+        return {
+            "op": OP_ENUM[name],
+            "arg0": parse_int(args[0]) if args else 0,
+            "arg1": 0,
+            "name": name,
+        }
+    if name in ("STOP_BGM", "STOP_VOICE"):
+        return {"op": OP_ENUM[name], "arg0": 0, "arg1": 0, "name": name}
+    if name == "PLAY_VOICE":
+        return {
+            "op": OP_ENUM[name],
+            "arg0": parse_int(args[0]) if args else 0,
+            "arg1": 3,  # default pan (matches PlaySfx death call)
+            "name": name,
+        }
+    if name == "PLAY_VOICE_PAN":
+        return {
+            "op": OP_ENUM["PLAY_VOICE"],
+            "arg0": parse_int(args[0]) if args else 0,
+            "arg1": parse_int(args[1]) if len(args) > 1 else 3,
             "name": name,
         }
     # unary numeric

@@ -43,12 +43,26 @@ SET_DATA gUserStackTop, 0x03007CA0
 SET_DATA gIrqStackTop, 0x03007FA0
 
 @ Last pool-backed vanilla global (82 hits). Free pool starts after pad.
+@ Alias of gGaxWorkspacePtr (same word); kept for older docs / occupancy notes.
 SET_DATA gVanillaIwramHighWater, 0x0300775C
 
 .macro _kernel_malloc name, size
     SET_DATA \name, UsedFreeRamSpaceTop
     .set UsedFreeRamSpaceTop, UsedFreeRamSpaceTop + \size
 .endm
+
+@ -- GAX Sound Engine ----------------------------------------------------------
+
+@ GAX2_PARAMS (~0x40 B); flags halfword at +0x0E (GAX_SPEECH = 0x40).
+SET_DATA gGaxParams, 0x030008C0
+@ Current song module pointer latch (PlayBgm dedup).
+SET_DATA gGaxCurrentSong, 0x030008B0
+@ Mix / workspace arena at vanilla site (IWRAM). Size 0x1000; ends at gOamCursor.
+SET_ARRAY gGaxMixBuffer, 0x03005910, 0x1000
+@ Pointer to GAX workspace (written by gax2_init).
+SET_DATA gGaxWorkspacePtr, 0x0300775C
+@ Current music volume (u16); PlayBgm reapplies via gax music-vol.
+SET_DATA gGaxMusicVol, 0x030011FC
 
 @ -- Engine / mode -------------------------------------------------------------
 
@@ -115,6 +129,9 @@ SET_DATA gTalkLayoutCmp, 0x030071B8
 SET_DATA gTalkActive, 0x030070E0
 SET_DATA gTalkGate, 0x03000014
 SET_DATA gTalkExtra, 0x0300001C
+@ TalkAdvance portrait header mirrors (speaker / side / expr).
+SET_DATA gTalkPortraitSide, 0x0300001D
+SET_DATA gTalkPortraitExpr, 0x0300001E
 
 @ -- Overworld encounters / input ----------------------------------------------
 
@@ -217,6 +234,8 @@ _kernel_malloc gHpBarTilesReady, 0x1
 _kernel_malloc gHpBarTileScratchAlignPad, 0x3
 @ Scratch for one-time bar tile encode (9 × 2 × 32 = 0x240).
 _kernel_malloc gHpBarTileScratch, 0x240
+@ 1 = custom GAX speech table installed into workspace object.
+_kernel_malloc gGaxSpeechInstalled, 0x1
 @ Charge Shot rework: 0 = charging, 1 = empowered (10x window).
 _kernel_malloc gChargeShotPhase, 0x1
 @ Frames elapsed in the current charge / empowered phase.

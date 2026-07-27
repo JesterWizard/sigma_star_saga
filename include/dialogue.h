@@ -12,6 +12,20 @@
 #define TALK_STATE_FLAGS_OFF 14
 #define TALK_FLAG_BUSY       0x0008
 
+/* Voice cue sentinel — stop speech without playing a new clip. */
+#define TALK_VOICE_STOP 0xFFFF
+
+typedef struct {
+    const u8 *header; /* points at leading 0x07 of a TALK header */
+    u16 voiceId;      /* catalog id, or TALK_VOICE_STOP */
+} TalkVoiceCue;
+
+extern const TalkVoiceCue gTalkVoiceCues[];
+extern const u16 gTalkVoiceCueCount;
+
+/* Vanilla @ 0x080102BC — consume `\x07 speaker side expr \x07`, return text ptr. */
+const u8 *TalkAdvance(const u8 *stream);
+
 /* Vanilla @ 0x08010808 — arm talk UI from a stream pointer. */
 void StartTalkPtr(const u8 *stream, u8 paramA, u8 paramB);
 

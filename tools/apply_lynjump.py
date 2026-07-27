@@ -16,7 +16,7 @@ BOOL_RE = re.compile(
     r"all_cannon_data|all_bullet_data|all_impact_data|"
     r"all_key_items|all_tools|custom_enemy_exp|overworld_enemy_exp|custom_dialogue|"
     r"custom_gun_data|enemy_hp_bars|disable_random_battles|custom_cutscene_ch1|"
-    r"custom_cutscene_stage|custom_talk_helpers|custom_event_runner)"
+    r"custom_cutscene_stage|custom_talk_helpers|custom_event_runner|custom_gax_audio)"
     r"\s*=\s*(TRUE|FALSE|true|false|1|0)",
     re.IGNORECASE,
 )
@@ -267,6 +267,7 @@ def load_runtime_flags() -> dict[str, bool]:
         "custom_cutscene_stage": False,
         "custom_talk_helpers": False,
         "custom_event_runner": False,
+        "custom_gax_audio": False,
     }
     for match in BOOL_RE.finditer(text):
         name = match.group(1)
@@ -1381,6 +1382,48 @@ def apply_disable_random_battles(rom: bytearray, owners: dict, symbols: dict, en
     )
 
 
+GAX_BOOT_OFF = 0x38D8  # AgbMain: gax2_new … gax2_init
+GAX_BOOT_VENEER_LEN = 8
+TALK_ADVANCE_OFF = 0x102BC
+
+
+def apply_gax_audio(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
+    """LynJump AgbMain GAX boot + TalkAdvance for per-TALK VOICE cues."""
+    baserom = (ROOT / "baserom.gba").read_bytes()
+    owner = "runtime:custom_gax_audio"
+    if not enabled:
+        checked_write(
+            rom,
+            GAX_BOOT_OFF,
+            baserom[GAX_BOOT_OFF : GAX_BOOT_OFF + GAX_BOOT_VENEER_LEN],
+            owners,
+            f"{owner}=FALSE",
+        )
+        checked_write(
+            rom,
+            TALK_ADVANCE_OFF,
+            baserom[TALK_ADVANCE_OFF : TALK_ADVANCE_OFF + VENEER_LEN],
+            owners,
+            f"{owner}=FALSE:TalkAdvance",
+        )
+        print("runtime: custom_gax_audio=FALSE (vanilla GAX boot / TalkAdvance)")
+        return
+
+    boot = "GaxBootInit__Replacement"
+    if boot not in symbols:
+        raise KeyError(f"{boot} missing — build gax_audio_hooks.c")
+    apply_veneer(rom, owners, GAX_BOOT_OFF, symbols[boot], owner)
+    print(f"runtime: custom_gax_audio=TRUE → {boot} 0x{symbols[boot]:08X}")
+
+    talk = "TalkAdvance_Gax__Replacement"
+    if talk not in symbols:
+        raise KeyError(f"{talk} missing — build gax_audio_hooks.c")
+    for offset in range(TALK_ADVANCE_OFF, TALK_ADVANCE_OFF + VENEER_LEN):
+        owners.pop(offset, None)
+    apply_veneer(rom, owners, TALK_ADVANCE_OFF, symbols[talk], owner)
+    print(f"runtime: custom_gax_audio=TRUE → {talk} 0x{symbols[talk]:08X}")
+
+
 def main():
     if len(sys.argv) != 3:
         print(f"usage: {sys.argv[0]} <elf> <rom>", file=sys.stderr)
@@ -1426,6 +1469,7 @@ def main():
     )
     apply_cutscene_stage(rom, owners, symbols, flags["custom_cutscene_stage"])
     apply_talk_helpers(rom, owners, symbols, flags["custom_talk_helpers"])
+    apply_gax_audio(rom, owners, symbols, flags["custom_gax_audio"])
 
     rom_path.write_bytes(rom)
     print(f"patches: {len(owners)} bytes written")

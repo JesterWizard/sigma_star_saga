@@ -34,6 +34,7 @@ typedef struct {
     u8 custom_cutscene_stage; /* LynJump stage FSM @ 0x2B18C → CutsceneStageUpdate */
     u8 custom_talk_helpers; /* LynJump StartTalk* / InitTalkBanks peels */
     u8 custom_event_runner; /* Drive known cutscenes from compile_events tables */
+    u8 custom_gax_audio; /* GAX_SPEECH + custom music/voice catalogs / event ops */
 } RuntimeConfig;
 
 extern const RuntimeConfig gRuntimeConfigRom;

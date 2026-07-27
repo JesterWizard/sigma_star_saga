@@ -105,7 +105,8 @@ C_SRCS := \
 	$(C_SUBDIR)/overworld_encounters.c \
 	$(C_SUBDIR)/dialogue.c \
 	$(C_SUBDIR)/cutscene_ch1.c \
-	$(C_SUBDIR)/cutscene_stage.c
+	$(C_SUBDIR)/cutscene_stage.c \
+	$(C_SUBDIR)/gax.c
 CUSTOM_C_SRCS := \
 	$(CUSTOM_C_SUBDIR)/nocash.c \
 	$(CUSTOM_C_SUBDIR)/flight_skip_hooks.c \
@@ -115,7 +116,8 @@ CUSTOM_C_SRCS := \
 	$(CUSTOM_C_SUBDIR)/enemy_hp_bar_hooks.c \
 	$(CUSTOM_C_SUBDIR)/random_battle_hooks.c \
 	$(CUSTOM_C_SUBDIR)/overworld_enemy_exp_hooks.c \
-	$(CUSTOM_C_SUBDIR)/event_runner_hooks.c
+	$(CUSTOM_C_SUBDIR)/event_runner_hooks.c \
+	$(CUSTOM_C_SUBDIR)/gax_audio_hooks.c
 CONFIG_SRCS := $(CONFIG_SUBDIR)/runtime.c
 # Region fragments + pool inventories are .included by ram_map.s (not assembled alone).
 RAM_MAP_FRAGMENTS := \
@@ -133,6 +135,7 @@ ASM_SRCS := \
 	$(ASM_SUBDIR)/enemy_hp_bar_trampoline.s \
 	$(ASM_SUBDIR)/random_battle_trampoline.s \
 	$(ASM_SUBDIR)/overworld_trampoline.s \
+	$(ASM_SUBDIR)/gax_trampoline.s \
 	$(ASM_SUBDIR)/ram_map.s
 DATA_ASM_SRCS :=
 
@@ -152,13 +155,22 @@ DATA_STRUCT_TABLES_C := $(OBJ_DIR)/data_structures_tables.c
 DATA_STRUCT_TABLES_O := $(OBJ_DIR)/data_structures_tables.o
 COMPILE_DATA_STRUCTS := $(TOOLS_DIR)/compile_data_structures.py
 
+GAX_SOUND_MUSIC := $(wildcard sound/music/*.json)
+GAX_SOUND_VOICE := $(wildcard sound/voice/*.json)
+GAX_SOUND_WAVS := $(wildcard sound/voice/*.wav) $(wildcard sound/voice/*.mp3) \
+	$(wildcard sound/music/samples/*.wav)
+BUILD_GAX_CATALOG := $(TOOLS_DIR)/build_gax_catalog.py
+GAX_CATALOG_C := $(CUSTOM_C_SUBDIR)/generated/gax_catalog.c
+GAX_CATALOG_H := include/gax_catalog.h
+GAX_CATALOG_O := $(OBJ_DIR)/gax_catalog.o
+
 C_OBJS := $(patsubst $(C_SUBDIR)/%.c,$(C_BUILDDIR)/%.o,$(C_SRCS))
 CUSTOM_C_OBJS := $(patsubst $(CUSTOM_C_SUBDIR)/%.c,$(CUSTOM_C_BUILDDIR)/%.o,$(CUSTOM_C_SRCS))
 CONFIG_OBJS := $(patsubst $(CONFIG_SUBDIR)/%.c,$(CONFIG_BUILDDIR)/%.o,$(CONFIG_SRCS))
 ASM_OBJS := $(patsubst $(ASM_SUBDIR)/%.s,$(ASM_BUILDDIR)/%.o,$(ASM_SRCS))
 DATA_ASM_OBJS := $(patsubst $(DATA_ASM_SUBDIR)/%.s,$(DATA_ASM_BUILDDIR)/%.o,$(DATA_ASM_SRCS))
 
-OBJS := $(C_OBJS) $(CUSTOM_C_OBJS) $(CONFIG_OBJS) $(DIALOGUE_BANKS_O) $(DATA_STRUCT_TABLES_O) $(EVENT_SCRIPTS_O) $(ASM_OBJS) $(DATA_ASM_OBJS)
+OBJS := $(C_OBJS) $(CUSTOM_C_OBJS) $(CONFIG_OBJS) $(DIALOGUE_BANKS_O) $(DATA_STRUCT_TABLES_O) $(EVENT_SCRIPTS_O) $(GAX_CATALOG_O) $(ASM_OBJS) $(DATA_ASM_OBJS)
 OBJS_REL := $(patsubst $(OBJ_DIR)/%,%,$(OBJS))
 
 LYNJUMP_EVENT := $(CUSTOM_C_SUBDIR)/LynJump.event
@@ -190,6 +202,7 @@ clean: tidy
 
 tidy:
 	rm -f $(ROM) $(ELF) $(MAP)
+	rm -f $(GAX_CATALOG_C) $(GAX_CATALOG_H)
 	rm -rf $(BUILD_DIR)
 
 $(ASM_BUILDDIR)/ram_map.o: $(RAM_MAP_FRAGMENTS)
@@ -253,6 +266,19 @@ $(DATA_STRUCT_TABLES_O): $(DATA_STRUCT_TABLES_C)
 	$(PREFIX)gcc -c -mcpu=arm7tdmi -mthumb -mthumb-interwork -O2 \
 		-fno-toplevel-reorder -iquote include -I include \
 		-o $@ $<
+
+# Pack sound/ music+voice → append GAX catalogs.
+$(GAX_CATALOG_C) $(GAX_CATALOG_H): $(BUILD_GAX_CATALOG) $(GAX_SOUND_MUSIC) $(GAX_SOUND_VOICE) $(GAX_SOUND_WAVS) \
+		$(TOOLS_DIR)/pack_gax_speech.py $(TOOLS_DIR)/pack_gax_song.py
+	@mkdir -p $(dir $(GAX_CATALOG_C))
+	python3 $(BUILD_GAX_CATALOG) --out-c $(GAX_CATALOG_C) --out-h $(GAX_CATALOG_H)
+
+$(GAX_CATALOG_O): $(GAX_CATALOG_C) $(GAX_CATALOG_H)
+	$(PREFIX)gcc -c -mcpu=arm7tdmi -mthumb -mthumb-interwork -O2 \
+		-fno-toplevel-reorder -iquote include -I include \
+		-o $@ $<
+
+$(CUSTOM_C_BUILDDIR)/gax_audio_hooks.o: $(GAX_CATALOG_H)
 
 LD_SCRIPT := ld_script.ld
 LDFLAGS = -Map ../../$(MAP)

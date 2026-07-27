@@ -90,7 +90,9 @@ Method: Thumb `LDR Rd,[PC,#imm]` literal pools only (not raw absolute words). Wo
 | `gTalkState` | `0x03007100` | Talk UI block (flags halfword at +14) |
 | `gTalkStreamPtr` | `0x03007198` | Active talk stream cursor |
 | `gTalkGate` | `0x03000014` | Talk gate latch |
-| `gTalkExtra` | `0x0300001C` | `StartTalkByIdEx` extra byte |
+| `gTalkExtra` | `0x0300001C` | `StartTalkByIdEx` latch / TalkAdvance speaker |
+| `gTalkPortraitSide` | `0x0300001D` | TalkAdvance portrait side |
+| `gTalkPortraitExpr` | `0x0300001E` | TalkAdvance portrait expr |
 | `gPlayerBombs` | `0x03007014` | Smart bomb count |
 | `gPlayerLevel` | `0x0300702C` | RPG level |
 | `gPlayerExp` | `0x0300705C` | Experience (canonical / save) |
@@ -103,6 +105,11 @@ Method: Thumb `LDR Rd,[PC,#imm]` literal pools only (not raw absolute words). Wo
 | `gStageClearFlag` | `0x03007668` | Stage-clear latch |
 | `gRandomBattleCooldown` | `0x03007684` | Overworld RNG encounter delay (`0x1DA5C`; CB writes `+1`) |
 | `gStageClearGate` | `0x03007730` | Clear-sequence gate (0 = allow; CB Clear Stage) |
+| `gGaxParams` | `0x030008C0` | GAX2_PARAMS (flags @ +0x0E; `GAX_SPEECH` = `0x40`) |
+| `gGaxCurrentSong` | `0x030008B0` | PlayBgm song-module latch |
+| `gGaxMixBuffer` | `0x03005910` | GAX mix arena (`0x1000` IWRAM; vanilla site) |
+| `gGaxWorkspacePtr` | `0x0300775C` | Pointer to mix workspace (same word as legacy high-water note) |
+| `gGaxMusicVol` | `0x030011FC` | Music volume (u16) |
 | `gGunDataBits` | `0x03007690` | Gun Data ownership bits |
 | `gBulletOwned` | `0x0300773C` | Bullet Gun Data word |
 | `gShotAuxPool` | `0x030004A0` | Flight shot aux (stride `0x40`, vanilla 10 slots) |
