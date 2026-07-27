@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>SSS Scene Editor</title>
+  <style>
+    :root {
+      --bg: #1a1f24;
+      --panel: #242b33;
+      --text: #e8eef4;
+      --muted: #8b9aab;
+      --accent: #3d9a6a;
+      --border: #3a4654;
+      --danger: #c45c5c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font: 14px/1.45 "IBM Plex Sans", "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 280px 1fr;
+    }
+    aside {
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      padding: 1rem;
+      overflow: auto;
+    }
+    main { padding: 1.25rem 1.5rem; overflow: auto; display: flex; flex-direction: column; gap: 0.75rem; }
+    h1 { font-size: 1.1rem; margin: 0 0 0.75rem; }
+    input[type="search"] {
+      width: 100%;
+      padding: 0.45rem 0.6rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--bg);
+      color: var(--text);
+    }
+    #list { list-style: none; padding: 0; margin: 0.75rem 0 0; }
+    #list li {
+      padding: 0.4rem 0.5rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: 12px;
+    }
+    #list li:hover, #list li.active { background: #2f3944; }
+    #list li .tag {
+      margin-left: 0.35rem;
+      padding: 0 0.35rem;
+      border-radius: 3px;
+      background: var(--accent);
+      color: #04140c;
+      font-size: 10px;
+      font-weight: 700;
+    }
+    .toolbar { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+    button {
+      background: var(--accent);
+      color: #04140c;
+      border: 0;
+      border-radius: 4px;
+      padding: 0.4rem 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button.secondary { background: #3a4654; color: var(--text); }
+    button:disabled { opacity: 0.5; cursor: default; }
+    #meta { color: var(--muted); font-size: 13px; }
+    #status { font-size: 13px; color: var(--muted); }
+    #status.err { color: var(--danger); }
+    #status.ok { color: var(--accent); }
+    textarea {
+      flex: 1;
+      min-height: 60vh;
+      width: 100%;
+      background: var(--panel);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1rem;
+      font: 12px/1.5 "IBM Plex Mono", ui-monospace, monospace;
+      resize: vertical;
+    }
+    .banner {
+      border: 1px solid var(--border);
+      background: #2a3328;
+      padding: 0.65rem 0.85rem;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <aside>
+    <h1>Scenes</h1>
+    <input id="q" type="search" placeholder="Filter…" />
+    <ul id="list"></ul>
+  </aside>
+  <main>
+    <div class="banner">
+      Run <code>python3 tools/scene_editor/server.py</code> then open this page.
+      Saves write into <code>src_custom/dialogue/…</code>.
+    </div>
+    <div class="toolbar">
+      <button id="save" disabled>Save</button>
+      <button id="reload" class="secondary" disabled>Reload</button>
+      <span id="status"></span>
+    </div>
+    <div id="meta">Select a scene.</div>
+    <textarea id="editor" spellcheck="false" placeholder="Scene source…"></textarea>
+  </main>
+  <script>
+    let scenes = [];
+    let catalogByName = {};
+    let current = null;
+    let dirty = false;
+    const list = document.getElementById("list");
+    const editor = document.getElementById("editor");
+    const meta = document.getElementById("meta");
+    const status = document.getElementById("status");
+    const saveBtn = document.getElementById("save");
+    const reloadBtn = document.getElementById("reload");
+    const q = document.getElementById("q");
+
+    function setStatus(msg, cls) {
+      status.textContent = msg || "";
+      status.className = cls || "";
+    }
+
+    function renderList(filter = "") {
+      const f = filter.toLowerCase();
+      list.innerHTML = "";
+      scenes
+        .filter((s) => !f || s.name.toLowerCase().includes(f) || s.rel.toLowerCase().includes(f))
+        .forEach((s) => {
+          const li = document.createElement("li");
+          li.textContent = s.name;
+          const info = catalogByName[s.name];
+          if (info && info.choreography_ops > 0) {
+            const tag = document.createElement("span");
+            tag.className = "tag";
+            tag.textContent = "FSM";
+            li.appendChild(tag);
+          }
+          li.onclick = () => openScene(s, li);
+          if (current && current.rel === s.rel) li.classList.add("active");
+          list.appendChild(li);
+        });
+    }
+
+    async function openScene(s, li) {
+      if (dirty && !confirm("Discard unsaved changes?")) return;
+      [...list.children].forEach((c) => c.classList.remove("active"));
+      if (li) li.classList.add("active");
+      const res = await fetch("/api/scene?path=" + encodeURIComponent(s.rel));
+      const data = await res.json();
+      if (!res.ok) { setStatus(data.error || "load failed", "err"); return; }
+      current = s;
+      editor.value = data.text;
+      dirty = false;
+      saveBtn.disabled = true;
+      reloadBtn.disabled = false;
+      const info = catalogByName[s.name];
+      meta.textContent = s.file + (info ? ` · ${info.choreography_ops} choreo ops` + (info.fsm ? ` · ${info.fsm}` : "") : "");
+      setStatus("loaded", "ok");
+    }
+
+    editor.addEventListener("input", () => {
+      dirty = true;
+      saveBtn.disabled = !current;
+      setStatus("modified", "");
+    });
+
+    saveBtn.onclick = async () => {
+      if (!current) return;
+      const res = await fetch("/api/scene", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: current.rel, text: editor.value }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setStatus(data.error || "save failed", "err"); return; }
+      dirty = false;
+      saveBtn.disabled = true;
+      setStatus(`saved ${data.bytes} bytes`, "ok");
+    };
+
+    reloadBtn.onclick = () => current && openScene(current);
+
+    q.addEventListener("input", () => renderList(q.value));
+
+    Promise.all([
+      fetch("/api/scenes").then((r) => r.json()),
+      fetch("/api/catalog").then((r) => (r.ok ? r.json() : [])).catch(() => []),
+    ]).then(([sceneData, catalog]) => {
+      scenes = sceneData.scenes || [];
+      (catalog || []).forEach((c) => { catalogByName[c.name] = c; });
+      renderList();
+    }).catch((e) => setStatus("API unavailable — start server.py", "err"));
+  </script>
+</body>
+</html>

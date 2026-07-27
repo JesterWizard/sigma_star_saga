@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x08072069 */
-DIALOGUE_SCRIPT(0x08072069, scene_072069)
+/* Script id 380 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x08072069. */
+EVENT_SCRIPT_REPLACEMENT(0x08072069, scene_072069)
+
   TALK(SPEAKER_PSYME, SIDE_RIGHT, EXPR_NEUTRAL,
       "Ok, now that we actually have the anti-virus we can keep Tierney on a short leash. We know Earth has a virus to destroy the weapon if it falls to the Krill.")
   TALK(SPEAKER_SCARLET, SIDE_RIGHT, EXPR_NEUTRAL,
@@ -20,4 +21,6 @@ DIALOGUE_SCRIPT(0x08072069, scene_072069)
   )
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
       "Let's head out.")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

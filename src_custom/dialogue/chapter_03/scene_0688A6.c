@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x080688A6 */
-DIALOGUE_SCRIPT(0x080688A6, scene_0688A6)
+/* Script id 216 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x080688A6. */
+EVENT_SCRIPT_REPLACEMENT(0x080688A6, scene_0688A6)
+
   TALK(SPEAKER_PSYME, SIDE_RIGHT, EXPR_NEUTRAL,
       "Well, that's all I need. Recker?")
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
@@ -10,4 +11,6 @@ DIALOGUE_SCRIPT(0x080688A6, scene_0688A6)
       "Why not? We can't leave her here to breed a virus that will destroy the Krill!")
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
       "Then she's coming with us. We'll have better chances of surviving if we stick together.")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x0805F323 */
-DIALOGUE_SCRIPT(0x0805F323, scene_05F323)
+/* Script id 89 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x0805F323. */
+EVENT_SCRIPT_REPLACEMENT(0x0805F323, scene_05F323)
+
   TALK(SPEAKER_CREWMAN, SIDE_RIGHT, EXPR_ALT,
       "Just heard the news. You're flying a Krill Fighter?")
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
@@ -18,4 +19,6 @@ DIALOGUE_SCRIPT(0x0805F323, scene_05F323)
       "Just take care of her and she'll take care of you. While you're in the Control Cavity, you and your ship share life and limb.",
       "So you can see why saving your progress is a good idea before flying."
   )
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

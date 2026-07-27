@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x080703D5 */
-DIALOGUE_SCRIPT(0x080703D5, scene_0703D5)
+/* Script id 354 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x080703D5. */
+EVENT_SCRIPT_REPLACEMENT(0x080703D5, scene_0703D5)
+
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
       "...",
       "Well, Psyme. Anything you want to ask me? About Tierney?",
@@ -58,4 +59,6 @@ DIALOGUE_SCRIPT(0x080703D5, scene_0703D5)
       "I'm still your superior. Lie to me again, and I'll kill you.")
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
       "This can't be good for our relationship.")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

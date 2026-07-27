@@ -66,7 +66,8 @@ Each `scene_XXXXXX.c` is one `#` entry (`XXXXXX` = vanilla file offset). `EMPTY(
 
 | Macro | Meaning |
 |-------|---------|
-| `DIALOGUE_SCRIPT(rom_addr, name)` / `END_DIALOGUE_SCRIPT()` | Scene wrapper (vanilla address is documentary) |
+| `EVENT_SCRIPT_REPLACEMENT(rom_addr, name)` / `END_EVENT_SCRIPT()` | Scene wrapper (preferred; includes event macros via `event_macros.h`) |
+| `DIALOGUE_SCRIPT(rom_addr, name)` / `END_DIALOGUE_SCRIPT()` | Legacy talk-only wrapper (still accepted by `compile_dialogue.py`) |
 | `TALK(speaker, side, expr, "page", …)` | Portrait line; one string per page |
 | `TEXT("…")` | System / UI line (no talk header) |
 | `CHOICE()` | Yes/No prompt after a `TEXT` page (emits `\x0c?`) |
@@ -118,8 +119,8 @@ cp -a data/dialogue src_custom/dialogue
 ## TODO
 
 - [ ] Confirm speaker id ↔ portrait frame mapping against in-game talk UI
-- [ ] Map scenes to overworld map / state / NPC once event RE exists
-- [ ] Scene editor UI over `src_custom/dialogue/` (ygodm8-style workflow)
+- [ ] Map scenes to cutscene FSMs / NPC call sites (see [`documentation/events/`](../events/))
+- [ ] Scene editor UI over dialogue + event scripts (movement is event-side, not talk macros)
 - [ ] Safer handling when adding/removing scenes (auto-shift call sites / ID tables)
 
 ## Limitations & Bugs

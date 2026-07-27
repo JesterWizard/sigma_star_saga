@@ -1,7 +1,10 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x080699CA */
-DIALOGUE_SCRIPT(0x080699CA, scene_0699CA)
+/* Script id 251 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x080699CA. */
+EVENT_SCRIPT_REPLACEMENT(0x080699CA, scene_0699CA)
+
   TALK(SPEAKER_CREWMAN, SIDE_RIGHT, EXPR_ALT,
       "We can't leave the ship till the bombing's done. Man I'm getting bored.")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

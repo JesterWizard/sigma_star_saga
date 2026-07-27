@@ -1,6 +1,6 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x0805D942 */
-DIALOGUE_SCRIPT(0x0805D942, scene_05D942)
+/* Script id 72 — EMPTY stub (ID alignment only; no talk / no FSM). Talk ROM 0x0805D942. */
+EVENT_SCRIPT_REPLACEMENT(0x0805D942, scene_05D942)
   EMPTY()
-END_DIALOGUE_SCRIPT()
+END_EVENT_SCRIPT()

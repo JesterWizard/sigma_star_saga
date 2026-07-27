@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x08065BC4 */
-DIALOGUE_SCRIPT(0x08065BC4, scene_065BC4)
+/* Script id 181 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x08065BC4. */
+EVENT_SCRIPT_REPLACEMENT(0x08065BC4, scene_065BC4)
+
   TALK(SPEAKER_ZELLY, SIDE_RIGHT, EXPR_NEUTRAL,
       "What? Psyme! Why did you not come to me with this information?")
   TALK(SPEAKER_PSYME, SIDE_RIGHT, EXPR_NEUTRAL,
@@ -12,4 +13,6 @@ DIALOGUE_SCRIPT(0x08065BC4, scene_065BC4)
       "I have verified his story through my own means. And he entered into our service only recently, which does not explain the presence of humans on the Forest Planet. But as a precaution, once I know the location of all six synchronized planets we will dispose of him.",
       "That will be your responsibility Psyme."
   )
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

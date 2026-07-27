@@ -1,7 +1,10 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x0807254E */
-DIALOGUE_SCRIPT(0x0807254E, scene_07254E)
+/* Script id 387 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x0807254E. */
+EVENT_SCRIPT_REPLACEMENT(0x0807254E, scene_07254E)
+
   TALK(SPEAKER_PSYME, SIDE_RIGHT, EXPR_NEUTRAL,
       "Aren't you going to sit in the chair? It's yours, right?")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

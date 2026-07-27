@@ -1,7 +1,20 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x0805D06C */
-DIALOGUE_SCRIPT(0x0805D06C, scene_05D06C)
+/*
+ * Script id 67 — Commander Tierney briefing (Recker enlistment).
+ *
+ * Vanilla trigger: map event record @ 0x0808248C
+ *   type 0x22 → StartTalkById(67, 4, 3) via walker @ 0x080179C8.
+ * Talk ROM 0x0805D06C.
+ *
+ * No sprite cutscene FSM in vanilla — actors are already on the map;
+ * talk records (0x22/0x26) carry no x/y. Do not invent SPAWN/WALK coords.
+ * compile_dialogue.py packs TALK only.
+ */
+
+EVENT_SCRIPT_REPLACEMENT(0x0805D06C, scene_05D06C)
+  /* Vanilla: StartTalkById(67, 4, 3) */
+
   TALK(SPEAKER_RECKER, SIDE_LEFT, EXPR_NEUTRAL,
       "Commander Tierney, Sir!")
   TALK(SPEAKER_TIERNEY, SIDE_RIGHT, EXPR_NEUTRAL,
@@ -72,4 +85,6 @@ DIALOGUE_SCRIPT(0x0805D06C, scene_05D06C)
       "Better crack this open now.",
       "No telling what those devils drink, or if they even have bathrooms."
   )
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

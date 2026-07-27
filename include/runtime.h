@@ -30,6 +30,10 @@ typedef struct {
     u8 custom_gun_data; /* Custom Impact Data from impact_data.json */
     u8 enemy_hp_bars;   /* Flight: HP bars under enemies (soft OAM only) */
     u8 disable_random_battles; /* Skip overworld RNG encounters (0x1DA5C) */
+    u8 custom_cutscene_ch1; /* LynJump Ch.1 opener FSM → CutsceneCh1Opener peel */
+    u8 custom_cutscene_stage; /* LynJump stage FSM @ 0x2B18C → CutsceneStageUpdate */
+    u8 custom_talk_helpers; /* LynJump StartTalk* / InitTalkBanks peels */
+    u8 custom_event_runner; /* Drive known cutscenes from compile_events tables */
 } RuntimeConfig;
 
 extern const RuntimeConfig gRuntimeConfigRom;

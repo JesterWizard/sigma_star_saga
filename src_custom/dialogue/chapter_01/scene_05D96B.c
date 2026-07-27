@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x0805D96B */
-DIALOGUE_SCRIPT(0x0805D96B, scene_05D96B)
+/* Script id 74 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x0805D96B. */
+EVENT_SCRIPT_REPLACEMENT(0x0805D96B, scene_05D96B)
+
   TALK(SPEAKER_GRUNT_1, SIDE_LEFT, EXPR_NEUTRAL,
       "See? See?! It moved again!",
       "It's breathing! That thing is alive and breathing!"
@@ -26,4 +27,6 @@ DIALOGUE_SCRIPT(0x0805D96B, scene_05D96B)
       "...things...",
       "...after all..."
   )
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

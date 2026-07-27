@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x0805DE57 */
-DIALOGUE_SCRIPT(0x0805DE57, scene_05DE57)
+/* Script id 76 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x0805DE57. */
+EVENT_SCRIPT_REPLACEMENT(0x0805DE57, scene_05DE57)
+
   TALK(SPEAKER_MEDIC, SIDE_RIGHT, EXPR_NEUTRAL,
       "Ahh, you're coming around.",
       "Try not to strain your muscles."
@@ -63,4 +64,6 @@ DIALOGUE_SCRIPT(0x0805DE57, scene_05DE57)
       "Try to rest.",
       "They'll be skinning you in the morning."
   )
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

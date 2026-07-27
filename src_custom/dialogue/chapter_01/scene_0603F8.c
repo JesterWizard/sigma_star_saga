@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x080603F8 */
-DIALOGUE_SCRIPT(0x080603F8, scene_0603F8)
+/* Script id 106 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x080603F8. */
+EVENT_SCRIPT_REPLACEMENT(0x080603F8, scene_0603F8)
+
   TALK(SPEAKER_PSYME, SIDE_RIGHT, EXPR_NEUTRAL,
       "Hot! I was hoping we'd see some action!")
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
@@ -15,4 +16,6 @@ DIALOGUE_SCRIPT(0x080603F8, scene_0603F8)
       "It's a link between you and your ship!",
       "If you're summoned, just take aim and destroy anything that moves. Once the ship relaxes, you'll be sent back."
   )
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

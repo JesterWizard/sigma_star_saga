@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x080609B6 */
-DIALOGUE_SCRIPT(0x080609B6, scene_0609B6)
+/* Script id 111 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x080609B6. */
+EVENT_SCRIPT_REPLACEMENT(0x080609B6, scene_0609B6)
+
   TALK(SPEAKER_PSYME, SIDE_RIGHT, EXPR_NEUTRAL,
       "What have you men found?")
   TALK(SPEAKER_CREWMAN, SIDE_RIGHT, EXPR_NEUTRAL,
@@ -20,4 +21,6 @@ DIALOGUE_SCRIPT(0x080609B6, scene_0609B6)
       "Where are we going?")
   TALK(SPEAKER_PSYME, SIDE_RIGHT, EXPR_NEUTRAL,
       "To find out what's causing this hunk of rock to shake. Somehow I doubt High Command sent us here for a simple foot massage.")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

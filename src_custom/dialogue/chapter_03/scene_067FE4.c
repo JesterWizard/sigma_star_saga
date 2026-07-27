@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x08067FE4 */
-DIALOGUE_SCRIPT(0x08067FE4, scene_067FE4)
+/* Script id 209 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x08067FE4. */
+EVENT_SCRIPT_REPLACEMENT(0x08067FE4, scene_067FE4)
+
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
       "Were those...",
       "Human beings?"
@@ -37,4 +38,6 @@ DIALOGUE_SCRIPT(0x08067FE4, scene_067FE4)
       "Double agent gig. Ok, sure.")
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
       "First, I need you to tell me what this compound is here for.")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

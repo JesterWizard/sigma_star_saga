@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x0806CF22 */
-DIALOGUE_SCRIPT(0x0806CF22, scene_06CF22)
+/* Script id 305 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x0806CF22. */
+EVENT_SCRIPT_REPLACEMENT(0x0806CF22, scene_06CF22)
+
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
       "So the virus was never intended to destroy the Krill?")
   TALK(SPEAKER_SCARLET, SIDE_RIGHT, EXPR_NEUTRAL,
@@ -18,4 +19,6 @@ DIALOGUE_SCRIPT(0x0806CF22, scene_06CF22)
       "Leave him! It's the only way to guarantee a Starbase will be waiting for us.")
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
       "We'd better get to the launch bay fast.")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

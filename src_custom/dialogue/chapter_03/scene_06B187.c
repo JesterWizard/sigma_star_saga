@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x0806B187 */
-DIALOGUE_SCRIPT(0x0806B187, scene_06B187)
+/* Script id 277 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x0806B187. */
+EVENT_SCRIPT_REPLACEMENT(0x0806B187, scene_06B187)
+
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
       "What's this for?")
   TALK(SPEAKER_NOMAK, SIDE_RIGHT, EXPR_NEUTRAL,
@@ -29,4 +30,6 @@ DIALOGUE_SCRIPT(0x0806B187, scene_06B187)
       "I'll bring your black box. But we may need Scarlet Keys to interpret the contents of the box. Think it over before you do something rash.")
   TALK(SPEAKER_NOMAK, SIDE_RIGHT, EXPR_NEUTRAL,
       "Your concern is noted, Recker! Now clear out!")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

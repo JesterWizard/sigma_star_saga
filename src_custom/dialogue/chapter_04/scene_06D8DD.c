@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x0806D8DD */
-DIALOGUE_SCRIPT(0x0806D8DD, scene_06D8DD)
+/* Script id 311 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x0806D8DD. */
+EVENT_SCRIPT_REPLACEMENT(0x0806D8DD, scene_06D8DD)
+
   TALK(SPEAKER_ZART, SIDE_RIGHT, EXPR_NEUTRAL,
       "I've been given instructions. High Command accepts your offer.",
       "You are free to use this facility to create an anti-virus on the condition that you turn it in upon completion.",
@@ -31,4 +32,6 @@ DIALOGUE_SCRIPT(0x0806D8DD, scene_06D8DD)
       "We'll see!")
   TALK(SPEAKER_PSYME, SIDE_RIGHT, EXPR_NEUTRAL,
       "I hope you get a sunburn, pink skin!")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

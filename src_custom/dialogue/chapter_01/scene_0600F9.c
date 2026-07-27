@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x080600F9 */
-DIALOGUE_SCRIPT(0x080600F9, scene_0600F9)
+/* Script id 104 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x080600F9. */
+EVENT_SCRIPT_REPLACEMENT(0x080600F9, scene_0600F9)
+
   TALK(SPEAKER_PSYME, SIDE_RIGHT, EXPR_NEUTRAL,
       "That blast was the Shell fleet deploying.",
       "By now you must already know that our ships are living things.",
@@ -18,4 +19,6 @@ DIALOGUE_SCRIPT(0x080600F9, scene_0600F9)
   )
   TALK(SPEAKER_PSYME, SIDE_RIGHT, EXPR_NEUTRAL,
       "You don't know?")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

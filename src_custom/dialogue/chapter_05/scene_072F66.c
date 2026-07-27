@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x08072F66 */
-DIALOGUE_SCRIPT(0x08072F66, scene_072F66)
+/* Script id 397 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x08072F66. */
+EVENT_SCRIPT_REPLACEMENT(0x08072F66, scene_072F66)
+
   TALK(SPEAKER_UNKNOWN, SIDE_RIGHT, EXPR_NEUTRAL,
       "W h o  A r e  Y o u ?")
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
@@ -75,4 +76,6 @@ DIALOGUE_SCRIPT(0x08072F66, scene_072F66)
   )
   TALK(SPEAKER_PSYME, SIDE_RIGHT, EXPR_NEUTRAL,
       "So the Krill used your weapon against you? Serves you right!")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

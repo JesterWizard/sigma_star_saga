@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x08060647 */
-DIALOGUE_SCRIPT(0x08060647, scene_060647)
+/* Script id 110 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x08060647. */
+EVENT_SCRIPT_REPLACEMENT(0x08060647, scene_060647)
+
   TALK(SPEAKER_PSYME, SIDE_RIGHT, EXPR_NEUTRAL,
       "So? How was it?")
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
@@ -30,4 +31,6 @@ DIALOGUE_SCRIPT(0x08060647, scene_060647)
       "Got it.")
   TALK(SPEAKER_PSYME, SIDE_RIGHT, EXPR_NEUTRAL,
       "I'm going to scout ahead. We need to gather data on the area.")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

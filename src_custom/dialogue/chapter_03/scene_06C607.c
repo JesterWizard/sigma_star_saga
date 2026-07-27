@@ -1,7 +1,10 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x0806C607 */
-DIALOGUE_SCRIPT(0x0806C607, scene_06C607)
+/* Script id 295 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x0806C607. */
+EVENT_SCRIPT_REPLACEMENT(0x0806C607, scene_06C607)
+
   TALK(SPEAKER_CREWMAN, SIDE_RIGHT, EXPR_ALT,
       "SCRAMBLE!!!")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

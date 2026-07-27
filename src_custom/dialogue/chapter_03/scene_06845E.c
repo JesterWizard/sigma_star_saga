@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x0806845E */
-DIALOGUE_SCRIPT(0x0806845E, scene_06845E)
+/* Script id 215 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x0806845E. */
+EVENT_SCRIPT_REPLACEMENT(0x0806845E, scene_06845E)
+
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
       "-under attack by a horde of diseased humans. They looked crazed somehow. Like, well...")
   TALK(SPEAKER_SCARLET, SIDE_RIGHT, EXPR_NEUTRAL,
@@ -32,4 +33,6 @@ DIALOGUE_SCRIPT(0x0806845E, scene_06845E)
       "The real virus only exists in code until we manufacture it.",
       "I still remember the formula...Maybe I could whip some up for you?"
   )
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

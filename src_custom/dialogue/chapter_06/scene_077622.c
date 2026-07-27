@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x08077622 */
-DIALOGUE_SCRIPT(0x08077622, scene_077622)
+/* Script id 460 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x08077622. */
+EVENT_SCRIPT_REPLACEMENT(0x08077622, scene_077622)
+
   TALK(SPEAKER_PSYME, SIDE_RIGHT, EXPR_NEUTRAL,
       "What...",
       "Where am I?"
@@ -26,4 +27,6 @@ DIALOGUE_SCRIPT(0x08077622, scene_077622)
       "You were right all along...",
       "But how did you defeat that...that thing?"
   )
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

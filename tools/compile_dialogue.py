@@ -66,12 +66,14 @@ SIDE_BY_NAME = {"SIDE_LEFT": ord("<"), "SIDE_RIGHT": ord(">")}
 EXPR_BY_NAME = {"EXPR_NEUTRAL": 0, "EXPR_ALT": 1}
 
 SCRIPT_RE = re.compile(
-    r"DIALOGUE_SCRIPT\s*\(\s*(0x[0-9A-Fa-f]+)\s*,\s*(\w+)\s*\)"
+    r"(?:DIALOGUE_SCRIPT|EVENT_SCRIPT_REPLACEMENT)\s*\(\s*(0x[0-9A-Fa-f]+)\s*,\s*(\w+)"
+    r"[^)]*\)"
     r"(.*?)"
-    r"END_DIALOGUE_SCRIPT\s*\(\s*\)",
+    r"(?:END_DIALOGUE_SCRIPT|END_EVENT_SCRIPT)\s*\(\s*\)",
     re.DOTALL,
 )
 # Macro call: NAME( ... ) with nested parens only in strings — keep simple.
+# Event choreography macros are ignored; only talk-bank ops emit bytes.
 CALL_RE = re.compile(
     r"\b(TALK|TEXT|CHAPTER_TITLE|CHOICE|EMPTY)\s*\(",
 )
@@ -209,8 +211,8 @@ def find_matching_paren(text: str, open_idx: int) -> int:
 
 
 def encode_events(body: str) -> bytes:
-    """Compile macro body (between DIALOGUE_SCRIPT and END) to entry bytes
-    including the leading '#'."""
+    """Compile macro body (between SCRIPT and END) to entry bytes
+    including the leading '#'. Event choreography macros are skipped."""
     # Strip C comments.
     body = re.sub(r"/\*.*?\*/", "", body, flags=re.DOTALL)
     body = re.sub(r"//.*?$", "", body, flags=re.MULTILINE)
@@ -274,7 +276,9 @@ def parse_scene_file(path: Path) -> tuple[int, bytes]:
     text = path.read_text(encoding="utf-8")
     m = SCRIPT_RE.search(text)
     if not m:
-        raise ValueError(f"{path}: no DIALOGUE_SCRIPT … END_DIALOGUE_SCRIPT")
+        raise ValueError(
+            f"{path}: no DIALOGUE_SCRIPT/EVENT_SCRIPT_REPLACEMENT … END_* block"
+        )
     addr = int(m.group(1), 16)
     body = m.group(3)
     return addr, encode_events(body)

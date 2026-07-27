@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x08075BD3 */
-DIALOGUE_SCRIPT(0x08075BD3, scene_075BD3)
+/* Script id 433 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x08075BD3. */
+EVENT_SCRIPT_REPLACEMENT(0x08075BD3, scene_075BD3)
+
   TALK(SPEAKER_SCARLET, SIDE_RIGHT, EXPR_NEUTRAL,
       "Recker! What happened?",
       "Was Psyme here?"
@@ -31,4 +32,6 @@ DIALOGUE_SCRIPT(0x08075BD3, scene_075BD3)
   )
   TALK(SPEAKER_SCARLET, SIDE_RIGHT, EXPR_NEUTRAL,
       "Ok, but hurry! I don't want to be anywhere near here when that planet blows!")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x0805F167 */
-DIALOGUE_SCRIPT(0x0805F167, scene_05F167)
+/* Script id 88 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x0805F167. */
+EVENT_SCRIPT_REPLACEMENT(0x0805F167, scene_05F167)
+
   TALK(SPEAKER_BLOSS, SIDE_RIGHT, EXPR_NEUTRAL,
       "Ah, you're back, Earthman. I just got an urgent call from Krill High Command.",
       "It's time to cash in that favor you owe me."
@@ -16,4 +17,6 @@ DIALOGUE_SCRIPT(0x0805F167, scene_05F167)
       "Just call me Ensign Expendable.")
   TALK(SPEAKER_BLOSS, SIDE_RIGHT, EXPR_NEUTRAL,
       "Then get yourself to the launch bay.")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

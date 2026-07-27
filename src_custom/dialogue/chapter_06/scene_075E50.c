@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x08075E50 */
-DIALOGUE_SCRIPT(0x08075E50, scene_075E50)
+/* Script id 435 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x08075E50. */
+EVENT_SCRIPT_REPLACEMENT(0x08075E50, scene_075E50)
+
   TALK(SPEAKER_OVERLORD, SIDE_RIGHT, EXPR_NEUTRAL,
       "You have journeyed so far only to meet your end here, at the foot of my throne.")
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
@@ -79,4 +80,6 @@ DIALOGUE_SCRIPT(0x08075E50, scene_075E50)
       "Dispose of Mister Recker.")
   TALK(SPEAKER_PSYME, SIDE_RIGHT, EXPR_NEUTRAL,
       "...")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

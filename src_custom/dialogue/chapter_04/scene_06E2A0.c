@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x0806E2A0 */
-DIALOGUE_SCRIPT(0x0806E2A0, scene_06E2A0)
+/* Script id 330 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x0806E2A0. */
+EVENT_SCRIPT_REPLACEMENT(0x0806E2A0, scene_06E2A0)
+
   TALK(SPEAKER_ZART, SIDE_RIGHT, EXPR_NEUTRAL,
       "Did you find the Genome?")
   TALK(SPEAKER_SCARLET, SIDE_RIGHT, EXPR_NEUTRAL,
@@ -12,4 +13,6 @@ DIALOGUE_SCRIPT(0x0806E2A0, scene_06E2A0)
       "Don't worry Psyme, I didn't put the moves on loverboy.",
       "Err Psyme, are you all right?"
   )
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

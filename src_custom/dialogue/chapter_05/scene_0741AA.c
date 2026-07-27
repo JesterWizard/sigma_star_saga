@@ -1,7 +1,17 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x080741AA */
-DIALOGUE_SCRIPT(0x080741AA, scene_0741AA)
+/*
+ * Script id 409 — cutscene-fired talk.
+ *
+ * FSM StartTalkById @ 0x08049E3E.
+ * Talk ROM 0x080741AA.
+ *
+ * No invented SPAWN/WALK — only macros evidenced by the owner FSM.
+ * compile_dialogue.py packs TALK/TEXT; compile_events.py may emit a runner table.
+ */
+
+EVENT_SCRIPT_REPLACEMENT(0x080741AA, scene_0741AA)
+
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
       "Blune! Turn back!")
   TALK(SPEAKER_BLUNE, SIDE_RIGHT, EXPR_NEUTRAL,
@@ -37,4 +47,6 @@ DIALOGUE_SCRIPT(0x080741AA, scene_0741AA)
       "I won't do that Recker! Hold your fire!")
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
       "No!")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

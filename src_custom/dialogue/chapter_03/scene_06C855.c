@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x0806C855 */
-DIALOGUE_SCRIPT(0x0806C855, scene_06C855)
+/* Script id 298 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x0806C855. */
+EVENT_SCRIPT_REPLACEMENT(0x0806C855, scene_06C855)
+
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
       "Psyme! I can't do this!!")
   TALK(SPEAKER_PSYME, SIDE_RIGHT, EXPR_NEUTRAL,
@@ -19,4 +20,6 @@ DIALOGUE_SCRIPT(0x0806C855, scene_06C855)
       "Sigma will be leading the attack, I just know it!",
       "Please, Recker!"
   )
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

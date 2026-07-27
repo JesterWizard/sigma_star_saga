@@ -98,10 +98,14 @@ DATA_ASM_BUILDDIR = $(OBJ_DIR)/$(DATA_ASM_SUBDIR)
 C_SRCS := \
 	$(C_SUBDIR)/level_up.c \
 	$(C_SUBDIR)/actor.c \
+	$(C_SUBDIR)/actor_spawn.c \
 	$(C_SUBDIR)/actor_draw.c \
 	$(C_SUBDIR)/actor_death.c \
 	$(C_SUBDIR)/damage.c \
-	$(C_SUBDIR)/overworld_encounters.c
+	$(C_SUBDIR)/overworld_encounters.c \
+	$(C_SUBDIR)/dialogue.c \
+	$(C_SUBDIR)/cutscene_ch1.c \
+	$(C_SUBDIR)/cutscene_stage.c
 CUSTOM_C_SRCS := \
 	$(CUSTOM_C_SUBDIR)/nocash.c \
 	$(CUSTOM_C_SUBDIR)/flight_skip_hooks.c \
@@ -110,7 +114,8 @@ CUSTOM_C_SRCS := \
 	$(CUSTOM_C_SUBDIR)/player_hit_hooks.c \
 	$(CUSTOM_C_SUBDIR)/enemy_hp_bar_hooks.c \
 	$(CUSTOM_C_SUBDIR)/random_battle_hooks.c \
-	$(CUSTOM_C_SUBDIR)/overworld_enemy_exp_hooks.c
+	$(CUSTOM_C_SUBDIR)/overworld_enemy_exp_hooks.c \
+	$(CUSTOM_C_SUBDIR)/event_runner_hooks.c
 CONFIG_SRCS := $(CONFIG_SUBDIR)/runtime.c
 # Region fragments + pool inventories are .included by ram_map.s (not assembled alone).
 RAM_MAP_FRAGMENTS := \
@@ -136,6 +141,10 @@ DIALOGUE_SCENE_SRCS := $(wildcard $(DIALOGUE_SRC_DIR)/chapter_*/*.c)
 DIALOGUE_BANKS_C := $(OBJ_DIR)/dialogue_banks.c
 DIALOGUE_BANKS_O := $(OBJ_DIR)/dialogue_banks.o
 COMPILE_DIALOGUE := $(TOOLS_DIR)/compile_dialogue.py
+COMPILE_EVENTS := $(TOOLS_DIR)/compile_events.py
+EVENT_SCRIPTS_JSON := $(OBJ_DIR)/event_scripts.json
+EVENT_SCRIPTS_C := $(OBJ_DIR)/event_scripts.c
+EVENT_SCRIPTS_O := $(OBJ_DIR)/event_scripts.o
 
 DATA_STRUCT_SRC_DIR := $(CUSTOM_C_SUBDIR)/data_structures
 DATA_STRUCT_JSON := $(wildcard $(DATA_STRUCT_SRC_DIR)/*.json)
@@ -149,7 +158,7 @@ CONFIG_OBJS := $(patsubst $(CONFIG_SUBDIR)/%.c,$(CONFIG_BUILDDIR)/%.o,$(CONFIG_S
 ASM_OBJS := $(patsubst $(ASM_SUBDIR)/%.s,$(ASM_BUILDDIR)/%.o,$(ASM_SRCS))
 DATA_ASM_OBJS := $(patsubst $(DATA_ASM_SUBDIR)/%.s,$(DATA_ASM_BUILDDIR)/%.o,$(DATA_ASM_SRCS))
 
-OBJS := $(C_OBJS) $(CUSTOM_C_OBJS) $(CONFIG_OBJS) $(DIALOGUE_BANKS_O) $(DATA_STRUCT_TABLES_O) $(ASM_OBJS) $(DATA_ASM_OBJS)
+OBJS := $(C_OBJS) $(CUSTOM_C_OBJS) $(CONFIG_OBJS) $(DIALOGUE_BANKS_O) $(DATA_STRUCT_TABLES_O) $(EVENT_SCRIPTS_O) $(ASM_OBJS) $(DATA_ASM_OBJS)
 OBJS_REL := $(patsubst $(OBJ_DIR)/%,%,$(OBJS))
 
 LYNJUMP_EVENT := $(CUSTOM_C_SUBDIR)/LynJump.event
@@ -222,6 +231,18 @@ $(DIALOGUE_BANKS_O): $(DIALOGUE_BANKS_C)
 	$(PREFIX)gcc -c -mcpu=arm7tdmi -mthumb -mthumb-interwork -O2 \
 		-fno-toplevel-reorder -iquote include -I include \
 		-o $@ $<
+
+# Catalog EVENT_SCRIPT choreography + opcode tables for the event runner.
+$(EVENT_SCRIPTS_C) $(EVENT_SCRIPTS_JSON): $(COMPILE_EVENTS) $(DIALOGUE_SCENE_SRCS)
+	@mkdir -p $(dir $@)
+	python3 $(COMPILE_EVENTS) --out-json $(EVENT_SCRIPTS_JSON) --out-c $(EVENT_SCRIPTS_C)
+
+$(EVENT_SCRIPTS_O): $(EVENT_SCRIPTS_C)
+	$(PREFIX)gcc -c -mcpu=arm7tdmi -mthumb -mthumb-interwork -O2 \
+		-fno-toplevel-reorder -iquote include -I include \
+		-o $@ $<
+
+$(ROM): $(EVENT_SCRIPTS_JSON)
 
 # Compile src_custom/data_structures/*.json → APPEND_RODATA tables.
 $(DATA_STRUCT_TABLES_C): $(COMPILE_DATA_STRUCTS) $(DATA_STRUCT_JSON) $(DATA_STRUCT_SRC_DIR)/README.md

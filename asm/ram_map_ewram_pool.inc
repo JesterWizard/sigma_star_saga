@@ -2,13 +2,13 @@
 @ AUTO-GENERATED — do not edit by hand.
 @   python3 tools/scan_ram_literals.py --emit-asm
 @ Word-aligned EWRAM pool targets with hits>=2 below FreeEwramSpaceTop.
+@ Excludes symbols already named in ram_map_ewram.s.
 @ Single-hit / unaligned / >=0x02030000 omitted (likely false positives).
 @ =============================================================================
 
 SET_DATA gUnk_02000000, 0x02000000  @ pool hits=3
 SET_DATA gUnk_02000004, 0x02000004  @ pool hits=2
 SET_DATA gUnk_02000008, 0x02000008  @ pool hits=2
-SET_DATA gUnk_02000010, 0x02000010  @ pool hits=2
 SET_DATA gUnk_020003C0, 0x020003C0  @ pool hits=2
 SET_DATA gUnk_020003E8, 0x020003E8  @ pool hits=2
 SET_DATA gUnk_020003EC, 0x020003EC  @ pool hits=2

@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x0806CC21 */
-DIALOGUE_SCRIPT(0x0806CC21, scene_06CC21)
+/* Script id 303 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x0806CC21. */
+EVENT_SCRIPT_REPLACEMENT(0x0806CC21, scene_06CC21)
+
   TALK(SPEAKER_PSYME, SIDE_RIGHT, EXPR_NEUTRAL,
       "Ek squealed like a girl. And you will too Nomak.")
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
@@ -23,4 +24,6 @@ DIALOGUE_SCRIPT(0x0806CC21, scene_06CC21)
       "Nothing! It was empty! Just these Sand Planet coordinates, I swear!")
   TALK(SPEAKER_PSYME, SIDE_RIGHT, EXPR_NEUTRAL,
       "That's all we need. Let's go!")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

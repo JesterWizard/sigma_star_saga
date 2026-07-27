@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x080746F3 */
-DIALOGUE_SCRIPT(0x080746F3, scene_0746F3)
+/* Script id 412 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x080746F3. */
+EVENT_SCRIPT_REPLACEMENT(0x080746F3, scene_0746F3)
+
   TALK(SPEAKER_TIERNEY, SIDE_RIGHT, EXPR_NEUTRAL,
       "Come in Recker. You remember Professor Zart, don't you?")
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
@@ -20,4 +21,6 @@ DIALOGUE_SCRIPT(0x080746F3, scene_0746F3)
       "Allied Earth Federation commissioned the virus. I just want the bio weapon. And now that I know the Krill will be eliminated by the hatching process, the virus only serves to threaten the weapon when I wield it! ")
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
       "But if the Krill world is destroyed, the weapon serves no purpose!")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

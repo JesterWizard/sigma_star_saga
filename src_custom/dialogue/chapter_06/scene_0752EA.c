@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x080752EA */
-DIALOGUE_SCRIPT(0x080752EA, scene_0752EA)
+/* Script id 431 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x080752EA. */
+EVENT_SCRIPT_REPLACEMENT(0x080752EA, scene_0752EA)
+
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
       "This place is quiet as a crypt.")
   TALK(SPEAKER_SCARLET, SIDE_RIGHT, EXPR_NEUTRAL,
@@ -18,4 +19,6 @@ DIALOGUE_SCRIPT(0x080752EA, scene_0752EA)
   )
   TALK(SPEAKER_SCARLET, SIDE_RIGHT, EXPR_NEUTRAL,
       "No problem. I'm not stepping foot in that place.")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

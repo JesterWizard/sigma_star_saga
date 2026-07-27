@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x0806623D */
-DIALOGUE_SCRIPT(0x0806623D, scene_06623D)
+/* Script id 190 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x0806623D. */
+EVENT_SCRIPT_REPLACEMENT(0x0806623D, scene_06623D)
+
   TALK(SPEAKER_PSYME, SIDE_RIGHT, EXPR_NEUTRAL,
       "Psyme reporting for active duty, Commander Zelly.",
       "I hope there are no hard feelings about what happened in front of the Overlord?"
@@ -48,4 +49,6 @@ DIALOGUE_SCRIPT(0x0806623D, scene_06623D)
       "I plan to clean house once you depart.",
       "Report to the launch bay immediately."
   )
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

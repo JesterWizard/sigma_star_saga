@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x0807140F */
-DIALOGUE_SCRIPT(0x0807140F, scene_07140F)
+/* Script id 367 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x0807140F. */
+EVENT_SCRIPT_REPLACEMENT(0x0807140F, scene_07140F)
+
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
       "Psyme. This is urgent. Come in.")
   TALK(SPEAKER_PSYME, SIDE_RIGHT, EXPR_NEUTRAL,
@@ -16,4 +17,6 @@ DIALOGUE_SCRIPT(0x0807140F, scene_07140F)
       "I noticed while working on SB2 that they have a detention section.")
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
       "I'll check it out.")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

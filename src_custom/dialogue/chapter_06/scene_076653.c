@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x08076653 */
-DIALOGUE_SCRIPT(0x08076653, scene_076653)
+/* Script id 437 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x08076653. */
+EVENT_SCRIPT_REPLACEMENT(0x08076653, scene_076653)
+
   TALK(SPEAKER_ZELLY, SIDE_RIGHT, EXPR_NEUTRAL,
       "Be a good girl and inform his highness there's been a change of plan.")
   TALK(SPEAKER_PSYME, SIDE_RIGHT, EXPR_NEUTRAL,
@@ -10,4 +11,6 @@ DIALOGUE_SCRIPT(0x08076653, scene_076653)
   )
   TALK(SPEAKER_OVERLORD, SIDE_RIGHT, EXPR_NEUTRAL,
       "Take care of it.")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

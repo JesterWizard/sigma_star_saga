@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x08071EFC */
-DIALOGUE_SCRIPT(0x08071EFC, scene_071EFC)
+/* Script id 377 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x08071EFC. */
+EVENT_SCRIPT_REPLACEMENT(0x08071EFC, scene_071EFC)
+
   TALK(SPEAKER_SCARLET, SIDE_RIGHT, EXPR_NEUTRAL,
       "That was a close one.",
       "Thank goodness you got my note about hiding in the ruins."
@@ -18,4 +19,6 @@ DIALOGUE_SCRIPT(0x08071EFC, scene_071EFC)
       "Ah. Errr, what matters is that you have the anti-virus, right?")
   TALK(SPEAKER_SCARLET, SIDE_RIGHT, EXPR_NEUTRAL,
       "Yes. Take it.")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

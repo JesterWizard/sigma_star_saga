@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x08069508 */
-DIALOGUE_SCRIPT(0x08069508, scene_069508)
+/* Script id 245 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x08069508. */
+EVENT_SCRIPT_REPLACEMENT(0x08069508, scene_069508)
+
   TALK(SPEAKER_NOMAK, SIDE_RIGHT, EXPR_NEUTRAL,
       "Ah. You must be Recker.")
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
@@ -14,4 +15,6 @@ DIALOGUE_SCRIPT(0x08069508, scene_069508)
       "Hah. That Zelly wench drives every man to wit's end. I'll see what strings I can pull.",
       "Ah, your pals are here."
   )
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

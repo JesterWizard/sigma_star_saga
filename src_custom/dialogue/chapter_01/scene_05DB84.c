@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x0805DB84 */
-DIALOGUE_SCRIPT(0x0805DB84, scene_05DB84)
+/* Script id 75 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x0805DB84. */
+EVENT_SCRIPT_REPLACEMENT(0x0805DB84, scene_05DB84)
+
   TALK(SPEAKER_MEDIC_1, SIDE_LEFT, EXPR_NEUTRAL,
       "...badly...",
       "...extensive damage..."
@@ -33,4 +34,6 @@ DIALOGUE_SCRIPT(0x0805DB84, scene_05DB84)
   )
   TALK(SPEAKER_MEDIC_2, SIDE_RIGHT, EXPR_NEUTRAL,
       "...too late...")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

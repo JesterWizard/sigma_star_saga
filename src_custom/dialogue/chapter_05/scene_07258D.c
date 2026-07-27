@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x0807258D */
-DIALOGUE_SCRIPT(0x0807258D, scene_07258D)
+/* Script id 388 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x0807258D. */
+EVENT_SCRIPT_REPLACEMENT(0x0807258D, scene_07258D)
+
   TALK(SPEAKER_PSYME, SIDE_RIGHT, EXPR_NEUTRAL,
       "What are you three doing here?")
   TALK(SPEAKER_SISTERS, SIDE_RIGHT, EXPR_NEUTRAL,
@@ -67,4 +68,6 @@ DIALOGUE_SCRIPT(0x0807258D, scene_07258D)
       "The feeling is hardly mutual. ")
   TALK(SPEAKER_LOLLY, SIDE_RIGHT, EXPR_NEUTRAL,
       "Ghost calls Lolly. Makes me warm and sleepy! ")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

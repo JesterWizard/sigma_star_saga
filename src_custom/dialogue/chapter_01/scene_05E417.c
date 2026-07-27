@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x0805E417 */
-DIALOGUE_SCRIPT(0x0805E417, scene_05E417)
+/* Script id 77 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x0805E417. */
+EVENT_SCRIPT_REPLACEMENT(0x0805E417, scene_05E417)
+
   TALK(SPEAKER_MEDIC, SIDE_RIGHT, EXPR_NEUTRAL,
       "Wake up kid, you're on!")
   TALK(SPEAKER_RECKER, SIDE_LEFT, EXPR_NEUTRAL,
@@ -22,4 +23,6 @@ DIALOGUE_SCRIPT(0x0805E417, scene_05E417)
       "Don't try to escape.",
       "It would be bad for both of us."
   )
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

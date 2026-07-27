@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x0805F663 */
-DIALOGUE_SCRIPT(0x0805F663, scene_05F663)
+/* Script id 92 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x0805F663. */
+EVENT_SCRIPT_REPLACEMENT(0x0805F663, scene_05F663)
+
   TALK(SPEAKER_BLOSS, SIDE_RIGHT, EXPR_NEUTRAL,
       "Not as easy as it looked, eh Earthman? ",
       "Why don't you hook up with the landing party. Give you a chance to use that firecracker you're always carrying around.",
@@ -30,4 +31,6 @@ DIALOGUE_SCRIPT(0x0805F663, scene_05F663)
       "...",
       "So that's who shot down Sigma Team! A lousy Krill girl!"
   )
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

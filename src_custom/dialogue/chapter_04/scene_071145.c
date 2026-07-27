@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x08071145 */
-DIALOGUE_SCRIPT(0x08071145, scene_071145)
+/* Script id 366 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x08071145. */
+EVENT_SCRIPT_REPLACEMENT(0x08071145, scene_071145)
+
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
       "Are you Commander Ammer?")
   TALK(SPEAKER_AMMER, SIDE_RIGHT, EXPR_NEUTRAL,
@@ -26,4 +27,6 @@ DIALOGUE_SCRIPT(0x08071145, scene_071145)
       "Pay it no mind. Well, I have things to attend to!")
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
       "Yes me too. Forgive the interruption.")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

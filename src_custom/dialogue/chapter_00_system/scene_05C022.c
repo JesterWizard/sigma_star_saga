@@ -1,6 +1,9 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x0805C022 */
-DIALOGUE_SCRIPT(0x0805C022, scene_05C022)
+/* Script id 7 — system/UI TEXT (no portrait). No sprite FSM in this stream. Talk ROM 0x0805C022. */
+EVENT_SCRIPT_REPLACEMENT(0x0805C022, scene_05C022)
+
   TEXT("You found a HINT!")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

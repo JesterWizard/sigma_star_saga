@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x08069716 */
-DIALOGUE_SCRIPT(0x08069716, scene_069716)
+/* Script id 247 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x08069716. */
+EVENT_SCRIPT_REPLACEMENT(0x08069716, scene_069716)
+
   TALK(SPEAKER_SCARLET, SIDE_RIGHT, EXPR_NEUTRAL,
       "Say What?!")
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
@@ -16,4 +17,6 @@ DIALOGUE_SCRIPT(0x08069716, scene_069716)
       "I'm sure.",
       "There's no shuttle between starbases for the moment. We're using every available ship to wipe out that nasty virus. Can't be too careful."
   )
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

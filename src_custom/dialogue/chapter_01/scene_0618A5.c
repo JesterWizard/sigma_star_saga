@@ -1,9 +1,12 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x080618A5 */
-DIALOGUE_SCRIPT(0x080618A5, scene_0618A5)
+/* Script id 125 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x080618A5. */
+EVENT_SCRIPT_REPLACEMENT(0x080618A5, scene_0618A5)
+
   TALK(SPEAKER_CREWMAN, SIDE_RIGHT, EXPR_ALT,
       "I remember my first parasite...bit down on my head like a bugger!",
       "A good slam against the wall takes care of that!"
   )
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

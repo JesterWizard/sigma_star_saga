@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x080715FB */
-DIALOGUE_SCRIPT(0x080715FB, scene_0715FB)
+/* Script id 369 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x080715FB. */
+EVENT_SCRIPT_REPLACEMENT(0x080715FB, scene_0715FB)
+
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
       "They've found us. Quick, who did this to you?")
   TALK(SPEAKER_ZELLY, SIDE_RIGHT, EXPR_NEUTRAL,
@@ -19,4 +20,6 @@ DIALOGUE_SCRIPT(0x080715FB, scene_0715FB)
   )
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
       "Count on it.")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

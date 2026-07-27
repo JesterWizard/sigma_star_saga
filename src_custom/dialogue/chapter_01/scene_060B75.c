@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x08060B75 */
-DIALOGUE_SCRIPT(0x08060B75, scene_060B75)
+/* Script id 112 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x08060B75. */
+EVENT_SCRIPT_REPLACEMENT(0x08060B75, scene_060B75)
+
   TALK(SPEAKER_PSYME, SIDE_RIGHT, EXPR_NEUTRAL,
       "I was right. The humans beat us here.")
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
@@ -45,4 +46,6 @@ DIALOGUE_SCRIPT(0x08060B75, scene_060B75)
       "I'll set up a remote DATA PLUG here.",
       "Use it to SAVE your progress."
   )
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

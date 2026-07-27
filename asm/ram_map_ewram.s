@@ -48,6 +48,11 @@ SET_DATA UsedFreeEwramSpaceTop, FreeEwramSpaceBottom
     SET_ARRAY \name, UsedFreeEwramSpaceTop, \size
 .endm
 
+@ -- Dialogue ------------------------------------------------------------------
+
+@ Halfword offset table into each talk bank (built by BuildTalkOffsets @ 0x10964).
+SET_DATA gDialogueEntryOffsets, 0x02000010
+
 @ -- Pool-backed unknowns (auto-generated) -------------------------------------
 .include "ram_map_ewram_pool.inc"
 

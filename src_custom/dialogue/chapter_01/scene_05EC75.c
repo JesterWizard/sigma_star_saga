@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x0805EC75 */
-DIALOGUE_SCRIPT(0x0805EC75, scene_05EC75)
+/* Script id 86 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x0805EC75. */
+EVENT_SCRIPT_REPLACEMENT(0x0805EC75, scene_05EC75)
+
   TALK(SPEAKER_SILENCE, SIDE_RIGHT, EXPR_NEUTRAL,
       "...............",
       "................",
@@ -43,4 +44,6 @@ DIALOGUE_SCRIPT(0x0805EC75, scene_05EC75)
       "How?")
   TALK(SPEAKER_TIERNEY, SIDE_RIGHT, EXPR_NEUTRAL,
       "Like this...")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

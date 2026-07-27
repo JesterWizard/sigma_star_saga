@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x08064109 */
-DIALOGUE_SCRIPT(0x08064109, scene_064109)
+/* Script id 163 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x08064109. */
+EVENT_SCRIPT_REPLACEMENT(0x08064109, scene_064109)
+
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
       "That does it. All three beacons should be cleared.")
   TALK(SPEAKER_BLUNE, SIDE_RIGHT, EXPR_NEUTRAL,
@@ -12,4 +13,6 @@ DIALOGUE_SCRIPT(0x08064109, scene_064109)
       "Remember, our mission objective is to find a fissure deep enough to take a clear reading of the planet.")
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
       "I'll head back in the direction we came. There were some places I want to check out.")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

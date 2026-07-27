@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x08063F4E */
-DIALOGUE_SCRIPT(0x08063F4E, scene_063F4E)
+/* Script id 162 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x08063F4E. */
+EVENT_SCRIPT_REPLACEMENT(0x08063F4E, scene_063F4E)
+
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
       "What is that thing?")
   TALK(SPEAKER_BLUNE, SIDE_RIGHT, EXPR_NEUTRAL,
@@ -20,4 +21,6 @@ DIALOGUE_SCRIPT(0x08063F4E, scene_063F4E)
   )
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
       "Affirmative.")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

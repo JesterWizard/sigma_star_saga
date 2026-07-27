@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x0806F905 */
-DIALOGUE_SCRIPT(0x0806F905, scene_06F905)
+/* Script id 353 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x0806F905. */
+EVENT_SCRIPT_REPLACEMENT(0x0806F905, scene_06F905)
+
   TALK(SPEAKER_TIERNEY, SIDE_RIGHT, EXPR_NEUTRAL,
       "Hello Psyme. I've heard impressive things about you.")
   TALK(SPEAKER_PSYME, SIDE_RIGHT, EXPR_NEUTRAL,
@@ -84,4 +85,6 @@ DIALOGUE_SCRIPT(0x0806F905, scene_06F905)
       "You are on your own.",
       "Over, and out."
   )
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

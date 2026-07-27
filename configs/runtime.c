@@ -17,5 +17,9 @@ const RuntimeConfig gRuntimeConfigRom __attribute__((section(".runtime_config"))
     .custom_dialogue = FALSE,
     .custom_gun_data = TRUE,
     .enemy_hp_bars = FALSE,
-    .disable_random_battles = FALSE,
+    .disable_random_battles = TRUE,
+    .custom_cutscene_ch1 = TRUE,
+    .custom_cutscene_stage = TRUE,
+    .custom_talk_helpers = FALSE,
+    .custom_event_runner = FALSE, /* interpret compile_events opcode tables */
 };

@@ -1,6 +1,9 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x08076EE2 */
-DIALOGUE_SCRIPT(0x08076EE2, scene_076EE2)
+/* Script id 445 — EMPTY stub (keeps script-ID alignment). Talk ROM 0x08076EE2. */
+EVENT_SCRIPT_REPLACEMENT(0x08076EE2, scene_076EE2)
+
   EMPTY()
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

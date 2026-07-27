@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x08064F8C */
-DIALOGUE_SCRIPT(0x08064F8C, scene_064F8C)
+/* Script id 169 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x08064F8C. */
+EVENT_SCRIPT_REPLACEMENT(0x08064F8C, scene_064F8C)
+
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
       "What is this thing? It looks like a hockey puck.")
   TALK(SPEAKER_BLUNE, SIDE_RIGHT, EXPR_NEUTRAL,
@@ -20,4 +21,6 @@ DIALOGUE_SCRIPT(0x08064F8C, scene_064F8C)
       "The existence of that creature should be data enough.")
   TALK(SPEAKER_PSYME, SIDE_RIGHT, EXPR_NEUTRAL,
       "All right then, let's get back to base. Maybe you can use that Puck thing to find a better route.")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

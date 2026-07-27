@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x0806A353 */
-DIALOGUE_SCRIPT(0x0806A353, scene_06A353)
+/* Script id 264 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x0806A353. */
+EVENT_SCRIPT_REPLACEMENT(0x0806A353, scene_06A353)
+
   TALK(SPEAKER_BLOSS, SIDE_RIGHT, EXPR_NEUTRAL,
       "Long time, kid! Commander Zelly said you're looking for an AWOL pilot.")
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
@@ -12,4 +13,6 @@ DIALOGUE_SCRIPT(0x0806A353, scene_06A353)
   )
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
       "Well Blune's blood will be on her hands. Where is he?")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

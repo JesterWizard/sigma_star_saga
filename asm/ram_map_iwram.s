@@ -63,8 +63,12 @@ SET_DATA gPlayerPtr, 0x03000DB8
 @ Current EXP gem object while ExpGemUpdate runs (pos at +0x18/+0x1C).
 SET_DATA gExpGemPtr, 0x03006FE0
 
-@ Flight actor pool base (stride 0x60; index 0 = player ship).
+@ Actor pool base (stride 0x60; flight index 0 = ship; also used by cutscenes).
 SET_DATA gActorPool, 0x03002780
+@ First index SpawnActor scans for a free slot; DeleteActor soft-clears below it.
+SET_DATA gActorAllocIndex, 0x0300368C
+@ Shared cutscene counter / spawn gate (also gUnk_03003688 in pool inventory).
+SET_DATA gCutsceneCounter, 0x03003688
 
 @ Soft OAM shadow (128 × 8 bytes) — DMA'd to 0x07000000 each VBlank.
 SET_DATA gSoftOam, 0x03001F70
@@ -75,6 +79,42 @@ SET_DATA gActorOamStart, 0x03000D60
 SET_DATA gUseYSorting, 0x03001658
 @ Camera array (stride 0x84; X @ +0x2C, Y @ +0x30, both 16.16).
 SET_DATA gCameras, 0x030009C0
+
+@ -- Dialogue / cutscene -------------------------------------------------------
+
+@ Runtime copy of the 7 talk-bank base pointers (InitTalkBanks @ 0x109A0).
+SET_DATA gDialogueBankBases, 0x03000018
+@ Per-frame cutscene step / case index (Ch.1 opener @ 0x523EC, etc.).
+SET_DATA gCutsceneStep, 0x03007704
+@ Cutscene lerp pair [0]=primary, [1]=secondary (paired with gCutsceneStep).
+SET_ARRAY gCutsceneParam, 0x03007708, 0x8
+@ Outer case index for stage FSM @ 0x0802B18C (JT; case 0 → talk id 109).
+SET_DATA gStageCase, 0x03007738
+@ Halfword gate used by stage intro case 268 (wait == 0x1F00).
+SET_DATA gCutsceneGateHw, 0x030038A8
+@ World / cutscene scroll registers (16.16; moved alongside gCameras).
+SET_DATA gWorldScrollX, 0x03000C44
+SET_DATA gWorldScrollY, 0x03000C6C
+@ Case 62 waveform output (160 u16 entries).
+SET_ARRAY gCutsceneWaveOutput, 0x030036A0, 0x140
+@ Case 62 waveform phase byte.
+SET_DATA gCutsceneWavePhase, 0x030076CC
+
+@ Talk UI (StartTalkPtr @ 0x10808). Base block; flags halfword at +14.
+SET_DATA gTalkState, 0x03007100
+SET_DATA gTalkStreamPtr, 0x03007198
+SET_DATA gTalkParamA, 0x03007184
+SET_DATA gTalkParamB, 0x030070F4
+SET_DATA gTalkBusyA, 0x030070F0
+SET_DATA gTalkBusyB, 0x030070E8
+SET_DATA gTalkParamAMirror, 0x03007154
+SET_DATA gTalkLayout, 0x030071B4
+SET_DATA gTalkPagePos, 0x030071D0
+SET_DATA gTalkPagePos2, 0x030071F4
+SET_DATA gTalkLayoutCmp, 0x030071B8
+SET_DATA gTalkActive, 0x030070E0
+SET_DATA gTalkGate, 0x03000014
+SET_DATA gTalkExtra, 0x0300001C
 
 @ -- Overworld encounters / input ----------------------------------------------
 

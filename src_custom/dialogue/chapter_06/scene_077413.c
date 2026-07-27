@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x08077413 */
-DIALOGUE_SCRIPT(0x08077413, scene_077413)
+/* Script id 457 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x08077413. */
+EVENT_SCRIPT_REPLACEMENT(0x08077413, scene_077413)
+
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
       "First Blune...",
       "Now Psyme..."
@@ -24,4 +25,6 @@ DIALOGUE_SCRIPT(0x08077413, scene_077413)
       "Then why does it feel like I lost?")
   TALK(SPEAKER_SCARLET, SIDE_RIGHT, EXPR_NEUTRAL,
       "You didn't lose me. Come on. I'll buy you dinner.")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

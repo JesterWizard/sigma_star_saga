@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x08072D18 */
-DIALOGUE_SCRIPT(0x08072D18, scene_072D18)
+/* Script id 394 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x08072D18. */
+EVENT_SCRIPT_REPLACEMENT(0x08072D18, scene_072D18)
+
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
       "You must be Sliss.")
   TALK(SPEAKER_SLISS, SIDE_RIGHT, EXPR_NEUTRAL,
@@ -20,4 +21,6 @@ DIALOGUE_SCRIPT(0x08072D18, scene_072D18)
       "Nexus quiet before. Loud now.")
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
       "Sigh...Guess I'll retrace my steps.")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

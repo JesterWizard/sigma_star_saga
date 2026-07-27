@@ -1,6 +1,9 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x0805BFA5 */
-DIALOGUE_SCRIPT(0x0805BFA5, scene_05BFA5)
+/* Script id 2 — system/UI TEXT (no portrait). No sprite FSM in this stream. Talk ROM 0x0805BFA5. */
+EVENT_SCRIPT_REPLACEMENT(0x0805BFA5, scene_05BFA5)
+
   TEXT("You planted a FLARE!")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

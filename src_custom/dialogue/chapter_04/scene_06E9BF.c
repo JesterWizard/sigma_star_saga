@@ -1,7 +1,10 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x0806E9BF */
-DIALOGUE_SCRIPT(0x0806E9BF, scene_06E9BF)
+/* Script id 340 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x0806E9BF. */
+EVENT_SCRIPT_REPLACEMENT(0x0806E9BF, scene_06E9BF)
+
   TALK(SPEAKER_MEDIC, SIDE_RIGHT, EXPR_NEUTRAL,
       "Uh, good luck pal!")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

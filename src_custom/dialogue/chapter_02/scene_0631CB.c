@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x080631CB */
-DIALOGUE_SCRIPT(0x080631CB, scene_0631CB)
+/* Script id 149 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x080631CB. */
+EVENT_SCRIPT_REPLACEMENT(0x080631CB, scene_0631CB)
+
   TALK(SPEAKER_TECH, SIDE_RIGHT, EXPR_ALT,
       "You transferred here with Psyme? Man, what a hothead.")
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
@@ -12,4 +13,6 @@ DIALOGUE_SCRIPT(0x080631CB, scene_0631CB)
       "I'll need an access key.")
   TALK(SPEAKER_TECH, SIDE_RIGHT, EXPR_NEUTRAL,
       "That's no problem. I have an extra.")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

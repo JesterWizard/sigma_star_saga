@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x08063D7D */
-DIALOGUE_SCRIPT(0x08063D7D, scene_063D7D)
+/* Script id 160 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x08063D7D. */
+EVENT_SCRIPT_REPLACEMENT(0x08063D7D, scene_063D7D)
+
   TALK(SPEAKER_BLUNE, SIDE_RIGHT, EXPR_NEUTRAL,
       "Good find Recker.")
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
@@ -10,4 +11,6 @@ DIALOGUE_SCRIPT(0x08063D7D, scene_063D7D)
       "Only one more to go. Then crossing between these land masses will be a cake walk.")
   TALK(SPEAKER_BLUNE, SIDE_RIGHT, EXPR_NEUTRAL,
       "Keep your eyes peeled for that last one.")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

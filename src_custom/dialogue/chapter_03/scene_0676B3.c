@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x080676B3 */
-DIALOGUE_SCRIPT(0x080676B3, scene_0676B3)
+/* Script id 196 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x080676B3. */
+EVENT_SCRIPT_REPLACEMENT(0x080676B3, scene_0676B3)
+
   TALK(SPEAKER_PSYME, SIDE_RIGHT, EXPR_NEUTRAL,
       "That was the loader arm dropping us I think.")
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
@@ -14,4 +15,6 @@ DIALOGUE_SCRIPT(0x080676B3, scene_0676B3)
   )
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
       "Aww, it wasn't so bad.")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

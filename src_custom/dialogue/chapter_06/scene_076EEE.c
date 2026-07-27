@@ -1,7 +1,10 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x08076EEE */
-DIALOGUE_SCRIPT(0x08076EEE, scene_076EEE)
+/* Script id 447 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x08076EEE. */
+EVENT_SCRIPT_REPLACEMENT(0x08076EEE, scene_076EEE)
+
   TALK(SPEAKER_OVERLORD, SIDE_RIGHT, EXPR_NEUTRAL,
       "Will be...")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

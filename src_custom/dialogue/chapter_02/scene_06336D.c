@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x0806336D */
-DIALOGUE_SCRIPT(0x0806336D, scene_06336D)
+/* Script id 152 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x0806336D. */
+EVENT_SCRIPT_REPLACEMENT(0x0806336D, scene_06336D)
+
   TALK(SPEAKER_TIERNEY, SIDE_RIGHT, EXPR_NEUTRAL,
       "Recker, good.")
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
@@ -22,4 +23,6 @@ DIALOGUE_SCRIPT(0x0806336D, scene_06336D)
       "No. We have no knowledge of this planet or why the Krill would want it. As soon has you have concrete data, send it over.",
       "Tierney out!"
   )
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

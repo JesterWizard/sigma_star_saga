@@ -70,11 +70,27 @@ Method: Thumb `LDR Rd,[PC,#imm]` literal pools only (not raw absolute words). Wo
 | `gPlayerMapObjIndex` | `0x0300704C` | Player map-object index |
 | `gEncounterObjIndices` | `0x03007070` | Encounter object index list |
 | `gExpGemPtr` | `0x03006FE0` | Current EXP gem during `ExpGemUpdate` |
-| `gActorPool` | `0x03002780` | Flight actor pool (stride `0x60`) |
+| `gActorPool` | `0x03002780` | Actor pool (stride `0x60`; flight + cutscenes) |
+| `gActorAllocIndex` | `0x0300368C` | `SpawnActor` free-slot scan start |
+| `gCutsceneCounter` | `0x03003688` | Cutscene wait counter / spawn gate |
 | `gSoftOam` | `0x03001F70` | Soft OAM shadow (128 × 8 bytes) |
 | `gOamCursor` | `0x03006910` | Soft OAM write cursor |
 | `gSoftOamCount` | `0x03006918` | Soft OAM entry count (128) |
 | `gCameras` | `0x030009C0` | Camera array (stride `0x84`) |
+| `gDialogueBankBases` | `0x03000018` | Runtime ptr to 7 talk-bank bases |
+| `gDialogueEntryOffsets` | `0x02000010` | Per-script halfword offsets into banks |
+| `gCutsceneStep` | `0x03007704` | Per-frame cutscene step / case index |
+| `gCutsceneParam` | `0x03007708` | Cutscene lerp pair (8 bytes) |
+| `gStageCase` | `0x03007738` | Stage FSM @ `0x0802B18C` outer JT index |
+| `gCutsceneGateHw` | `0x030038A8` | Stage intro case wait halfword |
+| `gWorldScrollX` | `0x03000C44` | World / cutscene scroll X (16.16) |
+| `gWorldScrollY` | `0x03000C6C` | World / cutscene scroll Y (16.16) |
+| `gCutsceneWaveOutput` | `0x030036A0` | Case 62 waveform output (160 halfwords) |
+| `gCutsceneWavePhase` | `0x030076CC` | Case 62 waveform phase |
+| `gTalkState` | `0x03007100` | Talk UI block (flags halfword at +14) |
+| `gTalkStreamPtr` | `0x03007198` | Active talk stream cursor |
+| `gTalkGate` | `0x03000014` | Talk gate latch |
+| `gTalkExtra` | `0x0300001C` | `StartTalkByIdEx` extra byte |
 | `gPlayerBombs` | `0x03007014` | Smart bomb count |
 | `gPlayerLevel` | `0x0300702C` | RPG level |
 | `gPlayerExp` | `0x0300705C` | Experience (canonical / save) |

@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x08077CB2 */
-DIALOGUE_SCRIPT(0x08077CB2, scene_077CB2)
+/* Script id 463 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x08077CB2. */
+EVENT_SCRIPT_REPLACEMENT(0x08077CB2, scene_077CB2)
+
   TALK(SPEAKER_PSYME, SIDE_RIGHT, EXPR_NEUTRAL,
       "What...",
       "Where am I?"
@@ -24,4 +25,6 @@ DIALOGUE_SCRIPT(0x08077CB2, scene_077CB2)
       "He...destroyed everything Recker.",
       "You were right all along..."
   )
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

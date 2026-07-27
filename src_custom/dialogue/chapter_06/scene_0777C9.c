@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x080777C9 */
-DIALOGUE_SCRIPT(0x080777C9, scene_0777C9)
+/* Script id 461 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x080777C9. */
+EVENT_SCRIPT_REPLACEMENT(0x080777C9, scene_0777C9)
+
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
       "It was Scarlet...",
       "Her body contained a copy of the virus.",
@@ -51,4 +52,6 @@ DIALOGUE_SCRIPT(0x080777C9, scene_0777C9)
       "Come on, show me around this planet of yours.",
       "I want to see everything!"
   )
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

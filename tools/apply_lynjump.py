@@ -15,7 +15,9 @@ BOOL_RE = re.compile(
     r"\.(skip_flight_battle|always_run|always_max_health|always_max_bombs|"
     r"all_cannon_data|all_bullet_data|all_impact_data|"
     r"all_key_items|all_tools|custom_enemy_exp|overworld_enemy_exp|custom_dialogue|"
-    r"custom_gun_data|enemy_hp_bars|disable_random_battles)\s*=\s*(TRUE|FALSE|true|false|1|0)",
+    r"custom_gun_data|enemy_hp_bars|disable_random_battles|custom_cutscene_ch1|"
+    r"custom_cutscene_stage|custom_talk_helpers|custom_event_runner)"
+    r"\s*=\s*(TRUE|FALSE|true|false|1|0)",
     re.IGNORECASE,
 )
 
@@ -81,6 +83,13 @@ PLAYER_STATE_MACHINE_OFF = 0x25DB4
 PLAYER_HIT_UPDATE_OFF = 0x24E24
 PLAYER_SHIP_UPDATE_OFF = 0x15F34
 DAMAGE_APPLY_OFF = 0x5350
+CUTSCENE_CH1_OPENER_OFF = 0x523EC  # CutsceneCh1Opener peel
+CUTSCENE_STAGE_OFF = 0x2B18C  # CutsceneStageUpdate peel
+START_TALK_PTR_OFF = 0x10808
+START_TALK_BY_ID_OFF = 0x108B0
+START_TALK_BY_ID_EX_OFF = 0x1093C
+BUILD_TALK_OFFSETS_OFF = 0x10964
+INIT_TALK_BANKS_OFF = 0x109A0
 PLAYER_DEATH_FX_OFF = 0x1BA4C
 DELETE_ACTOR_OFF = 0x6310
 DRAW_ACTORS_OFF = 0x6C0C
@@ -254,6 +263,10 @@ def load_runtime_flags() -> dict[str, bool]:
         "custom_gun_data": True,
         "enemy_hp_bars": False,
         "disable_random_battles": False,
+        "custom_cutscene_ch1": False,
+        "custom_cutscene_stage": False,
+        "custom_talk_helpers": False,
+        "custom_event_runner": False,
     }
     for match in BOOL_RE.finditer(text):
         name = match.group(1)
@@ -1212,6 +1225,115 @@ def apply_overworld_enemy_exp(
     del gun_data  # reserved for call-site symmetry / future gating
 
 
+def apply_cutscene_ch1(rom: bytearray, owners: dict, symbols: dict, enabled: bool,
+                       event_runner: bool = False):
+    """LynJump Chapter 1 opener FSM @ 0x523EC.
+
+    Prefer CutsceneCh1Opener__Replacement when custom_event_runner is on;
+    otherwise CutsceneCh1Opener peel.
+    """
+    baserom = (ROOT / "baserom.gba").read_bytes()
+    owner = "runtime:custom_cutscene_ch1"
+
+    if not enabled and not event_runner:
+        for offset in range(CUTSCENE_CH1_OPENER_OFF, CUTSCENE_CH1_OPENER_OFF + VENEER_LEN):
+            owners.pop(offset, None)
+        checked_write(
+            rom,
+            CUTSCENE_CH1_OPENER_OFF,
+            baserom[CUTSCENE_CH1_OPENER_OFF : CUTSCENE_CH1_OPENER_OFF + VENEER_LEN],
+            owners,
+            f"{owner}=FALSE",
+        )
+        print("runtime: custom_cutscene_ch1=FALSE (vanilla Ch.1 opener)")
+        return
+
+    if event_runner and "CutsceneCh1Opener__Replacement" in symbols:
+        name = "CutsceneCh1Opener__Replacement"
+    else:
+        name = "CutsceneCh1Opener"
+    if name not in symbols:
+        raise KeyError(f"symbol {name} not found (needed for custom_cutscene_ch1)")
+    for offset in range(CUTSCENE_CH1_OPENER_OFF, CUTSCENE_CH1_OPENER_OFF + VENEER_LEN):
+        owners.pop(offset, None)
+    apply_veneer(
+        rom,
+        owners,
+        CUTSCENE_CH1_OPENER_OFF,
+        symbols[name],
+        owner,
+    )
+    print(
+        f"runtime: custom_cutscene_ch1/event_runner → {name} "
+        f"0x{symbols[name]:08X}"
+    )
+
+
+def apply_cutscene_stage(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
+    """LynJump stage FSM @ 0x2B18C → CutsceneStageUpdate peel."""
+    baserom = (ROOT / "baserom.gba").read_bytes()
+    owner = "runtime:custom_cutscene_stage"
+
+    if not enabled:
+        for offset in range(CUTSCENE_STAGE_OFF, CUTSCENE_STAGE_OFF + VENEER_LEN):
+            owners.pop(offset, None)
+        checked_write(
+            rom,
+            CUTSCENE_STAGE_OFF,
+            baserom[CUTSCENE_STAGE_OFF : CUTSCENE_STAGE_OFF + VENEER_LEN],
+            owners,
+            f"{owner}=FALSE",
+        )
+        print("runtime: custom_cutscene_stage=FALSE (vanilla stage FSM)")
+        return
+
+    name = "CutsceneStageUpdate"
+    if name not in symbols:
+        raise KeyError(f"symbol {name} not found (needed for custom_cutscene_stage)")
+    for offset in range(CUTSCENE_STAGE_OFF, CUTSCENE_STAGE_OFF + VENEER_LEN):
+        owners.pop(offset, None)
+    apply_veneer(rom, owners, CUTSCENE_STAGE_OFF, symbols[name], owner)
+    print(
+        f"runtime: custom_cutscene_stage=TRUE → CutsceneStageUpdate "
+        f"0x{symbols[name]:08X}"
+    )
+
+
+def apply_talk_helpers(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
+    """LynJump StartTalk* / InitTalkBanks / BuildTalkOffsets peels."""
+    baserom = (ROOT / "baserom.gba").read_bytes()
+    owner = "runtime:custom_talk_helpers"
+    sites = (
+        (START_TALK_PTR_OFF, "StartTalkPtr"),
+        (START_TALK_BY_ID_OFF, "StartTalkById"),
+        (START_TALK_BY_ID_EX_OFF, "StartTalkByIdEx"),
+        (BUILD_TALK_OFFSETS_OFF, "BuildTalkOffsets"),
+        (INIT_TALK_BANKS_OFF, "InitTalkBanks"),
+    )
+
+    if not enabled:
+        for off, _name in sites:
+            for offset in range(off, off + VENEER_LEN):
+                owners.pop(offset, None)
+            checked_write(
+                rom,
+                off,
+                baserom[off : off + VENEER_LEN],
+                owners,
+                f"{owner}=FALSE",
+            )
+        print("runtime: custom_talk_helpers=FALSE (vanilla talk helpers)")
+        return
+
+    for off, name in sites:
+        if name not in symbols:
+            raise KeyError(f"symbol {name} not found (needed for custom_talk_helpers)")
+        for offset in range(off, off + VENEER_LEN):
+            owners.pop(offset, None)
+        apply_veneer(rom, owners, off, symbols[name], owner)
+        print(f"runtime: custom_talk_helpers=TRUE → {name} 0x{symbols[name]:08X}")
+
+
 def apply_disable_random_battles(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
     """No-op TryStartRandomBattle @ 0x1DA5C when enabled.
 
@@ -1295,6 +1417,15 @@ def main():
         flags["custom_gun_data"],
     )
     apply_disable_random_battles(rom, owners, symbols, flags["disable_random_battles"])
+    apply_cutscene_ch1(
+        rom,
+        owners,
+        symbols,
+        flags["custom_cutscene_ch1"],
+        flags["custom_event_runner"],
+    )
+    apply_cutscene_stage(rom, owners, symbols, flags["custom_cutscene_stage"])
+    apply_talk_helpers(rom, owners, symbols, flags["custom_talk_helpers"])
 
     rom_path.write_bytes(rom)
     print(f"patches: {len(owners)} bytes written")

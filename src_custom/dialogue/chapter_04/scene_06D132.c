@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x0806D132 */
-DIALOGUE_SCRIPT(0x0806D132, scene_06D132)
+/* Script id 308 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x0806D132. */
+EVENT_SCRIPT_REPLACEMENT(0x0806D132, scene_06D132)
+
   TALK(SPEAKER_ZART, SIDE_RIGHT, EXPR_NEUTRAL,
       "I am Professor Zart. Welcome to Starbase 4, or as we call it here, Zart Laboratories.")
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
@@ -41,4 +42,6 @@ DIALOGUE_SCRIPT(0x0806D132, scene_06D132)
       "You can use the formula to create an anti-virus. If Earth deploys it against his Excellency's alien matter, an anti-virus will be his only defense.")
   TALK(SPEAKER_ZART, SIDE_RIGHT, EXPR_NEUTRAL,
       "You were indeed wise to come directly to me. I will contact High Command and the Tyrannical Overlord.")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

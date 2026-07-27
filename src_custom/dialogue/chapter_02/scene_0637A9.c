@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x080637A9 */
-DIALOGUE_SCRIPT(0x080637A9, scene_0637A9)
+/* Script id 153 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x080637A9. */
+EVENT_SCRIPT_REPLACEMENT(0x080637A9, scene_0637A9)
+
   TALK(SPEAKER_BLUNE, SIDE_RIGHT, EXPR_NEUTRAL,
       "If everyone's here, let me explain our mission.",
       "Krill High Command requires detailed scans of this planet.",
@@ -21,4 +22,6 @@ DIALOGUE_SCRIPT(0x080637A9, scene_0637A9)
       "So you'll need to go down to the surface, and post the beacons first. That will tell the crewmen here on the base where to project the force fields.")
   TALK(SPEAKER_PSYME, SIDE_RIGHT, EXPR_NEUTRAL,
       "What's the hold up? Let's go already.")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

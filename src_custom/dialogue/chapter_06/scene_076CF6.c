@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x08076CF6 */
-DIALOGUE_SCRIPT(0x08076CF6, scene_076CF6)
+/* Script id 443 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x08076CF6. */
+EVENT_SCRIPT_REPLACEMENT(0x08076CF6, scene_076CF6)
+
   TALK(SPEAKER_OVERLORD, SIDE_RIGHT, EXPR_NEUTRAL,
       "It is with him, the Flesh Deity who as we speak spills chaos on this planet,",
       "with him that I will merge and claim reign to the stars.",
@@ -12,4 +13,6 @@ DIALOGUE_SCRIPT(0x08076CF6, scene_076CF6)
       "Can you feel him coming? Can you hear him calling for his master?",
       "Together we shall consume the universe!"
   )
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

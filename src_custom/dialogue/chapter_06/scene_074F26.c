@@ -1,6 +1,9 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x08074F26 */
-DIALOGUE_SCRIPT(0x08074F26, scene_074F26)
+/* Script id 423 — chapter title card. No sprite FSM in this stream. Talk ROM 0x08074F26. */
+EVENT_SCRIPT_REPLACEMENT(0x08074F26, scene_074F26)
+
   CHAPTER_TITLE("CHAPTER 6: Conclusion")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

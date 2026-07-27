@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x0806432D */
-DIALOGUE_SCRIPT(0x0806432D, scene_06432D)
+/* Script id 166 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x0806432D. */
+EVENT_SCRIPT_REPLACEMENT(0x0806432D, scene_06432D)
+
   TALK(SPEAKER_PSYME, SIDE_RIGHT, EXPR_NEUTRAL,
       "What did you find?")
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
@@ -75,4 +76,6 @@ DIALOGUE_SCRIPT(0x0806432D, scene_06432D)
       "I'll ride shotgun. We'll proceed to the source of the tremors and see if we can't get to the bottom of things.")
   TALK(SPEAKER_PSYME, SIDE_RIGHT, EXPR_NEUTRAL,
       "Here's a DATA PLUG. You'd better record your progress first.")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

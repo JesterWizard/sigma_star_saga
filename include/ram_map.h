@@ -16,7 +16,9 @@ extern u8 gEncounterObjCount;
 extern u8 gPlayerMapObjIndex;
 extern u8 gEncounterObjIndices[];
 extern u8 *gExpGemPtr; /* Current gem in ExpGemUpdate (@ +0x18/+0x1C) */
-extern u8 gActorPool[]; /* Flight actors, stride 0x60; [0] = ship */
+extern u8 gActorPool[]; /* Actors, stride 0x60; flight [0]=ship; cutscenes reuse */
+extern u8 gActorAllocIndex; /* SpawnActor free-slot scan start @ 0x0300368C */
+extern u32 gCutsceneCounter; /* Cutscene wait counter / spawn gate @ 0x03003688 */
 extern u16 gSoftOam[]; /* Soft OAM @ 0x03001F70 (8 bytes/entry) */
 extern u8 gOamCursor;
 extern u8 gSoftOamCount;
@@ -24,6 +26,30 @@ extern u8 gAffineSlotCounter;
 extern u8 gActorOamStart;
 extern u8 gUseYSorting;
 extern u8 gCameras[]; /* Camera array, stride 0x84 */
+extern const u8 *const *gDialogueBankBases; /* IWRAM ptr to 7 bank bases @ 0x03000018 */
+extern u32 gCutsceneStep; /* Per-frame cutscene step @ 0x03007704 */
+extern u32 gCutsceneParam[]; /* Lerp pair [0]/[1] @ 0x03007708 */
+extern u32 gStageCase; /* Stage FSM outer JT index @ 0x03007738 */
+extern u16 gCutsceneGateHw; /* Stage intro wait halfword @ 0x030038A8 */
+extern u32 gWorldScrollX; /* World/cutscene scroll X (16.16) @ 0x03000C44 */
+extern u32 gWorldScrollY; /* World/cutscene scroll Y (16.16) @ 0x03000C6C */
+extern u16 gCutsceneWaveOutput[]; /* Case 62 waveform output @ 0x030036A0 */
+extern u8 gCutsceneWavePhase; /* Case 62 waveform phase @ 0x030076CC */
+extern u16 gDialogueEntryOffsets[]; /* Per-script halfword offsets @ 0x02000010 */
+extern u8 gTalkState[]; /* Talk UI block @ 0x03007100; flags halfword at +14 */
+extern const u8 *gTalkStreamPtr; /* Active talk stream cursor @ 0x03007198 */
+extern u8 gTalkParamA;
+extern u8 gTalkParamB;
+extern u8 gTalkBusyA;
+extern u8 gTalkBusyB;
+extern u8 gTalkParamAMirror;
+extern u8 gTalkLayout;
+extern u8 gTalkPagePos;
+extern u8 gTalkPagePos2;
+extern u8 gTalkLayoutCmp;
+extern u8 gTalkActive;
+extern u8 gTalkGate;
+extern u8 gTalkExtra; /* StartTalkByIdEx latch @ 0x0300001C */
 extern u8 gPlayerBombs;
 extern u8 gPlayerLevel;
 extern u32 gPlayerExp;

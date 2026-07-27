@@ -16,11 +16,14 @@
 #define ACTOR_OFF_HP       0x34
 #define ACTOR_OFF_PARAM38  0x38
 #define ACTOR_OFF_EXP      0x3C
-#define ACTOR_OFF_X        0x40
-#define ACTOR_OFF_Y        0x4C
+#define ACTOR_OFF_X        0x40 /* world X (16.16); cutscenes: flags+0x28 */
+#define ACTOR_OFF_VX       0x48 /* velocity X (16.16); flight integrate */
+#define ACTOR_OFF_CUT_Y    0x48 /* alias: Ch.1 opener nudges slots 10–19 here */
+#define ACTOR_OFF_Y        0x4C /* world / draw Y (16.16) */
+#define ACTOR_OFF_VY       0x54 /* velocity Y (16.16); flight integrate */
 #define ACTOR_OFF_DRAW_NEXT 0x5C
 
-#define ACTOR_FLAG_ACTIVE  0x8000
+#define ACTOR_FLAG_ACTIVE  0x8000 /* visible / in-use; cutscenes skip if clear */
 #define ACTOR_KIND_LAYER_MASK 0xF0
 #define ACTOR_KIND_YSORT_EXCL 0xC0
 

@@ -3,74 +3,74 @@
   "description": "Overworld / field fauna kill EXP. id/anim are OVERWORLD_TYPE_* / OVERWORLD_ANIM_* names from include/overworld_enemy_ids.h (or raw integers). Lookup: exact (id,anim), else anim-only.",
   "enemies": [
     {
-      "id": "BURROWING_WORM",
-      "anim": "BURROWING_WORM",
+      "id": "OVERWORLD_TYPE_BURROWING_WORM",
+      "anim": "OVERWORLD_ANIM_BURROWING_WORM",
       "name": "burrowing_worm",
       "exp": 90
     },
     {
-      "id": "MECH_SPIDER",
-      "anim": "MECH_SPIDER",
+      "id": "OVERWORLD_TYPE_MECH_SPIDER",
+      "anim": "OVERWORLD_ANIM_MECH_SPIDER",
       "name": "mech_spider",
       "exp": 30
     },
     {
-      "id": "MULTI_EYE",
-      "anim": "MULTI_EYE",
+      "id": "OVERWORLD_TYPE_MULTI_EYE",
+      "anim": "OVERWORLD_ANIM_MULTI_EYE",
       "name": "multi_eye",
       "exp": 5
     },
     {
-      "id": "SHELL_BEETLE",
-      "anim": "SHELL_BEETLE",
+      "id": "OVERWORLD_TYPE_SHELL_BEETLE",
+      "anim": "OVERWORLD_ANIM_SHELL_BEETLE",
       "name": "shell_beetle",
       "exp": 10
     },
     {
-      "id": "HANGING_SPIDER",
-      "anim": "HANGING_SPIDER",
+      "id": "OVERWORLD_TYPE_HANGING_SPIDER",
+      "anim": "OVERWORLD_ANIM_HANGING_SPIDER",
       "name": "hanging_spider",
       "exp": 5
     },
     {
-      "id": "JUMPING_SPIDER",
-      "anim": "JUMPING_SPIDER",
+      "id": "OVERWORLD_TYPE_JUMPING_SPIDER",
+      "anim": "OVERWORLD_ANIM_JUMPING_SPIDER",
       "name": "jumping_spider",
       "exp": 15
     },
     {
-      "id": "JUMPING_SPIDER_ALT",
-      "anim": "JUMPING_SPIDER_ALT",
+      "id": "OVERWORLD_TYPE_JUMPING_SPIDER_ALT",
+      "anim": "OVERWORLD_ANIM_JUMPING_SPIDER_ALT",
       "name": "jumping_spider_alt",
       "exp": 15
     },
     {
-      "id": "HENNK",
-      "anim": "HENNK",
+      "id": "OVERWORLD_TYPE_HENNK",
+      "anim": "OVERWORLD_ANIM_HENNK",
       "name": "hennk",
       "exp": 25
     },
     {
-      "id": "CEPHALOPOD",
-      "anim": "CEPHALOPOD",
+      "id": "OVERWORLD_TYPE_CEPHALOPOD",
+      "anim": "OVERWORLD_ANIM_CEPHALOPOD",
       "name": "cephalopod",
       "exp": 10
     },
     {
-      "id": "TICK_SPIDER",
-      "anim": "TICK_SPIDER",
+      "id": "OVERWORLD_TYPE_TICK_SPIDER",
+      "anim": "OVERWORLD_ANIM_TICK_SPIDER",
       "name": "tick_spider",
       "exp": 20
     },
     {
-      "id": "ZOMBIE",
-      "anim": "ZOMBIE",
+      "id": "OVERWORLD_TYPE_ZOMBIE",
+      "anim": "OVERWORLD_ANIM_ZOMBIE",
       "name": "zombie",
       "exp": 30
     },
     {
-      "id": "SLUG",
-      "anim": "SLUG",
+      "id": "OVERWORLD_TYPE_SLUG",
+      "anim": "OVERWORLD_ANIM_SLUG",
       "name": "slug",
       "exp": 10
     }

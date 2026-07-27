@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x0806DD84 */
-DIALOGUE_SCRIPT(0x0806DD84, scene_06DD84)
+/* Script id 316 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x0806DD84. */
+EVENT_SCRIPT_REPLACEMENT(0x0806DD84, scene_06DD84)
+
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
       "No!",
       "Yes!",
@@ -20,4 +21,6 @@ DIALOGUE_SCRIPT(0x0806DD84, scene_06DD84)
       "Anyway, we need to split up.",
       "I'll check this way. Remember, we're looking for fossils."
   )
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

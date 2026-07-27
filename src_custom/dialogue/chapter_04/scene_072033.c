@@ -1,6 +1,9 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x08072033 */
-DIALOGUE_SCRIPT(0x08072033, scene_072033)
+/* Script id 378 — system/UI TEXT (no portrait). No sprite FSM in this stream. Talk ROM 0x08072033. */
+EVENT_SCRIPT_REPLACEMENT(0x08072033, scene_072033)
+
   TEXT("You got the ANTI-VIRUS!")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x08070BAF */
-DIALOGUE_SCRIPT(0x08070BAF, scene_070BAF)
+/* Script id 360 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x08070BAF. */
+EVENT_SCRIPT_REPLACEMENT(0x08070BAF, scene_070BAF)
+
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
       "Ok, the last one is activated and seems to be linked to the other two. Now how do I read this thing?")
   TALK(SPEAKER_PSYME, SIDE_RIGHT, EXPR_NEUTRAL,
@@ -48,4 +49,6 @@ DIALOGUE_SCRIPT(0x08070BAF, scene_070BAF)
   )
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
       "Then I'm off to Starbase 2.")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

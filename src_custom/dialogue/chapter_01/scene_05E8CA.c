@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x0805E8CA */
-DIALOGUE_SCRIPT(0x0805E8CA, scene_05E8CA)
+/* Script id 83 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x0805E8CA. */
+EVENT_SCRIPT_REPLACEMENT(0x0805E8CA, scene_05E8CA)
+
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
       "Is that the best you've got?")
   TALK(SPEAKER_BLOSS, SIDE_RIGHT, EXPR_NEUTRAL,
@@ -28,4 +29,6 @@ DIALOGUE_SCRIPT(0x0805E8CA, scene_05E8CA)
       "But never forget, my very loyal creature is fused to your spine, and my men are watching.",
       "Prove you can be relied upon and you will go far in the Krill forces. "
   )
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

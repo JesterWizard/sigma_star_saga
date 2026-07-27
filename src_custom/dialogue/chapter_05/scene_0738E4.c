@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x080738E4 */
-DIALOGUE_SCRIPT(0x080738E4, scene_0738E4)
+/* Script id 401 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x080738E4. */
+EVENT_SCRIPT_REPLACEMENT(0x080738E4, scene_0738E4)
+
   TALK(SPEAKER_IOT, SIDE_RIGHT, EXPR_NEUTRAL,
       "We will never forgive the Krill.")
   TALK(SPEAKER_PSYME, SIDE_RIGHT, EXPR_NEUTRAL,
@@ -16,4 +17,6 @@ DIALOGUE_SCRIPT(0x080738E4, scene_0738E4)
       "Perhaps...",
       "You deserve a chance."
   )
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x080677C0 */
-DIALOGUE_SCRIPT(0x080677C0, scene_0677C0)
+/* Script id 198 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x080677C0. */
+EVENT_SCRIPT_REPLACEMENT(0x080677C0, scene_0677C0)
+
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
       "Where are we?")
   TALK(SPEAKER_PSYME, SIDE_RIGHT, EXPR_NEUTRAL,
@@ -27,4 +28,6 @@ DIALOGUE_SCRIPT(0x080677C0, scene_0677C0)
       "I told you before! I can only communicate when the fleet is overhead.")
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
       "Then I guess it's up to me to scout ahead.")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

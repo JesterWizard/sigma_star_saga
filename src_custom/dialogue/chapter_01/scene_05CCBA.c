@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x0805CCBA */
-DIALOGUE_SCRIPT(0x0805CCBA, scene_05CCBA)
+/* Script id 58 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x0805CCBA. */
+EVENT_SCRIPT_REPLACEMENT(0x0805CCBA, scene_05CCBA)
+
   TALK(SPEAKER_SOLDIER, SIDE_RIGHT, EXPR_ALT,
       "We won?  This is huge!\nWe should celebrate!",
       "I'd call someone but the lines are all tied up!"
@@ -12,4 +13,6 @@ DIALOGUE_SCRIPT(0x0805CCBA, scene_05CCBA)
       "Serious?")
   TALK(SPEAKER_RECKER, SIDE_LEFT, EXPR_NEUTRAL,
       "Kidding. Relax.")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

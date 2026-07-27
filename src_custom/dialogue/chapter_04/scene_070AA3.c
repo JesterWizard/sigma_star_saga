@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x08070AA3 */
-DIALOGUE_SCRIPT(0x08070AA3, scene_070AA3)
+/* Script id 358 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x08070AA3. */
+EVENT_SCRIPT_REPLACEMENT(0x08070AA3, scene_070AA3)
+
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
       "Psyme! This is it! Looks like it's linking to the first one.")
   TALK(SPEAKER_PSYME, SIDE_RIGHT, EXPR_NEUTRAL,
@@ -12,4 +13,6 @@ DIALOGUE_SCRIPT(0x08070AA3, scene_070AA3)
       "Well this is a triathlon. You have one planet to go.",
       "Good luck."
   )
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

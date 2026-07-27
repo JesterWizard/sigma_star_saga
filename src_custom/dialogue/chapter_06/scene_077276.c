@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x08077276 */
-DIALOGUE_SCRIPT(0x08077276, scene_077276)
+/* Script id 456 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x08077276. */
+EVENT_SCRIPT_REPLACEMENT(0x08077276, scene_077276)
+
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
       "Blune...",
       "Scarlet...",
@@ -20,4 +21,6 @@ DIALOGUE_SCRIPT(0x08077276, scene_077276)
       "It's time to begin a new life.",
       "A better life."
   )
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

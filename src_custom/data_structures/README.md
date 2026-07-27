@@ -51,7 +51,8 @@ during 2D flight stages. Hook: fauna death-drop helper `PlayerDeathFx`
 | `exp` | `AddExperience` amount (also scaled by `.exp_multiplier`) |
 
 Lookup tries exact `(id, anim)`, then anim-only. Forest jumping spiders are
-`JUMPING_SPIDER` (`type=64`, `anim=36`).
+`OVERWORLD_TYPE_JUMPING_SPIDER` / `OVERWORLD_ANIM_JUMPING_SPIDER`
+(`type=64`, `anim=36`).
 
 ## `impact_data.json`
 

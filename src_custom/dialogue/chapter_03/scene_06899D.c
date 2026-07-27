@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x0806899D */
-DIALOGUE_SCRIPT(0x0806899D, scene_06899D)
+/* Script id 217 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x0806899D. */
+EVENT_SCRIPT_REPLACEMENT(0x0806899D, scene_06899D)
+
   TALK(SPEAKER_PSYME, SIDE_RIGHT, EXPR_NEUTRAL,
       "You're not thinking about trading up are you?")
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
@@ -21,4 +22,6 @@ DIALOGUE_SCRIPT(0x0806899D, scene_06899D)
       "Well we can't stay here.",
       "Hmmmm."
   )
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

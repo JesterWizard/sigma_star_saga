@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x08075527 */
-DIALOGUE_SCRIPT(0x08075527, scene_075527)
+/* Script id 432 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x08075527. */
+EVENT_SCRIPT_REPLACEMENT(0x08075527, scene_075527)
+
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
       "Psyme! Are you OK?")
   TALK(SPEAKER_PSYME, SIDE_RIGHT, EXPR_NEUTRAL,
@@ -71,4 +72,6 @@ DIALOGUE_SCRIPT(0x08075527, scene_075527)
       "But for you it was all a game.",
       "Don't follow me again."
   )
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

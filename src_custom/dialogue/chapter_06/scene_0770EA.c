@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x080770EA */
-DIALOGUE_SCRIPT(0x080770EA, scene_0770EA)
+/* Script id 452 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x080770EA. */
+EVENT_SCRIPT_REPLACEMENT(0x080770EA, scene_0770EA)
+
   TALK(SPEAKER_RECKER_KRILL, SIDE_LEFT, EXPR_NEUTRAL,
       "Is that...the Overlord?")
   TALK(SPEAKER_SCARLET, SIDE_RIGHT, EXPR_NEUTRAL,
@@ -9,4 +10,6 @@ DIALOGUE_SCRIPT(0x080770EA, scene_0770EA)
       "That's the weakest spot!",
       "Destroy it!"
   )
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()

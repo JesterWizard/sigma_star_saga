@@ -1,7 +1,8 @@
-#include "dialogue_macros.h"
+#include "event_macros.h"
 
-/* ROM 0x0805FD1C */
-DIALOGUE_SCRIPT(0x0805FD1C, scene_05FD1C)
+/* Script id 102 — map/NPC talk via event records (@ 0x080179C8 → StartTalkById). No cutscene FSM. Talk ROM 0x0805FD1C. */
+EVENT_SCRIPT_REPLACEMENT(0x0805FD1C, scene_05FD1C)
+
   TALK(SPEAKER_PSYME, SIDE_RIGHT, EXPR_NEUTRAL,
       "If everyone's here, let me go over our mission.",
       "This starbase has been conducting scans of the nearby Forest Planet for the past month.",
@@ -25,4 +26,6 @@ DIALOGUE_SCRIPT(0x0805FD1C, scene_05FD1C)
       "This \"star\" base can land?")
   TALK(SPEAKER_PSYME, SIDE_RIGHT, EXPR_NEUTRAL,
       "Would you rather we call it a land base? Shut up and do as you're ordered!")
-END_DIALOGUE_SCRIPT()
+  END()
+
+END_EVENT_SCRIPT()
