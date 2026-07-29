@@ -19,19 +19,23 @@ def main() -> int:
     hook = struct.unpack_from("<I", rom, off + 4)[0]
     assert hook & 1, hex(hook)
 
-    fx = REPO / "sound/voice/built/01_tierney_briefing.fx.s8"
+    fx = REPO / "sound/voice/built/01_tierney_briefing.fx.dpcm"
     entry = json.loads(fx.with_suffix(fx.suffix + ".entry.json").read_text())
-    assert entry["encoding"] == "pcm_u8_fx"
-    pcm = fx.read_bytes()
-    assert len(pcm) == entry["samples"] > 0
+    assert entry["encoding"] == "dpcm4_u8"
+    dpcm = fx.read_bytes()
+    assert len(dpcm) == entry["bytes"] > 0
+    assert entry["samples"] > 0
+    assert entry["bytes"] < entry.get("pcm_bytes", entry["samples"] + 1)
     assert entry.get("trim_lead", 0) + entry.get("trim_trail", 0) >= 0
     # Near-silence ends should have been trimmed when present in the source.
-    assert len(pcm) <= entry.get("raw_samples", len(pcm))
+    assert entry["samples"] <= entry.get("raw_samples", entry["samples"])
 
     catalog = (REPO / "src_custom/generated/gax_catalog.c").read_text()
     assert "sVoiceSlotPresent" in catalog
     assert "sVoiceBlob_" not in catalog
-    assert "sVoiceFxPcm_1" in catalog
+    assert "sVoiceFxDpcm_1" in catalog
+    assert "sVoiceFxPcm_" not in catalog
+    assert "gGaxVoiceDpcmTable" in catalog
 
     clips = json.loads((REPO / "sound/voice/voice_clips.json").read_text())
     assert "chapter_01" in clips
@@ -48,13 +52,15 @@ def main() -> int:
     assert "GAX_WS_RATE_OFF" in hooks
     assert "GAX_FLAG_SPEECH" in hooks
     assert "GaxSpeechConsumer__Replacement" in hooks
+    assert "GaxVoiceDecodeDpcm" in hooks
+    assert "gVoiceDecodeBuf" in hooks
 
     gax = (REPO / "src/gax.c").read_text()
     assert "flags & ~GAX_FLAG_SPEECH" in gax
     assert "GaxAttachSpeech()" in gax
 
     stop = hooks[hooks.find("GaxStopVoice") :]
-    assert "GAX_SPEECH_INDEX_OFF" in stop
+    assert "StopFxChannel" in stop.split("APPEND_TEXT")[0]
     assert "StopAllFx" not in stop.split("}")[0]
 
     print("test_gax_speech_integration: PASS")

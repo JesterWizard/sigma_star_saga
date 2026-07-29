@@ -116,4 +116,10 @@ extern u8 FreeEwramSpaceBottom;
 extern u8 FreeFlashSpaceTop;
 extern u8 FreeFlashSpaceBottom;
 
+/* Custom EWRAM free-pool (via _kernel_malloc_ewram* in ram_map_ewram.s). */
+#define GAX_VOICE_DECODE_BYTES 0x14000
+extern u8 gVoiceDecodeBuf[]; /* GAX_VOICE_DECODE_BYTES */
+extern u8 gGaxFxWaveSetRam[]; /* 175 × 8 = 0x578 */
+extern u8 gGaxPackageRam[]; /* 0x20 — mutable GAX package copy */
+
 #endif /* GUARD_RAM_MAP_H */

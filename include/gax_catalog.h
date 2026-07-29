@@ -19,6 +19,17 @@ extern const GaxSpeechEntry gGaxVoiceTable[];
 #define GAX_VOICE_FX_BASE 124
 #define GAX_VOICE_FX_NOTE 58
 #define GAX_VOICE_FX_PRIORITY 0x7FFF
+#define GAX_FX_WAVESET_COUNT 175
+
+typedef struct { const u8 *addr; u32 size; } GaxFxWaveEntry;
+typedef struct {
+    const u8 *data;
+    u32 bytes;
+    u16 waveSlot;
+} GaxVoiceDpcmClip;
+
 extern const u32 gGaxPackageEx[];
+extern const GaxFxWaveEntry gGaxFxWaveSetEx[];
+extern const GaxVoiceDpcmClip gGaxVoiceDpcmTable[];
 
 #endif /* GUARD_GAX_CATALOG_H */

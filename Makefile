@@ -118,7 +118,8 @@ CUSTOM_C_SRCS := \
 	$(CUSTOM_C_SUBDIR)/random_battle_hooks.c \
 	$(CUSTOM_C_SUBDIR)/overworld_enemy_exp_hooks.c \
 	$(CUSTOM_C_SUBDIR)/event_runner_hooks.c \
-	$(CUSTOM_C_SUBDIR)/gax_audio_hooks.c
+	$(CUSTOM_C_SUBDIR)/gax_audio_hooks.c \
+	$(CUSTOM_C_SUBDIR)/gax_voice_dpcm.c
 CONFIG_SRCS := $(CONFIG_SUBDIR)/runtime.c
 # Region fragments + pool inventories are .included by ram_map.s (not assembled alone).
 RAM_MAP_FRAGMENTS := \
@@ -280,6 +281,7 @@ $(GAX_CATALOG_O): $(GAX_CATALOG_C) $(GAX_CATALOG_H)
 		-o $@ $<
 
 $(CUSTOM_C_BUILDDIR)/gax_audio_hooks.o: $(GAX_CATALOG_H)
+$(CUSTOM_C_BUILDDIR)/gax_voice_dpcm.o: $(GAX_CATALOG_H)
 
 LD_SCRIPT := ld_script.ld
 LDFLAGS = -Map ../../$(MAP)

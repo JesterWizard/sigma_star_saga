@@ -4,6 +4,7 @@
 #include "gax_audio.h"
 #include "gax_catalog.h"
 #include "gax_speech.h"
+#include "gax_voice_dpcm.h"
 #include "nocash.h"
 #include "ram_map.h"
 #include "runtime.h"
@@ -135,14 +136,31 @@ APPEND_TEXT void GaxAttachSpeech(void)
 
 APPEND_TEXT void GaxBootInit__Replacement(void)
 {
+    u32 i;
+    GaxFxWaveEntry *waves;
+    u32 *pkgRam;
+    const u32 *pkgRom;
+
     Gax2New(&gGaxParams);
     gGaxParams.debugAssert = 0;
     gGaxParams.wramSize = GAX_MIX_BUFFER_BYTES;
     gGaxParams.wram = gGaxMixBuffer;
+
+    /* Copy ROM wave set + package into EWRAM so voice play can patch holes. */
+    waves = (GaxFxWaveEntry *)gGaxFxWaveSetRam;
+    for (i = 0; i < GAX_FX_WAVESET_COUNT; i++)
+        waves[i] = gGaxFxWaveSetEx[i];
+
+    pkgRom = gGaxPackageEx;
+    pkgRam = (u32 *)gGaxPackageRam;
+    for (i = 0; i < 8; i++)
+        pkgRam[i] = pkgRom[i];
+    pkgRam[5] = (u32)waves; /* package+0x14 = wave set */
+
     /* Custom audio swaps in the extended package (vanilla FX verbatim + voice
      * entries past slot 123). gax_fx(id) sequences list[id] on an FX channel. */
     gGaxParams.package =
-        gRuntimeConfig.custom_gax_audio ? (const void *)gGaxPackageEx : GAX_PACKAGE_ROM;
+        gRuntimeConfig.custom_gax_audio ? (const void *)pkgRam : GAX_PACKAGE_ROM;
     gGaxParams.flags = (u16)(gGaxParams.flags & ~GAX_FLAG_SPEECH);
 
     Gax2Init(&gGaxParams);
@@ -166,10 +184,10 @@ APPEND_TEXT void GaxStopMusic(void)
 }
 
 /*
- * Voice playback rides the FX engine: clip N is FX id GAX_VOICE_FX_BASE+N,
- * a 0x44-byte entry (instrument + embedded volenv/perf/wave params) whose
- * wave slot holds unsigned 8-bit PCM (0x80=silence) at the FX mix rate. IRQ-guarded because
- * the mixer walks channel state from IRQ context.
+ * Voice playback rides the FX engine: clip N is FX id GAX_VOICE_FX_BASE+N.
+ * ROM holds 4-bit delta DPCM; decode once into gVoiceDecodeBuf, patch the RAM
+ * wave-set hole, then queue the FX. IRQ-guarded around wave patch + queue
+ * because the mixer walks channel/wave state from IRQ context.
  */
 APPEND_TEXT void GaxPlayVoice(u16 id, s16 pan)
 {
@@ -182,6 +200,9 @@ APPEND_TEXT void GaxPlayVoice(u16 id, s16 pan)
     s32 best;
     u32 bestPrio;
     u32 prio;
+    const GaxVoiceDpcmClip *clip;
+    u32 decoded;
+    GaxFxWaveEntry *waves;
 
     (void)pan;
 
@@ -192,8 +213,21 @@ APPEND_TEXT void GaxPlayVoice(u16 id, s16 pan)
     if (gGaxVoiceTable[id].data == NULL)
         return;
 
+    clip = &gGaxVoiceDpcmTable[id];
+    if (clip->data == NULL || clip->bytes == 0)
+        return;
+
+    decoded = GaxVoiceDecodeDpcm(
+        clip->data, clip->bytes, gVoiceDecodeBuf, GAX_VOICE_DECODE_BYTES);
+    if (decoded == 0 || decoded > GAX_VOICE_DECODE_BYTES)
+        return;
+
     ime = REG_IME;
     REG_IME = 0;
+
+    waves = (GaxFxWaveEntry *)gGaxFxWaveSetRam;
+    waves[clip->waveSlot].addr = gVoiceDecodeBuf;
+    waves[clip->waveSlot].size = decoded;
 
     state = (u8 *)gGaxWorkspacePtr;
     if (state == NULL)
@@ -244,7 +278,7 @@ APPEND_TEXT void GaxPlayVoice(u16 id, s16 pan)
     state[0x59] = 1;
 
     gGaxVoiceFxChannel = (s16)best;
-    NoCashGBAPrintf("GAX voice fx id=%d ch=%d", id, best);
+    NoCashGBAPrintf("GAX voice fx id=%d ch=%d n=%u", id, best, decoded);
     REG_IME = ime;
 }
 

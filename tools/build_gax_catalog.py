@@ -253,20 +253,21 @@ def collect_voice() -> list[dict]:
                 raise FileNotFoundError(f"{path}: missing audio {audio}")
             stem = voice_built_stem(voice_dir, meta)
             stem.parent.mkdir(parents=True, exist_ok=True)
-            # FX PCM only — speech vocoder blobs are unused by GaxPlayVoice.
-            fx_pcm = stem.with_suffix(".fx.s8")
+            # FX DPCM only — speech vocoder blobs are unused by GaxPlayVoice.
+            fx_dpcm = stem.with_suffix(".fx.dpcm")
             pitch = meta.get("pitch_semitones", None)
             fx_cmd = [
                 sys.executable,
                 str(PACK_VOICE_FX),
                 str(audio),
                 "-o",
-                str(fx_pcm),
+                str(fx_dpcm),
             ]
             if pitch is not None:
                 fx_cmd += ["--pitch-semitones", str(pitch)]
             subprocess.check_call(fx_cmd)
-            meta["_fx_pcm"] = fx_pcm
+            meta["_fx_dpcm"] = fx_dpcm
+            meta["_fx_entry"] = fx_dpcm.with_suffix(fx_dpcm.suffix + ".entry.json")
             items.append(meta)
     items.sort(key=lambda m: m["_id"])
     return items
@@ -308,7 +309,7 @@ def write_voice_inventory(voice: list[dict]) -> Path:
         audio = voice_audio_path(v, v["_path"])
         registered_audio.add(audio.resolve())
         src_n = audio.stat().st_size
-        fx_n = Path(v["_fx_pcm"]).stat().st_size
+        fx_n = Path(v["_fx_dpcm"]).stat().st_size
         overhead = FX_ENTRY_OVERHEAD + FX_LIST_PTR_BYTES + VOICE_TABLE_STUB_BYTES
         rom_n = fx_n + overhead
         pct = _change_pct(rom_n, src_n)
@@ -347,11 +348,11 @@ def write_voice_inventory(voice: list[dict]) -> Path:
         "Sizes:",
         "",
         "- **Source** — on-disk source clip (`.mp3` / `.wav` / …), including container headers.",
-        "- **In-ROM** — FX unsigned-8 PCM payload + FX entry (`0x58`) + FX list pointer (`4`) "
-        "+ voice-table presence stub (`8`). Speech vocoder blobs are not embedded.",
+        "- **In-ROM** — FX 4-bit delta DPCM payload + FX entry (`0x58`) + FX list pointer (`4`) "
+        "+ voice-table presence stub (`8`). Decoded once into EWRAM at play. Speech vocoder blobs are not embedded.",
         "- **Overall Change** — `(in-ROM − source) / source`; negative means the ROM blob is smaller.",
         "- **Total** row — sum of all registered clips (source vs in-ROM).",
-        "- Playback uses raw **u8 PCM @ 15769 Hz** via the GAX FX path; near-silence ends are trimmed at pack.",
+        "- Playback decodes **dpcm4_u8 → u8 PCM @ 15769 Hz** into `gVoiceDecodeBuf`; near-silence ends are trimmed at pack.",
         "- JSON `id` is the C constant (`GAX_VOICE_…`); numeric slot is `index` "
         f"(or a legacy `NN_` filename). Clips live in [`{VOICE_CLIPS_NAME}`]({VOICE_CLIPS_NAME}) "
         "under chapter sections; each clip also has a `chapter` field (metadata only).",
@@ -417,8 +418,8 @@ def emit_voice_fx(lines: list[str], voice_slots: list[dict | None]) -> None:
 
     gax_fx(id) sequences package+0x10 list[id] on an FX channel. Each voice
     clip gets a 0x44-byte FX entry (instrument + embedded volenv/perf/wave
-    params, layout recovered from vanilla @ 0x0814D800+i*0x44) plus a wave
-    set slot holding its unsigned 8-bit PCM (0x80=silence) at the FX mix rate.
+    params) plus a wave-set hole patched at play with decoded PCM in EWRAM.
+    ROM stores 4-bit delta DPCM; GaxPlayVoice decodes into gVoiceDecodeBuf.
     """
     pkg, vanilla_list, vanilla_waves = extract_vanilla_fx()
     n_slots = len(voice_slots)
@@ -427,8 +428,8 @@ def emit_voice_fx(lines: list[str], voice_slots: list[dict | None]) -> None:
     lines.append(" * Vanilla FX module layout (baserom @ 0x0814D7EC..): a 0x14-byte data")
     lines.append(" * block (12B volenv + 8B perf row) immediately precedes each 0x44-byte")
     lines.append(" * entry; the entry's +0x0C/+0x14 pointers reference that block. Voice")
-    lines.append(" * entries clone the vanilla template with waveSlots[0] -> voice PCM. */")
-    lines.append("typedef struct { const u8 *addr; u32 size; } GaxFxWaveEntry;")
+    lines.append(" * entries clone the vanilla template; waveSlots[0] indexes a hole that")
+    lines.append(" * GaxPlayVoice patches to gVoiceDecodeBuf after DPCM decode. */")
     lines.append(
         "typedef struct {\n"
         "    u8 volenv[12];\n"
@@ -455,10 +456,10 @@ def emit_voice_fx(lines: list[str], voice_slots: list[dict | None]) -> None:
         if v is None:
             continue
         vid = v["_id"]
-        pcm = Path(v["_fx_pcm"]).read_bytes()
-        lines.append(f"APPEND_RODATA static const u8 sVoiceFxPcm_{vid}[] = {{")
-        for j in range(0, len(pcm), 16):
-            chunk = ", ".join(str(b) for b in pcm[j : j + 16])
+        dpcm = Path(v["_fx_dpcm"]).read_bytes()
+        lines.append(f"APPEND_RODATA static const u8 sVoiceFxDpcm_{vid}[] = {{")
+        for j in range(0, len(dpcm), 16):
+            chunk = ", ".join(str(b) for b in dpcm[j : j + 16])
             lines.append(f"    {chunk},")
         lines.append("};")
 
@@ -475,7 +476,7 @@ def emit_voice_fx(lines: list[str], voice_slots: list[dict | None]) -> None:
     lines.append("")
 
     # The FX engine rejects wave set indices beyond the vanilla table, so
-    # voice PCM occupies unused {0,0} holes in the copied vanilla wave set.
+    # voice clips occupy unused {0,0} holes; RAM copy is patched on play.
     hole_slots = [
         i for i, (addr, size) in enumerate(vanilla_waves) if addr == 0 and size == 0
     ]
@@ -499,21 +500,32 @@ def emit_voice_fx(lines: list[str], voice_slots: list[dict | None]) -> None:
     lines.append("};")
     lines.append("")
 
-    voice_wave = {}
+    voice_wave_slots: dict[int, int] = {}
     for i, v in enumerate(voice_slots):
         if v is not None:
-            vid = v["_id"]
-            voice_wave[hole_slots[i]] = vid
+            voice_wave_slots[v["_id"]] = hole_slots[i]
 
     n_waves = GAX_FX_WAVESET_COUNT
-    lines.append(f"APPEND_RODATA static const GaxFxWaveEntry gGaxFxWaveSetEx[{n_waves}] = {{")
+    # Voice holes stay {0,0} in ROM; boot copies this table to gGaxFxWaveSetRam.
+    lines.append(f"APPEND_RODATA const GaxFxWaveEntry gGaxFxWaveSetEx[{n_waves}] = {{")
     for idx, (addr, size) in enumerate(vanilla_waves):
-        if idx in voice_wave:
-            vid = voice_wave[idx]
-            lines.append(f"    {{ (const u8 *)sVoiceFxPcm_{vid}, sizeof(sVoiceFxPcm_{vid}) }},")
-        else:
-            a = f"(const u8 *)0x{addr:08X}" if addr else "0"
-            lines.append(f"    {{ {a}, 0x{size:08X} }},")
+        a = f"(const u8 *)0x{addr:08X}" if addr else "0"
+        lines.append(f"    {{ {a}, 0x{size:08X} }},")
+    lines.append("};")
+    lines.append("")
+
+    lines.append(
+        f"APPEND_RODATA const GaxVoiceDpcmClip gGaxVoiceDpcmTable[{max(n_slots, 1)}] = {{"
+    )
+    for i, v in enumerate(voice_slots):
+        if v is None:
+            lines.append("    { 0, 0, 0 },")
+            continue
+        vid = v["_id"]
+        slot = voice_wave_slots[vid]
+        lines.append(
+            f"    {{ sVoiceFxDpcm_{vid}, sizeof(sVoiceFxDpcm_{vid}), {slot} }},"
+        )
     lines.append("};")
     lines.append("")
 
@@ -577,7 +589,18 @@ def emit(music: list[dict], voice: list[dict], out_c: Path, out_h: Path) -> None
         f"#define GAX_VOICE_FX_BASE {GAX_FX_LIST_COUNT}",
         f"#define GAX_VOICE_FX_NOTE {VOICE_FX_NOTE}",
         "#define GAX_VOICE_FX_PRIORITY 0x7FFF",
+        f"#define GAX_FX_WAVESET_COUNT {GAX_FX_WAVESET_COUNT}",
+        "",
+        "typedef struct { const u8 *addr; u32 size; } GaxFxWaveEntry;",
+        "typedef struct {",
+        "    const u8 *data;",
+        "    u32 bytes;",
+        "    u16 waveSlot;",
+        "} GaxVoiceDpcmClip;",
+        "",
         "extern const u32 gGaxPackageEx[];",
+        "extern const GaxFxWaveEntry gGaxFxWaveSetEx[];",
+        "extern const GaxVoiceDpcmClip gGaxVoiceDpcmTable[];",
         "",
         "#endif /* GUARD_GAX_CATALOG_H */",
         "",

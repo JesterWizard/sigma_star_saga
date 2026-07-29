@@ -37,12 +37,12 @@ Method: Thumb `LDR Rd,[PC,#imm]` literal pools only (not raw absolute words). Wo
 | IWRAM IRQ stack | `0x03007FA0`–`0x03008000` | 96 B | **USED** |
 | EWRAM hardware | `0x02000000`–`0x02040000` | 256 KiB | — |
 | EWRAM dense pool use | `0x02000000`–`~0x02005E00` | — | **USED** (142 `gUnk_*`) |
-| EWRAM reserved / provisional | `~0x02005E00`–`0x02030000` | — | treat as used until proven free |
-| EWRAM custom free* | `0x02030000`–`0x02040000` | **64 KiB** | **SAFE*** via `_kernel_malloc_ewram*` |
+| EWRAM probe band | `~0x02005E00`–`0x0202B000` | — | canary probe dirty ≤`0x020071C0` (title→talk); left as unused margin |
+| EWRAM custom free | `0x0202B000`–`0x02040000` | **~84 KiB** | **SAFE** via `_kernel_malloc_ewram*` |
 | Save chip | EEPROM_V124 | — | Not `0x0E…` |
 | SRAM-bus scratch** | `0x0E000000`–`0x0E000100` | 256 B | Opt-in only |
 
-\* EWRAM free floor is provisional — raise `FreeEwramSpaceTop` only with evidence. Dense confirmed use ends near `0x02005E00`; sparse higher pool hits look like false positives.  
+\* EWRAM free floor lowered to `0x0202B000` after `tools/mgba_ewram_canary_probe.c` (last dirty `0x020071C0`). Fits `gVoiceDecodeBuf` (80 KiB) + FX wave-set/package RAM.  
 \*\* Not cart save; verify before use. Pool scan found no trustworthy SRAM-bus globals.
 
 ## Macros

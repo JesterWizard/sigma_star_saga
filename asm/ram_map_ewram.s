@@ -22,17 +22,18 @@
 @ 0x020302E0, 0x02035620, …) sit in graphics-looking ROM — treated as suspects,
 @ NOT as reason to raise FreeEwramSpaceTop.
 @
-@   0x02030000 ── FreeEwramSpaceTop ────────── SAFE custom pool (FREE*)
+@   0x0202B000 ── FreeEwramSpaceTop ────────── SAFE custom pool (FREE*)
 @              bump _kernel_malloc_ewram grows downward toward Top
-@   0x02040000 ── FreeEwramSpaceBottom         (64 KiB free)
+@   0x02040000 ── FreeEwramSpaceBottom         (~84 KiB free)
 @
-@ * Floor remains provisional/conservative. Dense vanilla use ends ~0x02005E00;
-@   do not lower FreeEwramSpaceTop without stronger evidence.
-@ Safe leftover: ONLY 0x02030000–0x02040000 via _kernel_malloc_ewram*.
+@ * Floor proven by tools/mgba_ewram_canary_probe.c (title→voiced talk):
+@   canary band 0x02005E00–0x02030000; last dirty slot 0x020071C0.
+@   Margin below high-water; ≤0x0202C000 so 80 KiB voice decode fits, plus
+@   wave-set/package RAM copies.
 @ Inventory: ram_map_ewram_pool.inc (142 gUnk_* symbols, hits>=2).
 @ =============================================================================
 
-SET_DATA FreeEwramSpaceTop, 0x02030000
+SET_DATA FreeEwramSpaceTop, 0x0202B000
 SET_DATA FreeEwramSpaceBottom, 0x02040000
 SET_DATA UsedFreeEwramSpaceTop, FreeEwramSpaceBottom
 
@@ -58,3 +59,9 @@ SET_DATA gDialogueEntryOffsets, 0x02000010
 
 @ -- Custom free-space allocations ---------------------------------------------
 @ Prefer _kernel_malloc_ewram / _kernel_malloc_ewram_array for larger buffers.
+
+@ GAX voice: one-shot DPCM decode buffer (5 s @ 15769 Hz → 78845 B, pad 80 KiB).
+_kernel_malloc_ewram_array gVoiceDecodeBuf, 0x14000
+@ Mutable FX wave set (175 × {addr,size}) + package copy so play can patch holes.
+_kernel_malloc_ewram_array gGaxFxWaveSetRam, 0x578
+_kernel_malloc_ewram_array gGaxPackageRam, 0x20
