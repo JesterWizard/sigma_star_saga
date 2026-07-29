@@ -270,7 +270,7 @@ $(DATA_STRUCT_TABLES_O): $(DATA_STRUCT_TABLES_C)
 
 # Pack sound/ music+voice → append GAX catalogs.
 $(GAX_CATALOG_C) $(GAX_CATALOG_H): $(BUILD_GAX_CATALOG) $(GAX_SOUND_MUSIC) $(GAX_SOUND_VOICE) $(GAX_SOUND_WAVS) \
-		$(TOOLS_DIR)/pack_gax_speech.py $(TOOLS_DIR)/pack_gax_song.py
+		$(TOOLS_DIR)/pack_gax_voice_fx.py $(TOOLS_DIR)/pack_gax_song.py
 	@mkdir -p $(dir $(GAX_CATALOG_C))
 	python3 $(BUILD_GAX_CATALOG) --out-c $(GAX_CATALOG_C) --out-h $(GAX_CATALOG_H)
 

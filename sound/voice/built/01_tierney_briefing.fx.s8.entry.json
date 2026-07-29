@@ -1,8 +1,12 @@
 {
   "source": "/home/username/Github/sigma_star_saga/sound/voice/voice_sample.mp3",
   "rate": 15769,
-  "samples": 24923,
-  "bytes": 24923,
+  "samples": 18945,
+  "bytes": 18945,
+  "raw_samples": 24923,
+  "trim_lead": 700,
+  "trim_trail": 5278,
+  "silence_threshold": 8,
   "note": 58,
   "pitch_semitones": -4.0,
   "encoding": "pcm_u8_fx"

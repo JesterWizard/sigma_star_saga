@@ -5,18 +5,17 @@ GAX FX samples are unsigned 8-bit PCM centered at 0x80 (silence), same as
 vanilla FX wave-set payloads. Encoded at the FX mixing rate (15769 Hz) with
 perf note 0x3A (speed-tuned). Optional pitch_semitones shifts pitch without
 changing duration (asetrate + aresample + atempo), since FX note locks
-speed and pitch together.
+speed and pitch together. Leading/trailing near-silence is trimmed.
 
 Emits:
   <out>            — raw unsigned 8-bit PCM (silence = 0x80)
-  <out>.entry.json — {rate, samples, bytes, note, pitch_semitones}
+  <out>.entry.json — {rate, samples, bytes, note, pitch_semitones, …}
 """
 
 from __future__ import annotations
 
 import argparse
 import json
-import math
 import subprocess
 from pathlib import Path
 
@@ -26,6 +25,8 @@ FX_MIX_RATE = 15769
 FX_NATURAL_NOTE = 0x3A  # speed-tuned; see build_gax_catalog.py
 # Default pitch-only shift (semitones). Negative = lower; does not change tempo.
 DEFAULT_PITCH_SEMITONES = -5
+# |sample − 0x80| ≤ threshold counts as near-silence for end trimming.
+SILENCE_THRESHOLD = 8
 _WORK_RATE = 44100
 
 
@@ -60,10 +61,31 @@ def _pitch_filters(semitones: float) -> list[str]:
     return parts
 
 
+def trim_near_silence(pcm: bytes, threshold: int = SILENCE_THRESHOLD) -> tuple[bytes, int, int]:
+    """Drop leading/trailing samples with |s−0x80| ≤ threshold. Keeps ≥1 byte."""
+    if not pcm:
+        return pcm, 0, 0
+
+    def quiet(b: int) -> bool:
+        return abs(b - 0x80) <= threshold
+
+    start = 0
+    while start < len(pcm) and quiet(pcm[start]):
+        start += 1
+    end = len(pcm)
+    while end > start and quiet(pcm[end - 1]):
+        end -= 1
+    if start >= end:
+        # All quiet — keep a tiny silence pad so the wave is non-empty.
+        return bytes([0x80]), len(pcm) - 1, 0
+    return pcm[start:end], start, len(pcm) - end
+
+
 def pack(audio: Path, out: Path, pitch_semitones: float = DEFAULT_PITCH_SEMITONES) -> None:
     ffmpeg = find_ffmpeg()
     out.parent.mkdir(parents=True, exist_ok=True)
     af = ",".join(_pitch_filters(pitch_semitones))
+    tmp = out.with_suffix(out.suffix + ".raw")
     cmd = [
         ffmpeg,
         "-y",
@@ -79,15 +101,23 @@ def pack(audio: Path, out: Path, pitch_semitones: float = DEFAULT_PITCH_SEMITONE
         "u8",
         "-acodec",
         "pcm_u8",
-        str(out),
+        str(tmp),
     ]
     subprocess.check_call(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
-    n = out.stat().st_size
+    raw = tmp.read_bytes()
+    tmp.unlink(missing_ok=True)
+    pcm, trim_lead, trim_trail = trim_near_silence(raw)
+    out.write_bytes(pcm)
+    n = len(pcm)
     meta = {
         "source": str(audio),
         "rate": FX_MIX_RATE,
         "samples": n,
         "bytes": n,
+        "raw_samples": len(raw),
+        "trim_lead": trim_lead,
+        "trim_trail": trim_trail,
+        "silence_threshold": SILENCE_THRESHOLD,
         "note": FX_NATURAL_NOTE,
         "pitch_semitones": pitch_semitones,
         "encoding": "pcm_u8_fx",
@@ -97,7 +127,8 @@ def pack(audio: Path, out: Path, pitch_semitones: float = DEFAULT_PITCH_SEMITONE
     )
     print(
         f"wrote {out} ({n} bytes u8 @ {FX_MIX_RATE} Hz, "
-        f"pitch {pitch_semitones:+.1f} st)"
+        f"pitch {pitch_semitones:+.1f} st, "
+        f"trimmed {trim_lead}+{trim_trail} of {len(raw)})"
     )
 
 

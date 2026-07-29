@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Static integration checks for GAX vocoder playback wiring."""
+"""Static integration checks for GAX FX voice playback wiring."""
 
 from __future__ import annotations
 
@@ -9,9 +9,6 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(REPO / "tools"))
-
-from pack_gax_speech import FRAME, unpack_fields  # noqa: E402
 
 
 def main() -> int:
@@ -22,20 +19,19 @@ def main() -> int:
     hook = struct.unpack_from("<I", rom, off + 4)[0]
     assert hook & 1, hex(hook)
 
-    entry = json.loads(
-        (REPO / "sound/voice/built/01_tierney_briefing.entry.json").read_text()
-    )
-    assert entry["encoding"] == "pcm_vocoder_v1"
-    blob = (REPO / "sound/voice/built/01_tierney_briefing.bin").read_bytes()
-    frames = blob[: entry["bit_offset"]]
-    assert len(frames) % FRAME == 0
-    nonzero = 0
-    for i in range(0, len(frames), FRAME):
-        fields = unpack_fields(frames[i : i + FRAME])
-        assert fields is not None
-        if any(fields.values()):
-            nonzero += 1
-    assert nonzero > 0, "Tierney blob must not be silence-only"
+    fx = REPO / "sound/voice/built/01_tierney_briefing.fx.s8"
+    entry = json.loads(fx.with_suffix(fx.suffix + ".entry.json").read_text())
+    assert entry["encoding"] == "pcm_u8_fx"
+    pcm = fx.read_bytes()
+    assert len(pcm) == entry["samples"] > 0
+    assert entry.get("trim_lead", 0) + entry.get("trim_trail", 0) >= 0
+    # Near-silence ends should have been trimmed when present in the source.
+    assert len(pcm) <= entry.get("raw_samples", len(pcm))
+
+    catalog = (REPO / "src_custom/generated/gax_catalog.c").read_text()
+    assert "sVoiceSlotPresent" in catalog
+    assert "sVoiceBlob_" not in catalog
+    assert "sVoiceFxPcm_1" in catalog
 
     clips = json.loads((REPO / "sound/voice/voice_clips.json").read_text())
     assert "chapter_01" in clips

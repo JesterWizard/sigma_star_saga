@@ -25,7 +25,6 @@ REPO = Path(__file__).resolve().parents[1]
 SOUND = REPO / "sound"
 OUT_DIR = REPO / "src_custom" / "generated"
 OUT_H_DIR = REPO / "include"
-PACK_SPEECH = REPO / "tools" / "pack_gax_speech.py"
 PACK_SONG = REPO / "tools" / "pack_gax_song.py"
 PACK_VOICE_FX = REPO / "tools" / "pack_gax_voice_fx.py"
 BASEROM = REPO / "baserom.gba"
@@ -254,12 +253,7 @@ def collect_voice() -> list[dict]:
                 raise FileNotFoundError(f"{path}: missing audio {audio}")
             stem = voice_built_stem(voice_dir, meta)
             stem.parent.mkdir(parents=True, exist_ok=True)
-            subprocess.check_call(
-                [sys.executable, str(PACK_SPEECH), str(audio), "-o", str(stem)]
-            )
-            entry = json.loads(stem.with_suffix(".entry.json").read_text())
-            meta["_bin"] = stem.with_suffix(".bin")
-            meta["_entry"] = entry
+            # FX PCM only — speech vocoder blobs are unused by GaxPlayVoice.
             fx_pcm = stem.with_suffix(".fx.s8")
             pitch = meta.get("pitch_semitones", None)
             fx_cmd = [
@@ -298,7 +292,8 @@ def _change_html(pct: float | None) -> str:
 # Per-clip FX instrument overhead embedded beside the PCM wave payload.
 FX_ENTRY_OVERHEAD = GAX_FX_DATA_BYTES + GAX_FX_ENTRY_BYTES  # 0x14 + 0x44
 FX_LIST_PTR_BYTES = 4
-SPEECH_TABLE_ENTRY_BYTES = 8
+# Occupied voice slots still have an 8-byte speech-table stub (presence only).
+VOICE_TABLE_STUB_BYTES = 8
 
 
 def write_voice_inventory(voice: list[dict]) -> Path:
@@ -314,9 +309,8 @@ def write_voice_inventory(voice: list[dict]) -> Path:
         registered_audio.add(audio.resolve())
         src_n = audio.stat().st_size
         fx_n = Path(v["_fx_pcm"]).stat().st_size
-        speech_n = Path(v["_bin"]).stat().st_size
-        overhead = FX_ENTRY_OVERHEAD + FX_LIST_PTR_BYTES + SPEECH_TABLE_ENTRY_BYTES
-        rom_n = fx_n + speech_n + overhead
+        overhead = FX_ENTRY_OVERHEAD + FX_LIST_PTR_BYTES + VOICE_TABLE_STUB_BYTES
+        rom_n = fx_n + overhead
         pct = _change_pct(rom_n, src_n)
         sum_src += src_n
         sum_rom += rom_n
@@ -354,10 +348,10 @@ def write_voice_inventory(voice: list[dict]) -> Path:
         "",
         "- **Source** — on-disk source clip (`.mp3` / `.wav` / …), including container headers.",
         "- **In-ROM** — FX unsigned-8 PCM payload + FX entry (`0x58`) + FX list pointer (`4`) "
-        "+ speech bitstream blob + speech table entry (`8`).",
+        "+ voice-table presence stub (`8`). Speech vocoder blobs are not embedded.",
         "- **Overall Change** — `(in-ROM − source) / source`; negative means the ROM blob is smaller.",
         "- **Total** row — sum of all registered clips (source vs in-ROM).",
-        "- Playback uses raw **u8 PCM @ 15769 Hz** via the GAX FX path (speech vocoder blob is also linked).",
+        "- Playback uses raw **u8 PCM @ 15769 Hz** via the GAX FX path; near-silence ends are trimmed at pack.",
         "- JSON `id` is the C constant (`GAX_VOICE_…`); numeric slot is `index` "
         f"(or a legacy `NN_` filename). Clips live in [`{VOICE_CLIPS_NAME}`]({VOICE_CLIPS_NAME}) "
         "under chapter sections; each clip also has a `chapter` field (metadata only).",
@@ -652,32 +646,24 @@ def emit(music: list[dict], voice: list[dict], out_c: Path, out_h: Path) -> None
     lines.append("};")
     lines.append("")
 
-    # Voice blobs
+    # Voice table: presence stubs only (FX PCM is the real payload). Occupied
+    # slots point at a shared 1-byte marker so GaxPlayVoice's NULL check works.
     max_voice_id = max((v["_id"] for v in voice), default=-1)
     voice_slots = [None] * (max_voice_id + 1 if max_voice_id >= 0 else 0)
     for v in voice:
         voice_slots[v["_id"]] = v
 
-    for v in voice:
-        vid = v["_id"]
-        data = Path(v["_bin"]).read_bytes()
-        lines.append(f"APPEND_RODATA static const u8 sVoiceBlob_{vid}[] = {{")
-        for i in range(0, len(data), 16):
-            chunk = ", ".join(f"0x{b:02X}" for b in data[i : i + 16])
-            lines.append(f"    {chunk},")
-        lines.append("};")
-
-    lines.append("")
+    if voice:
+        lines.append("APPEND_RODATA static const u8 sVoiceSlotPresent = 1;")
+        lines.append("")
     lines.append("APPEND_RODATA const GaxSpeechEntry gGaxVoiceTable[] = {")
     if not voice_slots:
         lines.append("    {0, 0},")
-    for i, v in enumerate(voice_slots):
+    for v in voice_slots:
         if v is None:
             lines.append("    {0, 0},")
         else:
-            vid = v["_id"]
-            sf = v["_entry"]["size_flags"]
-            lines.append(f"    {{ sVoiceBlob_{vid}, 0x{sf:08X} }},")
+            lines.append("    { &sVoiceSlotPresent, 0 },")
     lines.append("};")
     lines.append("")
 
