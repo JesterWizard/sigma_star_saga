@@ -77,6 +77,13 @@ EXP_MULT_RE = re.compile(r"\.exp_multiplier\s*=\s*(\d+)")
 LEVEL_CAP_HUD_CMP_SITES = (0xFEB4, 0xFF3E)
 CMP_R0_0x62 = bytes((0x62, 0x28))  # cmp r0, #0x62
 CMP_R0_0xFE = bytes((0xFE, 0x28))  # cmp r0, #0xFE
+# Status overlay LEVEL digits (fall-through @ 0x542B6).
+# Site is 2-mod-4, so ARM long veneer (bx pc) is illegal — use Thumb-only:
+#   ldr r3, [pc, #4]; bx r3; nop; .word hook|1
+STATUS_LEVEL_DIGITS_OFF = 0x542B6
+STATUS_LEVEL_DIGITS_VENEER_LEN = 12
+# Thumb: ldr r3,[pc,#4] → Align(PC,4)+4 = 0x542BC when site is 0x542B6
+STATUS_LEVEL_DIGITS_VENEER_HEAD = struct.pack("<HHH", 0x4B01, 0x4718, 0x0000)
 
 # --- Suction (29th Impact Data) ------------------------------------------------
 IMPACT_COUNT_OFF = 0xF0A98 + 8  # word[2] of {28,20,28,22}
@@ -511,6 +518,32 @@ def apply_exp_hooks(
         f"runtime: level_cap_255={'TRUE' if level_cap_255 else 'FALSE'} "
         f"(HUD cmp sites → {'#0xFE' if level_cap_255 else 'vanilla #0x62'})"
     )
+
+    # Status overlay (SELECT): 3-digit LEVEL. Do not touch the top flight HUD bar.
+    name = "DrawStatusLevelDigits__Replacement"
+    if level_cap_255:
+        if name not in symbols:
+            raise KeyError(f"symbol {name} not found (needed for level_cap_255 HUD)")
+        hook = symbols[name] | 1  # Thumb
+        checked_write(
+            rom,
+            STATUS_LEVEL_DIGITS_OFF,
+            STATUS_LEVEL_DIGITS_VENEER_HEAD + struct.pack("<I", hook),
+            owners,
+            "runtime:level_cap_255:status_digits",
+        )
+        print(f"runtime: level_cap_255 status LEVEL digits → 0x{hook:08X}")
+    else:
+        checked_write(
+            rom,
+            STATUS_LEVEL_DIGITS_OFF,
+            baserom[
+                STATUS_LEVEL_DIGITS_OFF : STATUS_LEVEL_DIGITS_OFF
+                + STATUS_LEVEL_DIGITS_VENEER_LEN
+            ],
+            owners,
+            "runtime:level_cap_255:status_digits=off",
+        )
 
 
 def _sym_file_off(symbols: dict, name: str) -> int:
