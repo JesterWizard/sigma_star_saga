@@ -1,7 +1,13 @@
 {
-  "source": "/home/username/Github/sigma_star_saga/sound/voice/01_tierney_briefing.mp3",
-  "bit_offset": 11022,
-  "size_flags": 2147494670,
-  "bytes": 11356,
-  "frames": 334
+  "source": "/home/username/Github/sigma_star_saga/sound/voice/voice_sample.mp3",
+  "bit_offset": 3135,
+  "size_flags": 2147486783,
+  "bytes": 3147,
+  "frames": 95,
+  "encoding": "pcm_vocoder_v1",
+  "gate": "ones_per_frame",
+  "samples_per_frame": 40,
+  "rate": 2400,
+  "payload_bits": 260,
+  "field_count": 76
 }

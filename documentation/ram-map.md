@@ -108,6 +108,7 @@ Method: Thumb `LDR Rd,[PC,#imm]` literal pools only (not raw absolute words). Wo
 | `gGaxParams` | `0x030008C0` | GAX2_PARAMS (flags @ +0x0E; `GAX_SPEECH` = `0x40`) |
 | `gGaxCurrentSong` | `0x030008B0` | PlayBgm song-module latch |
 | `gGaxMixBuffer` | `0x03005910` | GAX mix arena (`0x1000` IWRAM; vanilla site) |
+| `gGaxSpeechObject` | `0x03004348` | GAX_SPEECH object (`0x7A4` IWRAM; uncharted gap) |
 | `gGaxWorkspacePtr` | `0x0300775C` | Pointer to mix workspace (same word as legacy high-water note) |
 | `gGaxMusicVol` | `0x030011FC` | Music volume (u16) |
 | `gGunDataBits` | `0x03007690` | Gun Data ownership bits |

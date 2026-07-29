@@ -3,6 +3,7 @@
 #include "cutscene_ch1.h"
 #include "cutscene_stage.h"
 #include "dialogue.h"
+#include "gax.h"
 #include "ram_map.h"
 
 /*
@@ -47,7 +48,6 @@ typedef s32 (*S32U32Func)(u32 a, u32 b);
 #define Helper_2D040 ((VoidFunc)0x0802D041)
 #define Helper_041B4 ((VoidU32Func)0x080041B5)
 #define Helper_2ADF0 ((VoidU32Func)0x0802ADF1)
-#define Helper_2C024 ((VoidFunc)0x0802C025)
 #define Helper_09070 ((Void4U32Func)0x08009071)
 #define Helper_589F4 ((S32U32Func)0x080589F5)
 #define Helper_07170 ((GetBoundsFunc)0x08007171)
@@ -85,23 +85,14 @@ static void StageSharedLerp(void)
     *(s32 *)(gCameras + 0xB4) += dy;
 }
 
-static void StageTrailer(void)
+/*
+ * Body of vanilla 0x2c024. That ROM routine is a frame-sharing tail of
+ * CutsceneStageUpdate (its epilogue pops the caller's frame), so it must
+ * never be called as a normal function — decompiled here instead.
+ */
+static void StageClearCheck(void)
 {
-    s32 sx;
-    s32 sy;
     u32 mode;
-
-    *(s32 *)(gCameras + CAMERA_OFF_X) = (s32)gWorldScrollY;
-    *(s32 *)(gCameras + CAMERA_OFF_Y) = (s32)gWorldScrollX;
-
-    sx = (s32)gWorldScrollY >> 16;
-    sy = (s32)gWorldScrollX >> 16;
-    gUnk_03007728[0] = (u16)(sx - 32);
-    gUnk_03007728[1] = (u16)(sx + 240);
-    gUnk_03007728[2] = (u16)(sy - 32);
-    gUnk_03007728[3] = (u16)(sy + 160);
-
-    Helper_2F40C(gUnk_03001638, gUnk_03002774, gUnk_03001F50);
 
     if (gUnk_03007700 != 0 && gEnemyRemainingByte == 0)
         gStageClearGate = 0;
@@ -115,6 +106,26 @@ static void StageTrailer(void)
         Helper_2AF68();
     else if (Helper_05B3C(0x75) == 0xFF)
         Helper_3B8B8();
+}
+
+static void StageTrailer(void)
+{
+    s32 sx;
+    s32 sy;
+
+    *(s32 *)(gCameras + CAMERA_OFF_X) = (s32)gWorldScrollY;
+    *(s32 *)(gCameras + CAMERA_OFF_Y) = (s32)gWorldScrollX;
+
+    sx = (s32)gWorldScrollY >> 16;
+    sy = (s32)gWorldScrollX >> 16;
+    gUnk_03007728[0] = (u16)(sx - 32);
+    gUnk_03007728[1] = (u16)(sx + 240);
+    gUnk_03007728[2] = (u16)(sy - 32);
+    gUnk_03007728[3] = (u16)(sy + 160);
+
+    Helper_2F40C(gUnk_03001638, gUnk_03002774, gUnk_03001F50);
+
+    StageClearCheck();
 }
 
 static void StageCaseBounds(u16 hitMode);
@@ -543,10 +554,31 @@ static void StageCaseIntroCtrl(void)
 void CutsceneStageUpdate(void)
 {
     u32 stageCase;
+    u8 *state;
+
+    /* Keep FX enable latched while voice is active (BGMs without FX tracks
+     * otherwise clear state+0x59 every song-apply and starve the queue). */
+    if (gGaxVoiceFxChannel >= 0)
+    {
+        state = (u8 *)gGaxWorkspacePtr;
+        if (state != NULL)
+        {
+            if (*(u32 *)(*(u8 **)(state + 0x0C) + gGaxVoiceFxChannel * 0x50 + 0x40)
+                == 0x80000000u)
+                gGaxVoiceFxChannel = -1;
+            else
+                state[0x59] = 1;
+        }
+    }
 
     Helper_3BE54();
     if (gUnk_03000D80 != 0)
-        Helper_2C024();
+    {
+        /* Vanilla bl 0x2c024 never returns here (frame-sharing tail, see
+           StageClearCheck): the scroll/switch path below is skipped. */
+        StageClearCheck();
+        return;
+    }
 
     gWorldScrollY += gCutsceneParam[0];
     gWorldScrollX += gCutsceneParam[1];

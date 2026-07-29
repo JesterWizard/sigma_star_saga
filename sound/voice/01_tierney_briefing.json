@@ -1,5 +1,6 @@
 {
   "id": 1,
   "name": "tierney_briefing",
-  "src": "01_tierney_briefing.mp3"
+  "src": "voice_sample.mp3",
+  "pitch_semitones": -4
 }

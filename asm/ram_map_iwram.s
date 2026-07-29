@@ -59,6 +59,9 @@ SET_DATA gGaxParams, 0x030008C0
 SET_DATA gGaxCurrentSong, 0x030008B0
 @ Mix / workspace arena at vanilla site (IWRAM). Size 0x1000; ends at gOamCursor.
 SET_ARRAY gGaxMixBuffer, 0x03005910, 0x1000
+@ GAX_SPEECH object in uncharted IWRAM gap (0x03004348.. before 0x030050F0).
+@ Must NOT be carved from the mix buffer (that overflows into gOamCursor).
+SET_ARRAY gGaxSpeechObject, 0x03004348, 0x7A8
 @ Pointer to GAX workspace (written by gax2_init).
 SET_DATA gGaxWorkspacePtr, 0x0300775C
 @ Current music volume (u16); PlayBgm reapplies via gax music-vol.
@@ -235,7 +238,8 @@ _kernel_malloc gHpBarTileScratchAlignPad, 0x3
 @ Scratch for one-time bar tile encode (9 × 2 × 32 = 0x240).
 _kernel_malloc gHpBarTileScratch, 0x240
 @ 1 = custom GAX speech table installed into workspace object.
-_kernel_malloc gGaxSpeechInstalled, 0x1
+@ (moved: gGaxSpeechInstalled is derived from the workspace at runtime — the
+@ free pool overlaps user-stack headroom and gets thrashed; see gax-audio.md)
 @ Charge Shot rework: 0 = charging, 1 = empowered (10x window).
 _kernel_malloc gChargeShotPhase, 0x1
 @ Frames elapsed in the current charge / empowered phase.

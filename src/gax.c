@@ -1,6 +1,8 @@
 #include "global.h"
 #include "gax.h"
+#include "gax_audio.h"
 #include "ram_map.h"
+#include "runtime.h"
 
 /*
  * GAX 3.05A wrappers — decompiled call shapes from early ROM stubs and
@@ -11,6 +13,7 @@
 typedef void (*Gax2NewFunc)(Gax2Params *params);
 typedef void (*Gax2InitFunc)(Gax2Params *params);
 typedef void (*GaxFxFunc)(u32 id, u32 pan);
+typedef s32 (*GaxFxExFunc)(u32 id, s32 channel, u32 priority, u32 note);
 typedef void (*GaxSongFunc)(Gax2Params *params);
 typedef void (*GaxStopMusicFunc)(void);
 typedef void (*GaxStopFxFunc)(u32 unused, s32 channel);
@@ -20,6 +23,7 @@ typedef void (*GaxFxVolFunc)(s32 channel, u32 vol);
 #define Gax2NewRom ((Gax2NewFunc)0x08054AB5)
 #define Gax2InitRom ((Gax2InitFunc)0x08054F95)
 #define GaxFxRom ((GaxFxFunc)0x08055C8D)
+#define GaxFxExRom ((GaxFxExFunc)0x08055D6D)
 #define GaxSongApplyRom ((GaxSongFunc)0x08054891)
 #define GaxStopMusicRom ((GaxStopMusicFunc)0x08056509)
 #define GaxStopFxRom ((GaxStopFxFunc)0x08056571)
@@ -41,6 +45,16 @@ void PlaySfx(u32 id, u32 pan)
     GaxFxRom(id, pan);
 }
 
+s32 PlaySfxEx(u32 id, s32 channel, u32 priority, u32 note)
+{
+    return GaxFxExRom(id, channel, priority, note);
+}
+
+void StopFxChannel(s32 channel)
+{
+    GaxStopFxRom(0, channel);
+}
+
 void PlayBgm(const void *songModule)
 {
     if (gGaxCurrentSong == songModule)
@@ -50,9 +64,13 @@ void PlayBgm(const void *songModule)
     gGaxParams.music = songModule;
     GaxSongApplyRom(&gGaxParams);
 
+    /* Clear speech before any Gax2Init re-entry so mix is not re-carved. */
+    gGaxParams.flags = (u16)(gGaxParams.flags & ~GAX_FLAG_SPEECH);
+
     if (gGaxParams.wramSize <= 0x1000)
         Gax2InitRom(&gGaxParams);
 
+    GaxAttachSpeech();
     GaxMusicVolRom(-1, gGaxMusicVol);
 }
 

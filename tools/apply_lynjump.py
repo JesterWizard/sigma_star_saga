@@ -1384,11 +1384,12 @@ def apply_disable_random_battles(rom: bytearray, owners: dict, symbols: dict, en
 
 GAX_BOOT_OFF = 0x38D8  # AgbMain: gax2_new … gax2_init
 GAX_BOOT_VENEER_LEN = 8
+GAX_SPEECH_CONSUMER_OFF = 0x56A30  # temporary probe; restore when flag off
 TALK_ADVANCE_OFF = 0x102BC
 
 
 def apply_gax_audio(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
-    """LynJump AgbMain GAX boot + TalkAdvance for per-TALK VOICE cues."""
+    """LynJump AgbMain GAX boot + TalkAdvance + temporary speech consumer probe."""
     baserom = (ROOT / "baserom.gba").read_bytes()
     owner = "runtime:custom_gax_audio"
     if not enabled:
@@ -1406,6 +1407,13 @@ def apply_gax_audio(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
             owners,
             f"{owner}=FALSE:TalkAdvance",
         )
+        checked_write(
+            rom,
+            GAX_SPEECH_CONSUMER_OFF,
+            baserom[GAX_SPEECH_CONSUMER_OFF : GAX_SPEECH_CONSUMER_OFF + VENEER_LEN],
+            owners,
+            f"{owner}=FALSE:SpeechConsumer",
+        )
         print("runtime: custom_gax_audio=FALSE (vanilla GAX boot / TalkAdvance)")
         return
 
@@ -1422,6 +1430,14 @@ def apply_gax_audio(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
         owners.pop(offset, None)
     apply_veneer(rom, owners, TALK_ADVANCE_OFF, symbols[talk], owner)
     print(f"runtime: custom_gax_audio=TRUE → {talk} 0x{symbols[talk]:08X}")
+
+    consumer = "GaxSpeechConsumer__Replacement"
+    if consumer not in symbols:
+        raise KeyError(f"{consumer} missing — build gax_audio_hooks.c")
+    for offset in range(GAX_SPEECH_CONSUMER_OFF, GAX_SPEECH_CONSUMER_OFF + VENEER_LEN):
+        owners.pop(offset, None)
+    apply_veneer(rom, owners, GAX_SPEECH_CONSUMER_OFF, symbols[consumer], owner)
+    print(f"runtime: custom_gax_audio=TRUE → {consumer} 0x{symbols[consumer]:08X}")
 
 
 def main():

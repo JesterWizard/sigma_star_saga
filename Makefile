@@ -106,7 +106,8 @@ C_SRCS := \
 	$(C_SUBDIR)/dialogue.c \
 	$(C_SUBDIR)/cutscene_ch1.c \
 	$(C_SUBDIR)/cutscene_stage.c \
-	$(C_SUBDIR)/gax.c
+	$(C_SUBDIR)/gax.c \
+	$(C_SUBDIR)/gax_speech_decode.c
 CUSTOM_C_SRCS := \
 	$(CUSTOM_C_SUBDIR)/nocash.c \
 	$(CUSTOM_C_SUBDIR)/flight_skip_hooks.c \

@@ -10,6 +10,8 @@ void GaxStopVoice(void);
 
 /* LynJump body — AgbMain gax boot @ 0x080038D8 */
 void GaxBootInit__Replacement(void);
+/* Temporary LynJump — speech consumer @ 0x08056A30 when custom_gax_audio */
+s32 GaxSpeechConsumer__Replacement(void *speechObj);
 /* LynJump — TalkAdvance @ 0x080102BC when custom_gax_audio */
 const u8 *TalkAdvance_Gax__Replacement(const u8 *stream);
 

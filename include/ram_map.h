@@ -10,6 +10,7 @@
 extern Gax2Params gGaxParams; /* @ 0x030008C0 */
 extern void *gGaxCurrentSong; /* @ 0x030008B0 */
 extern u8 gGaxMixBuffer[]; /* @ 0x03005910, 0x1000 bytes (IWRAM) */
+extern u8 gGaxSpeechObject[]; /* @ 0x03004348, 0x7A4 bytes (IWRAM) */
 extern void *gGaxWorkspacePtr; /* @ 0x0300775C — pointer slot, not the buffer */
 extern u16 gGaxMusicVol; /* @ 0x030011FC */
 
@@ -103,7 +104,6 @@ extern u8 gHpBarTilesReady;
 extern u32 gHpBarTileScratch[];
 extern u8 gChargeShotPhase;
 extern u16 gChargeShotTimer;
-extern u8 gGaxSpeechInstalled;
 
 /* Last pool-backed vanilla IWRAM global before free pool (see gGaxWorkspacePtr). */
 extern u8 gVanillaIwramHighWater;

@@ -1,0 +1,39 @@
+set mi-async on
+set pagination off
+set confirm off
+file sigma_star_saga.elf
+target remote :2345
+printf "connected; letting game boot...\n"
+continue &
+shell sleep 10
+interrupt
+shell sleep 1
+printf "=== after boot ===\n"
+info registers pc lr sp
+x/1wx &gGaxSpeechProbeCount
+printf "flags=%#x installed=%d\n", gGaxParams.flags, gGaxSpeechInstalled
+printf "=== calling GaxPlayVoice(1,0) ===\n"
+call (void) GaxPlayVoice(1, 0)
+printf "=== returned; sampling ===\n"
+printf "idx=%d fc=%u bi=%u probe=%u flags=%#x\n", *(int*)(gGaxSpeechObject+0x798), *(unsigned int*)(gGaxSpeechObject+0x79C), *(unsigned int*)(gGaxSpeechObject+0x7A0), gGaxSpeechProbeCount, gGaxParams.flags
+continue &
+shell sleep 1
+interrupt
+shell sleep 1
+printf "=== sample 1 ===\n"
+info registers pc
+continue &
+shell sleep 1
+interrupt
+shell sleep 1
+printf "=== sample 2 ===\n"
+info registers pc
+continue &
+shell sleep 1
+interrupt
+shell sleep 1
+printf "=== sample 3 ===\n"
+info registers pc
+printf "idx=%d fc=%u bi=%u probe=%u flags=%#x\n", *(int*)(gGaxSpeechObject+0x798), *(unsigned int*)(gGaxSpeechObject+0x79C), *(unsigned int*)(gGaxSpeechObject+0x7A0), gGaxSpeechProbeCount, gGaxParams.flags
+x/8wx gGaxSpeechObject+0x794
+quit
