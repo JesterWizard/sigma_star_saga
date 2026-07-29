@@ -14,7 +14,8 @@ POIN_RE = re.compile(r"POIN\s+(\w+)")
 BOOL_RE = re.compile(
     r"\.(skip_flight_battle|always_run|always_max_health|always_max_bombs|"
     r"all_cannon_data|all_bullet_data|all_impact_data|"
-    r"all_key_items|all_tools|custom_enemy_exp|overworld_enemy_exp|custom_dialogue|"
+    r"all_key_items|all_tools|level_cap_255|start_max_level|custom_enemy_exp|"
+    r"overworld_enemy_exp|custom_dialogue|"
     r"custom_gun_data|enemy_hp_bars|disable_random_battles|custom_cutscene_ch1|"
     r"custom_cutscene_stage|custom_talk_helpers|custom_event_runner|custom_gax_audio)"
     r"\s*=\s*(TRUE|FALSE|true|false|1|0)",
@@ -34,13 +35,15 @@ SHOOTER_CHEAT_FLAGS = (
     "all_impact_data",
     "all_key_items",
     "all_tools",
+    "start_max_level",
     "custom_gun_data",  # Phoenix per-frame revive via UpdateShooterFrame
 )
 
-# Overworld unlocks (tools / items) — ApplyInventoryCheatsOnce before flight.
+# Overworld unlocks (tools / items / max level) before flight.
 OVERWORLD_UNLOCK_FLAGS = (
     "all_key_items",
     "all_tools",
+    "start_max_level",
 )
 OVERWORLD_PLAYER_UPDATE_OFF = 0x1DC84
 
@@ -65,10 +68,15 @@ ANDS_R0_R1 = bytes((0x08, 0x40))  # 0x4008
 MOVS_R0_2 = bytes((0x02, 0x20))  # 0x2002
 
 # AddExperience @ 0xFDC4 — long-jump veneer when exp_multiplier != 1
-# or custom_enemy_exp is enabled.
+# and/or level_cap_255 (custom_enemy_exp is catalog-only and does not veneer).
 ADD_EXPERIENCE_OFF = 0xFDC4
 ADD_EXPERIENCE_VENEER_LEN = 8
 EXP_MULT_RE = re.compile(r"\.exp_multiplier\s*=\s*(\d+)")
+# RebuildExpDigits (@ 0xFE20): cmp level,#0x62 → zero remaining EXP at vanilla max.
+# Raise to #0xFE so the bar keeps working through level 254 (cap at 255).
+LEVEL_CAP_HUD_CMP_SITES = (0xFEB4, 0xFF3E)
+CMP_R0_0x62 = bytes((0x62, 0x28))  # cmp r0, #0x62
+CMP_R0_0xFE = bytes((0xFE, 0x28))  # cmp r0, #0xFE
 
 # --- Suction (29th Impact Data) ------------------------------------------------
 IMPACT_COUNT_OFF = 0xF0A98 + 8  # word[2] of {28,20,28,22}
@@ -257,6 +265,8 @@ def load_runtime_flags() -> dict[str, bool]:
         "all_impact_data": False,
         "all_key_items": False,
         "all_tools": False,
+        "level_cap_255": False,
+        "start_max_level": False,
         "custom_enemy_exp": False,
         "overworld_enemy_exp": False,
         "custom_dialogue": False,
@@ -433,16 +443,23 @@ def apply_custom_dialogue(rom: bytearray, owners: dict, symbols: dict, enabled: 
 
 
 def apply_exp_hooks(
-    rom: bytearray, owners: dict, symbols: dict, multiplier: int, custom_enemy_exp: bool
+    rom: bytearray,
+    owners: dict,
+    symbols: dict,
+    multiplier: int,
+    custom_enemy_exp: bool,
+    level_cap_255: bool,
 ):
-    """Veneer AddExperience only for exp_multiplier.
+    """Veneer AddExperience for exp_multiplier and/or level_cap_255.
 
     custom_enemy_exp is catalog / by-id data for tools and future hooks — it must
     not rewrite gem awards by amount (gems already carry the full actor+0x3C pool).
     """
     del custom_enemy_exp  # kept in signature for call-site compatibility
     baserom = (ROOT / "baserom.gba").read_bytes()
-    if multiplier == 1:
+    need_veneer = multiplier != 1 or level_cap_255
+
+    if not need_veneer:
         checked_write(
             rom,
             ADD_EXPERIENCE_OFF,
@@ -450,21 +467,50 @@ def apply_exp_hooks(
             owners,
             "runtime:exp_hooks=off",
         )
-        print("runtime: AddExperience vanilla (exp_multiplier=1)")
-        return
+        print("runtime: AddExperience vanilla (exp_multiplier=1, level_cap_255=FALSE)")
+    else:
+        name = "AddExperience__Replacement"
+        if name not in symbols:
+            raise KeyError(f"symbol {name} not found (needed for exp hooks)")
+        hook = symbols[name]
+        checked_write(
+            rom,
+            ADD_EXPERIENCE_OFF,
+            SHOOTER_FRAME_VENEER_HEAD + struct.pack("<I", hook),
+            owners,
+            "runtime:exp_hooks",
+        )
+        print(
+            f"runtime: exp_multiplier={multiplier} level_cap_255={level_cap_255} "
+            f"→ 0x{hook:08X}"
+        )
 
-    name = "AddExperience__Replacement"
-    if name not in symbols:
-        raise KeyError(f"symbol {name} not found (needed for exp hooks)")
-    hook = symbols[name]
-    checked_write(
-        rom,
-        ADD_EXPERIENCE_OFF,
-        SHOOTER_FRAME_VENEER_HEAD + struct.pack("<I", hook),
-        owners,
-        "runtime:exp_hooks",
+    # HUD remaining-EXP zeroing at vanilla max (level > 98).
+    # With level_cap_255, raise the threshold to level > 254.
+    for off in LEVEL_CAP_HUD_CMP_SITES:
+        cur = bytes(rom[off : off + 2])
+        vanilla = baserom[off : off + 2]
+        if vanilla != CMP_R0_0x62:
+            raise ValueError(
+                f"level_cap_255: baserom cmp at 0x{off:X} is {vanilla.hex()}, "
+                f"expected {CMP_R0_0x62.hex()}"
+            )
+        if cur not in (CMP_R0_0x62, CMP_R0_0xFE):
+            raise ValueError(
+                f"level_cap_255: unexpected cmp at 0x{off:X}, found {cur.hex()}"
+            )
+        patch = CMP_R0_0xFE if level_cap_255 else vanilla
+        checked_write(
+            rom,
+            off,
+            patch,
+            owners,
+            f"runtime:level_cap_255:hud@{off:X}",
+        )
+    print(
+        f"runtime: level_cap_255={'TRUE' if level_cap_255 else 'FALSE'} "
+        f"(HUD cmp sites → {'#0xFE' if level_cap_255 else 'vanilla #0x62'})"
     )
-    print(f"runtime: exp_multiplier={multiplier} → 0x{hook:08X}")
 
 
 def _sym_file_off(symbols: dict, name: str) -> int:
@@ -1463,7 +1509,12 @@ def main():
     apply_shooter_cheats(rom, owners, symbols, flags)
     apply_overworld_unlocks(rom, owners, symbols, flags)
     apply_exp_hooks(
-        rom, owners, symbols, exp_multiplier, flags["custom_enemy_exp"]
+        rom,
+        owners,
+        symbols,
+        exp_multiplier,
+        flags["custom_enemy_exp"],
+        flags["level_cap_255"],
     )
     apply_custom_dialogue(rom, owners, symbols, flags["custom_dialogue"])
     apply_suction(rom, owners, symbols, flags["custom_gun_data"])

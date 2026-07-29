@@ -100,9 +100,33 @@ static void ApplyMaxHealth(void)
         player[PLAYER_STATE_OFF] = PLAYER_STATE_FLY;
 }
 
+static u8 ConfiguredMaxLevel(void)
+{
+    return gRuntimeConfig.level_cap_255 ? MAX_PLAYER_LEVEL_EXTENDED
+                                        : MAX_PLAYER_LEVEL;
+}
+
+/* Bump to the active cap once per low-level state (save loads re-trigger). */
+static void ApplyMaxLevel(void)
+{
+    u8 maxLevel;
+
+    if (!gRuntimeConfig.start_max_level)
+        return;
+
+    maxLevel = ConfiguredMaxLevel();
+    if (gPlayerLevel == maxLevel)
+        return;
+
+    gPlayerLevel = maxLevel;
+    CalcExpToNextLevel();
+    gPlayerExp = gExpToNextLevel;
+}
+
 /* Overworld walk update @ 0x0801DC84 — apply unlocks before flight stages. */
 APPEND_TEXT void OverworldPlayerUpdate__Replacement(void)
 {
+    ApplyMaxLevel();
     ApplyToolsAndItems();
     ApplyGunDataCheatsOnce();
     OverworldPlayerUpdate__Continue();
@@ -128,6 +152,7 @@ APPEND_TEXT void UpdateShooterFrame__Replacement(void)
     if (gRuntimeConfig.always_max_bombs && gPlayerBombs < MAX_BOMBS)
         gPlayerBombs = MAX_BOMBS;
 
+    ApplyMaxLevel();
     ApplyPhoenixRevive();
     TickPhoenixRevivePopup();
     ApplyAutoTarget();
@@ -137,21 +162,22 @@ APPEND_TEXT void UpdateShooterFrame__Replacement(void)
     ApplyGunDataCheatsOnce();
 }
 
-/* Veneered over AddExperience @ 0x0800FDC4 when exp_multiplier != 1.
- * Must match vanilla: only mutate gPlayerExp / level. Do NOT write
- * gPlayerExpDisplay — HudSync copies + RebuildExpDigits when they differ. */
+/* Veneered over AddExperience @ 0x0800FDC4 when exp_multiplier != 1
+ * and/or level_cap_255. Must match vanilla: only mutate gPlayerExp / level.
+ * Do NOT write gPlayerExpDisplay — HudSync copies + RebuildExpDigits when they differ. */
 APPEND_TEXT bool8 AddExperience__Replacement(u32 amount)
 {
     u8 level = gPlayerLevel;
+    u8 maxLevel = ConfiguredMaxLevel();
 
-    if (level > MAX_PLAYER_LEVEL - 1)
+    if (level > maxLevel - 1)
         return FALSE;
 
     amount *= gRuntimeConfig.exp_multiplier;
 
     gPlayerExp += amount;
 
-    if (level == MAX_PLAYER_LEVEL)
+    if (level == maxLevel)
     {
         if (gPlayerExp > gExpToNextLevel)
             gPlayerExp = gExpToNextLevel;
@@ -160,8 +186,8 @@ APPEND_TEXT bool8 AddExperience__Replacement(u32 amount)
     if (gPlayerExp >= gExpToNextLevel)
     {
         gPlayerLevel++;
-        if (gPlayerLevel > MAX_PLAYER_LEVEL - 1)
-            gPlayerLevel = MAX_PLAYER_LEVEL;
+        if (gPlayerLevel > maxLevel - 1)
+            gPlayerLevel = maxLevel;
         CalcExpToNextLevel();
         return TRUE;
     }

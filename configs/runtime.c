@@ -11,7 +11,9 @@ const RuntimeConfig gRuntimeConfigRom __attribute__((section(".runtime_config"))
     .all_impact_data = TRUE,
     .all_key_items = FALSE,
     .all_tools = FALSE,
-    .exp_multiplier = 3,
+    .exp_multiplier = 1000,
+    .level_cap_255 = TRUE, /* vanilla stops at 99; raise AddExperience + HUD to 255 */
+    .start_max_level = TRUE, /* bump to 99, or 255 when level_cap_255 */
     .custom_enemy_exp = FALSE,
     .overworld_enemy_exp = TRUE,
     .custom_dialogue = TRUE, /* needed for TALK VOICE(...) cues in custom banks */

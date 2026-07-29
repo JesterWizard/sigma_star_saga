@@ -24,6 +24,8 @@ typedef struct {
     u8 all_key_items;      /* Full gItemsOwned (CB Have All Items) */
     u8 all_tools;          /* Krill Puck / Boots / Girl Wings / Scanner / Warp */
     u8 exp_multiplier;     /* Scale AddExperience amount (1 = vanilla) */
+    u8 level_cap_255;      /* Allow level-ups through 255 (vanilla max 99) */
+    u8 start_max_level;    /* Force gPlayerLevel to cap (99, or 255 if lifted) */
     u8 custom_enemy_exp;   /* Build enemy_exp.json by-id catalog (not amount remap) */
     u8 overworld_enemy_exp; /* Award EXP on overworld fauna kills (JSON catalog) */
     u8 custom_dialogue;    /* Use src_custom/dialogue banks (append + ptr redirect) */

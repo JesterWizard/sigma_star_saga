@@ -19,6 +19,6 @@ Wiring the HQ blob in would never be called by GAX.
 [] Remove the Forgotten Planet's ghost overlay during the countdown (it's annoying shit)
 [] Add a debug scene teleporter
 [] Add a debug boss fight enabler
-[] Allow level ups past 100 (maybe to 255?)
+[x] Allow level ups past 100 (maybe to 255?)
 [] Add custom gun data to boost defense
 [] Add a debug anywhere save command
