@@ -84,12 +84,20 @@ VOICE_STOP_ID = 0xFFFF
 
 
 def load_voice_name_map() -> dict[str, int]:
-    """GAX_VOICE_* from include/gax_catalog.h (may be empty before first catalog build)."""
+    """GAX_VOICE_* clip constants from include/gax_catalog.h."""
     path = REPO / "include" / "gax_catalog.h"
     names: dict[str, int] = {"VOICE_STOP": VOICE_STOP_ID}
     if not path.is_file():
         return names
+    skip = {
+        "GAX_VOICE_COUNT",
+        "GAX_VOICE_FX_BASE",
+        "GAX_VOICE_FX_NOTE",
+        "GAX_VOICE_FX_PRIORITY",
+    }
     for m in re.finditer(r"#define\s+(GAX_VOICE_\w+)\s+(\d+)", path.read_text()):
+        if m.group(1) in skip:
+            continue
         names[m.group(1)] = int(m.group(2))
     return names
 

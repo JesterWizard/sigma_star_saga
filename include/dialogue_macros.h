@@ -19,8 +19,9 @@
 /* TALK(speaker, side, expr[, VOICE(id)|VOICE_STOP], "page", ...) */
 #define TALK(...)
 
-/* Optional voice cue after expr — catalog id from sound/voice/*.json.
- * Requires .custom_dialogue + .custom_gax_audio. Omit = leave audio unchanged. */
+/* Optional voice cue after expr — catalog constant from sound/voice/*.json `id`
+ * (e.g. VOICE(GAX_VOICE_TIERNEY_BRIEFING)). Requires .custom_dialogue +
+ * .custom_gax_audio. Omit = leave audio unchanged. */
 #define VOICE(...)
 #define VOICE_STOP
 

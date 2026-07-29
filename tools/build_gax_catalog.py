@@ -75,6 +75,60 @@ def parse_int(s) -> int:
     return int(str(s), 0)
 
 
+def c_ident(name: str) -> str:
+    s = re.sub(r"[^0-9A-Za-z_]", "_", name)
+    if s and s[0].isdigit():
+        s = "_" + s
+    return s
+
+
+_VOICE_FILE_INDEX_RE = re.compile(r"^(\d+)[_-]")
+
+
+def voice_constant_name(meta: dict, path: Path) -> str:
+    """C macro name for this clip — must match VOICE(GAX_VOICE_…) in dialogue.
+
+    JSON `id` is the constant (with or without the GAX_VOICE_ prefix). Legacy
+    numeric `id` + `name` still works.
+    """
+    raw = meta.get("id")
+    if isinstance(raw, str) and not _is_numeric_token(raw):
+        token = raw.strip()
+        if token.startswith("GAX_VOICE_"):
+            token = token[len("GAX_VOICE_") :]
+        return "GAX_VOICE_" + c_ident(token).upper()
+    name = meta.get("name")
+    if name:
+        return "GAX_VOICE_" + c_ident(str(name)).upper()
+    raise ValueError(
+        f"{path}: id must be a GAX_VOICE_* constant name "
+        f'(e.g. "GAX_VOICE_TIERNEY_BRIEFING"), or provide name with numeric id'
+    )
+
+
+def _is_numeric_token(s: str) -> bool:
+    t = s.strip().lower()
+    if t.startswith("0x"):
+        return all(c in "0123456789abcdef" for c in t[2:]) and len(t) > 2
+    return t.isdigit()
+
+
+def voice_numeric_id(meta: dict, path: Path) -> int:
+    """Numeric catalog slot: explicit `index`, else NN_ from filename, else legacy numeric id."""
+    if "index" in meta:
+        return parse_int(meta["index"])
+    m = _VOICE_FILE_INDEX_RE.match(path.stem)
+    if m:
+        return int(m.group(1), 10)
+    raw = meta.get("id")
+    if isinstance(raw, int) or (isinstance(raw, str) and _is_numeric_token(raw)):
+        return parse_int(raw)
+    raise ValueError(
+        f"{path}: need numeric slot — use filename prefix NN_name.json "
+        f'or set "index": N'
+    )
+
+
 def collect_music() -> list[dict]:
     items = []
     music_dir = SOUND / "music"
@@ -101,6 +155,8 @@ def collect_voice() -> list[dict]:
     voice_dir = SOUND / "voice"
     if not voice_dir.is_dir():
         return items
+    seen_const: dict[str, Path] = {}
+    seen_index: dict[int, Path] = {}
     for path in sorted(voice_dir.glob("*.json")):
         # Skip inventory / non-manifest JSON (e.g. a leftover VOICES.json).
         if path.name.upper() in {"VOICES.JSON"}:
@@ -111,6 +167,20 @@ def collect_voice() -> list[dict]:
         ):
             continue
         meta["_path"] = path
+        meta["_constant"] = voice_constant_name(meta, path)
+        meta["_id"] = voice_numeric_id(meta, path)
+        if meta["_constant"] in seen_const:
+            raise ValueError(
+                f"{path}: duplicate constant {meta['_constant']} "
+                f"(also {seen_const[meta['_constant']]})"
+            )
+        if meta["_id"] in seen_index:
+            raise ValueError(
+                f"{path}: duplicate index {meta['_id']} "
+                f"(also {seen_index[meta['_id']]})"
+            )
+        seen_const[meta["_constant"]] = path
+        seen_index[meta["_id"]] = path
         audio = voice_audio_path(meta, path)
         if not audio.is_file():
             raise FileNotFoundError(f"{path}: missing audio {audio}")
@@ -131,15 +201,8 @@ def collect_voice() -> list[dict]:
         subprocess.check_call(fx_cmd)
         meta["_fx_pcm"] = fx_pcm
         items.append(meta)
-    items.sort(key=lambda m: parse_int(m.get("id", 0)))
+    items.sort(key=lambda m: m["_id"])
     return items
-
-
-def c_ident(name: str) -> str:
-    s = re.sub(r"[^0-9A-Za-z_]", "_", name)
-    if s and s[0].isdigit():
-        s = "_" + s
-    return s
 
 
 def _fmt_bytes(n: int) -> str:
@@ -184,7 +247,7 @@ def write_voice_inventory(voice: list[dict]) -> Path:
         pct = _change_pct(rom_n, src_n)
         sum_src += src_n
         sum_rom += rom_n
-        title = v.get("name", audio.stem)
+        title = v.get("_constant", v.get("name", audio.stem))
         rows.append(
             (
                 title,
@@ -220,13 +283,14 @@ def write_voice_inventory(voice: list[dict]) -> Path:
         "- **Overall Change** — `(in-ROM − source) / source`; negative means the ROM blob is smaller.",
         "- **Total** row — sum of all registered clips (source vs in-ROM).",
         "- Playback uses raw **u8 PCM @ 15769 Hz** via the GAX FX path (speech vocoder blob is also linked).",
+        "- JSON `id` is the C constant (`GAX_VOICE_…`); numeric slot comes from the `NN_` filename prefix or `index`.",
         "",
         "## Registered clips",
         "",
         "<table>",
         "  <thead>",
         "    <tr>",
-        "      <th>Title</th>",
+        "      <th>Constant</th>",
         "      <th>Source</th>",
         "      <th>Manifest</th>",
         "      <th>Source Size</th>",
@@ -238,7 +302,7 @@ def write_voice_inventory(voice: list[dict]) -> Path:
     ]
     for title, src, manifest, src_d, rom_d, chg in rows:
         lines.append(
-            f"    <tr><td>{title}</td><td><code>{src}</code></td>"
+            f"    <tr><td><code>{title}</code></td><td><code>{src}</code></td>"
             f"<td><code>{manifest}</code></td><td>{src_d}</td>"
             f"<td>{rom_d}</td><td>{chg}</td></tr>"
         )
@@ -318,7 +382,7 @@ def emit_voice_fx(lines: list[str], voice_slots: list[dict | None]) -> None:
     for i, v in enumerate(voice_slots):
         if v is None:
             continue
-        vid = parse_int(v.get("id", i))
+        vid = v["_id"]
         pcm = Path(v["_fx_pcm"]).read_bytes()
         lines.append(f"APPEND_RODATA static const u8 sVoiceFxPcm_{vid}[] = {{")
         for j in range(0, len(pcm), 16):
@@ -366,7 +430,7 @@ def emit_voice_fx(lines: list[str], voice_slots: list[dict | None]) -> None:
     voice_wave = {}
     for i, v in enumerate(voice_slots):
         if v is not None:
-            vid = parse_int(v.get("id", i))
+            vid = v["_id"]
             voice_wave[hole_slots[i]] = vid
 
     n_waves = GAX_FX_WAVESET_COUNT
@@ -413,7 +477,7 @@ def emit(music: list[dict], voice: list[dict], out_c: Path, out_h: Path) -> None
         max((parse_int(m.get("id", 0)) for m in music), default=-1) + 1 if music else 0
     )
     voice_count = (
-        max((parse_int(v.get("id", 0)) for v in voice), default=-1) + 1 if voice else 0
+        max((v["_id"] for v in voice), default=-1) + 1 if voice else 0
     )
     lines_h = [
         "#ifndef GUARD_GAX_CATALOG_H",
@@ -429,7 +493,7 @@ def emit(music: list[dict], voice: list[dict], out_c: Path, out_h: Path) -> None
     for m in music:
         lines_h.append(f"#define GAX_MUSIC_{c_ident(m.get('name', str(m.get('id')))).upper()} {parse_int(m.get('id', 0))}")
     for v in voice:
-        lines_h.append(f"#define GAX_VOICE_{c_ident(v.get('name', str(v.get('id')))).upper()} {parse_int(v.get('id', 0))}")
+        lines_h.append(f"#define {v['_constant']} {v['_id']}")
     lines_h += [
         "",
         "extern const u16 gGaxMusicCount;",
@@ -511,13 +575,13 @@ def emit(music: list[dict], voice: list[dict], out_c: Path, out_h: Path) -> None
     lines.append("")
 
     # Voice blobs
-    max_voice_id = max((parse_int(v.get("id", 0)) for v in voice), default=-1)
+    max_voice_id = max((v["_id"] for v in voice), default=-1)
     voice_slots = [None] * (max_voice_id + 1 if max_voice_id >= 0 else 0)
     for v in voice:
-        voice_slots[parse_int(v.get("id", 0))] = v
+        voice_slots[v["_id"]] = v
 
     for v in voice:
-        vid = parse_int(v.get("id", 0))
+        vid = v["_id"]
         data = Path(v["_bin"]).read_bytes()
         lines.append(f"APPEND_RODATA static const u8 sVoiceBlob_{vid}[] = {{")
         for i in range(0, len(data), 16):
@@ -533,7 +597,7 @@ def emit(music: list[dict], voice: list[dict], out_c: Path, out_h: Path) -> None
         if v is None:
             lines.append("    {0, 0},")
         else:
-            vid = parse_int(v.get("id", i))
+            vid = v["_id"]
             sf = v["_entry"]["size_flags"]
             lines.append(f"    {{ sVoiceBlob_{vid}, 0x{sf:08X} }},")
     lines.append("};")
