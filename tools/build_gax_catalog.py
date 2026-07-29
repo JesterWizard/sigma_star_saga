@@ -3,11 +3,12 @@
 
 Reads:
   sound/music/*.json
-  sound/voice/*.json   (each points at a .bin from pack_gax_speech)
+  sound/voice/voice_clips.json  (chapter sections → clips with GAX_VOICE_* ids)
 
 Writes:
   src_custom/generated/gax_catalog.c
-  src_custom/generated/gax_catalog.h
+  include/gax_catalog.h
+  sound/voice/VOICES.md
 """
 
 from __future__ import annotations
@@ -124,8 +125,8 @@ def voice_numeric_id(meta: dict, path: Path) -> int:
     if isinstance(raw, int) or (isinstance(raw, str) and _is_numeric_token(raw)):
         return parse_int(raw)
     raise ValueError(
-        f"{path}: need numeric slot — use filename prefix NN_name.json "
-        f'or set "index": N'
+        f"{path}: need numeric slot — set \"index\": N on the clip "
+        f"(or use a legacy NN_name.json filename)"
     )
 
 
@@ -142,12 +143,73 @@ def collect_music() -> list[dict]:
     return items
 
 
+VOICE_CLIPS_NAME = "voice_clips.json"
+VOICE_CHAPTER_KEYS = (
+    "chapter_00_system",
+    "chapter_01",
+    "chapter_02",
+    "chapter_03",
+    "chapter_04",
+    "chapter_05",
+    "chapter_06",
+)
+
+
 def voice_audio_path(meta: dict, json_path: Path) -> Path:
     """Resolve source audio: prefer `src`, then `mp3`, then `wav`."""
     for key in ("src", "mp3", "wav"):
         if key in meta and meta[key]:
             return json_path.parent / meta[key]
     raise KeyError(f"{json_path}: need src, mp3, or wav")
+
+
+def voice_built_stem(voice_dir: Path, meta: dict) -> Path:
+    """built/NN_<constant_suffix> for packed speech/FX outputs."""
+    suffix = meta["_constant"]
+    if suffix.startswith("GAX_VOICE_"):
+        suffix = suffix[len("GAX_VOICE_") :]
+    return voice_dir / "built" / f"{meta['_id']:02d}_{suffix.lower()}"
+
+
+def _iter_voice_clip_entries(path: Path) -> list[tuple[str, dict]]:
+    """Yield (chapter_key, clip_meta) from voice_clips.json or a legacy single clip."""
+    data = json.loads(path.read_text())
+    if path.name == VOICE_CLIPS_NAME:
+        if not isinstance(data, dict):
+            raise ValueError(f"{path}: expected object keyed by chapter")
+        out: list[tuple[str, dict]] = []
+        for chapter in VOICE_CHAPTER_KEYS:
+            clips = data.get(chapter, [])
+            if clips is None:
+                clips = []
+            if not isinstance(clips, list):
+                raise ValueError(f"{path}: {chapter} must be an array of clips")
+            for i, clip in enumerate(clips):
+                if not isinstance(clip, dict):
+                    raise ValueError(f"{path}: {chapter}[{i}] must be an object")
+                # Chapter field is metadata only (must exist; defaulted from section).
+                if "chapter" not in clip:
+                    clip = {**clip, "chapter": chapter}
+                out.append((chapter, clip))
+        # Allow extra chapter keys later without dropping them.
+        for key, clips in data.items():
+            if key in VOICE_CHAPTER_KEYS:
+                continue
+            if not isinstance(clips, list):
+                continue
+            for i, clip in enumerate(clips):
+                if not isinstance(clip, dict):
+                    raise ValueError(f"{path}: {key}[{i}] must be an object")
+                if "chapter" not in clip:
+                    clip = {**clip, "chapter": key}
+                out.append((key, clip))
+        return out
+    # Legacy: one clip per JSON file.
+    if isinstance(data, dict) and (
+        "src" in data or "mp3" in data or "wav" in data
+    ):
+        return [("", data)]
+    return []
 
 
 def collect_voice() -> list[dict]:
@@ -157,50 +219,61 @@ def collect_voice() -> list[dict]:
         return items
     seen_const: dict[str, Path] = {}
     seen_index: dict[int, Path] = {}
+
+    paths = []
+    primary = voice_dir / VOICE_CLIPS_NAME
+    if primary.is_file():
+        paths.append(primary)
     for path in sorted(voice_dir.glob("*.json")):
-        # Skip inventory / non-manifest JSON (e.g. a leftover VOICES.json).
-        if path.name.upper() in {"VOICES.JSON"}:
+        if path.name == VOICE_CLIPS_NAME or path.name.upper() == "VOICES.JSON":
             continue
-        meta = json.loads(path.read_text())
-        if not isinstance(meta, dict) or (
-            "src" not in meta and "mp3" not in meta and "wav" not in meta
-        ):
-            continue
-        meta["_path"] = path
-        meta["_constant"] = voice_constant_name(meta, path)
-        meta["_id"] = voice_numeric_id(meta, path)
-        if meta["_constant"] in seen_const:
-            raise ValueError(
-                f"{path}: duplicate constant {meta['_constant']} "
-                f"(also {seen_const[meta['_constant']]})"
+        paths.append(path)
+
+    for path in paths:
+        for _chapter, meta in _iter_voice_clip_entries(path):
+            if "src" not in meta and "mp3" not in meta and "wav" not in meta:
+                raise ValueError(f"{path}: clip {meta.get('id')!r} needs src/mp3/wav")
+            meta = dict(meta)
+            meta["_path"] = path
+            meta["_constant"] = voice_constant_name(meta, path)
+            meta["_id"] = voice_numeric_id(meta, path)
+            if meta["_constant"] in seen_const:
+                raise ValueError(
+                    f"{path}: duplicate constant {meta['_constant']} "
+                    f"(also {seen_const[meta['_constant']]})"
+                )
+            if meta["_id"] in seen_index:
+                raise ValueError(
+                    f"{path}: duplicate index {meta['_id']} "
+                    f"(also {seen_index[meta['_id']]})"
+                )
+            seen_const[meta["_constant"]] = path
+            seen_index[meta["_id"]] = path
+            audio = voice_audio_path(meta, path)
+            if not audio.is_file():
+                raise FileNotFoundError(f"{path}: missing audio {audio}")
+            stem = voice_built_stem(voice_dir, meta)
+            stem.parent.mkdir(parents=True, exist_ok=True)
+            subprocess.check_call(
+                [sys.executable, str(PACK_SPEECH), str(audio), "-o", str(stem)]
             )
-        if meta["_id"] in seen_index:
-            raise ValueError(
-                f"{path}: duplicate index {meta['_id']} "
-                f"(also {seen_index[meta['_id']]})"
-            )
-        seen_const[meta["_constant"]] = path
-        seen_index[meta["_id"]] = path
-        audio = voice_audio_path(meta, path)
-        if not audio.is_file():
-            raise FileNotFoundError(f"{path}: missing audio {audio}")
-        stem = path.parent / "built" / path.stem
-        stem.parent.mkdir(parents=True, exist_ok=True)
-        subprocess.check_call(
-            [sys.executable, str(PACK_SPEECH), str(audio), "-o", str(stem)]
-        )
-        entry = json.loads(stem.with_suffix(".entry.json").read_text())
-        bin_path = stem.with_suffix(".bin")
-        meta["_bin"] = bin_path
-        meta["_entry"] = entry
-        fx_pcm = stem.with_suffix(".fx.s8")
-        pitch = meta.get("pitch_semitones", None)
-        fx_cmd = [sys.executable, str(PACK_VOICE_FX), str(audio), "-o", str(fx_pcm)]
-        if pitch is not None:
-            fx_cmd += ["--pitch-semitones", str(pitch)]
-        subprocess.check_call(fx_cmd)
-        meta["_fx_pcm"] = fx_pcm
-        items.append(meta)
+            entry = json.loads(stem.with_suffix(".entry.json").read_text())
+            meta["_bin"] = stem.with_suffix(".bin")
+            meta["_entry"] = entry
+            fx_pcm = stem.with_suffix(".fx.s8")
+            pitch = meta.get("pitch_semitones", None)
+            fx_cmd = [
+                sys.executable,
+                str(PACK_VOICE_FX),
+                str(audio),
+                "-o",
+                str(fx_pcm),
+            ]
+            if pitch is not None:
+                fx_cmd += ["--pitch-semitones", str(pitch)]
+            subprocess.check_call(fx_cmd)
+            meta["_fx_pcm"] = fx_pcm
+            items.append(meta)
     items.sort(key=lambda m: m["_id"])
     return items
 
@@ -248,9 +321,11 @@ def write_voice_inventory(voice: list[dict]) -> Path:
         sum_src += src_n
         sum_rom += rom_n
         title = v.get("_constant", v.get("name", audio.stem))
+        chapter = v.get("chapter", "")
         rows.append(
             (
                 title,
+                chapter,
                 audio.name,
                 v["_path"].name,
                 _fmt_bytes(src_n),
@@ -283,7 +358,9 @@ def write_voice_inventory(voice: list[dict]) -> Path:
         "- **Overall Change** — `(in-ROM − source) / source`; negative means the ROM blob is smaller.",
         "- **Total** row — sum of all registered clips (source vs in-ROM).",
         "- Playback uses raw **u8 PCM @ 15769 Hz** via the GAX FX path (speech vocoder blob is also linked).",
-        "- JSON `id` is the C constant (`GAX_VOICE_…`); numeric slot comes from the `NN_` filename prefix or `index`.",
+        "- JSON `id` is the C constant (`GAX_VOICE_…`); numeric slot is `index` "
+        f"(or a legacy `NN_` filename). Clips live in [`{VOICE_CLIPS_NAME}`]({VOICE_CLIPS_NAME}) "
+        "under chapter sections; each clip also has a `chapter` field (metadata only).",
         "",
         "## Registered clips",
         "",
@@ -291,6 +368,7 @@ def write_voice_inventory(voice: list[dict]) -> Path:
         "  <thead>",
         "    <tr>",
         "      <th>Constant</th>",
+        "      <th>Chapter</th>",
         "      <th>Source</th>",
         "      <th>Manifest</th>",
         "      <th>Source Size</th>",
@@ -300,14 +378,14 @@ def write_voice_inventory(voice: list[dict]) -> Path:
         "  </thead>",
         "  <tbody>",
     ]
-    for title, src, manifest, src_d, rom_d, chg in rows:
+    for title, chapter, src, manifest, src_d, rom_d, chg in rows:
         lines.append(
-            f"    <tr><td><code>{title}</code></td><td><code>{src}</code></td>"
-            f"<td><code>{manifest}</code></td><td>{src_d}</td>"
-            f"<td>{rom_d}</td><td>{chg}</td></tr>"
+            f"    <tr><td><code>{title}</code></td><td><code>{chapter}</code></td>"
+            f"<td><code>{src}</code></td><td><code>{manifest}</code></td>"
+            f"<td>{src_d}</td><td>{rom_d}</td><td>{chg}</td></tr>"
         )
     lines.append(
-        f'    <tr><td colspan="3"><strong>Total</strong></td>'
+        f'    <tr><td colspan="4"><strong>Total</strong></td>'
         f"<td><strong>{_fmt_bytes(sum_src)}</strong></td>"
         f"<td><strong>{_fmt_bytes(sum_rom)}</strong></td>"
         f"<td><strong>{_change_html(total_pct)}</strong></td></tr>"
@@ -317,7 +395,7 @@ def write_voice_inventory(voice: list[dict]) -> Path:
         "</table>",
         "",
         f"_Sample rate: 15769 Hz · FX note `0x{VOICE_FX_NOTE:02X}` · "
-        f"{len(rows)} clip(s) from `sound/voice/*.json`._",
+        f"{len(rows)} clip(s) from `sound/voice/{VOICE_CLIPS_NAME}`._",
         "",
     ]
     if unregistered:

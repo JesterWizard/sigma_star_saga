@@ -12,7 +12,7 @@
  * compile_dialogue.py packs TALK only.
  *
  * Voice: per-line VOICE(GAX_VOICE_…) / VOICE_STOP on TALK (needs custom_dialogue +
- * custom_gax_audio). Constants come from sound/voice/*.json `id` fields.
+ * custom_gax_audio). Constants come from sound/voice/voice_clips.json `id` fields.
  */
 
 EVENT_SCRIPT_REPLACEMENT(0x0805D06C, scene_05D06C)

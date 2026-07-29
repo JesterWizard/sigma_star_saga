@@ -37,6 +37,13 @@ def main() -> int:
             nonzero += 1
     assert nonzero > 0, "Tierney blob must not be silence-only"
 
+    clips = json.loads((REPO / "sound/voice/voice_clips.json").read_text())
+    assert "chapter_01" in clips
+    assert any(
+        c.get("id") == "GAX_VOICE_TIERNEY_BRIEFING" for c in clips["chapter_01"]
+    )
+    assert all("chapter" in c for c in clips["chapter_01"])
+
     scene = (REPO / "src_custom/dialogue/chapter_01/scene_05D06C.c").read_text()
     assert "VOICE(GAX_VOICE_TIERNEY_BRIEFING)" in scene
     assert "VOICE_STOP" in scene

@@ -1,0 +1,17 @@
+{
+  "chapter_00_system": [],
+  "chapter_01": [
+    {
+      "id": "GAX_VOICE_TIERNEY_BRIEFING",
+      "index": 1,
+      "chapter": "chapter_01",
+      "src": "voice_sample.mp3",
+      "pitch_semitones": -4
+    }
+  ],
+  "chapter_02": [],
+  "chapter_03": [],
+  "chapter_04": [],
+  "chapter_05": [],
+  "chapter_06": []
+}

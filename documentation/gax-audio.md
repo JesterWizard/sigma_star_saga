@@ -28,7 +28,7 @@ This feature adds:
 
 | Layer | Behavior |
 |-------|----------|
-| Authoring | `sound/music/*.json`, `sound/voice/*.json` + WAV/MP3 |
+| Authoring | `sound/music/*.json`, `sound/voice/voice_clips.json` + WAV/MP3 |
 | Pack | `tools/pack_gax_speech.py`, `tools/pack_gax_song.py`, `tools/build_gax_catalog.py` |
 | Runtime | `GaxPlayMusic` / `GaxPlayVoice` / `GaxAttachSpeech` in `gax_audio_hooks.c` |
 | Events | `PLAY_BGM(id)` / `PLAY_VOICE(id)` macros → runner opcodes 40–43 (cutscene FSMs) |
@@ -64,16 +64,20 @@ flowchart LR
 
 ## Adding a voice clip from MP3
 
-1. Drop the file under `sound/voice/`, e.g. `01_tierney_briefing.mp3`.
-2. Add a JSON sibling:
+1. Drop the file under `sound/voice/`, e.g. `tierney_line.mp3`.
+2. Add an entry under the matching chapter in [`sound/voice/voice_clips.json`](../sound/voice/voice_clips.json):
 
 ```json
 {
-  "id": 1,
-  "name": "tierney_briefing",
-  "src": "01_tierney_briefing.mp3"
+  "id": "GAX_VOICE_TIERNEY_BRIEFING",
+  "index": 1,
+  "chapter": "chapter_01",
+  "src": "tierney_line.mp3",
+  "pitch_semitones": -4
 }
 ```
+
+(`chapter` is metadata only; the clip must also sit in that chapter’s array.)
 
 3. Ensure **ffmpeg** is available (`PATH`, `tools/bin/ffmpeg`, or `FFMPEG=…`).
 4. Attach clips on talk lines:

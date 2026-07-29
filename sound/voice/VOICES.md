@@ -9,7 +9,7 @@ Sizes:
 - **Overall Change** — `(in-ROM − source) / source`; negative means the ROM blob is smaller.
 - **Total** row — sum of all registered clips (source vs in-ROM).
 - Playback uses raw **u8 PCM @ 15769 Hz** via the GAX FX path (speech vocoder blob is also linked).
-- JSON `id` is the C constant (`GAX_VOICE_…`); numeric slot comes from the `NN_` filename prefix or `index`.
+- JSON `id` is the C constant (`GAX_VOICE_…`); numeric slot is `index` (or a legacy `NN_` filename). Clips live in [`voice_clips.json`](voice_clips.json) under chapter sections; each clip also has a `chapter` field (metadata only).
 
 ## Registered clips
 
@@ -17,6 +17,7 @@ Sizes:
   <thead>
     <tr>
       <th>Constant</th>
+      <th>Chapter</th>
       <th>Source</th>
       <th>Manifest</th>
       <th>Source Size</th>
@@ -25,9 +26,9 @@ Sizes:
     </tr>
   </thead>
   <tbody>
-    <tr><td><code>GAX_VOICE_TIERNEY_BRIEFING</code></td><td><code>voice_sample.mp3</code></td><td><code>01_tierney_briefing.json</code></td><td>61,896 B (60.4 KB)</td><td>28,170 B (27.5 KB)</td><td><span style="color: #3fb950">-54.5%</span></td></tr>
-    <tr><td colspan="3"><strong>Total</strong></td><td><strong>61,896 B (60.4 KB)</strong></td><td><strong>28,170 B (27.5 KB)</strong></td><td><strong><span style="color: #3fb950">-54.5%</span></strong></td></tr>
+    <tr><td><code>GAX_VOICE_TIERNEY_BRIEFING</code></td><td><code>chapter_01</code></td><td><code>voice_sample.mp3</code></td><td><code>voice_clips.json</code></td><td>61,896 B (60.4 KB)</td><td>28,170 B (27.5 KB)</td><td><span style="color: #3fb950">-54.5%</span></td></tr>
+    <tr><td colspan="4"><strong>Total</strong></td><td><strong>61,896 B (60.4 KB)</strong></td><td><strong>28,170 B (27.5 KB)</strong></td><td><strong><span style="color: #3fb950">-54.5%</span></strong></td></tr>
   </tbody>
 </table>
 
-_Sample rate: 15769 Hz · FX note `0x3A` · 1 clip(s) from `sound/voice/*.json`._
+_Sample rate: 15769 Hz · FX note `0x3A` · 1 clip(s) from `sound/voice/voice_clips.json`._
