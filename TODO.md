@@ -12,7 +12,7 @@ Wiring the HQ blob in would never be called by GAX.
 [x] Make GAX_SPEECH PlaySfx/IRQ path safe (owner in free IWRAM; VOICE cues live)
 [x] Recover GAX_SPEECH 260-bit frame table + PCM vocoder packer (host-tested)
 [x] Confirm Tierney VO + title BGM + VOICE_STOP in No$GBA (consumer probe still wired)
-[] Add CG export support
+[x] Add CG export support
 [] Add custom CG support
 [] Fix Recker's broken portrait palette during the final battle
 [] Fix the Forgotten Planet's softlock glitch
