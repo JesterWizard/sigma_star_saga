@@ -3,6 +3,7 @@
 #include "ram_map.h"
 #include "actor.h"
 #include "debug_menu.h"
+#include "overworld_encounters.h"
 #include "overworld_frame.h"
 #include "save.h"
 #include "status.h"
@@ -131,38 +132,72 @@ typedef struct {
 #define DEBUG_WARP_TABLE ((const DebugWarpEntry *)0x0824F348)
 #define DEBUG_WARP_COUNT 24
 
-/* Boss fights.
+/* Boss fights — the full vanilla roster.
  *
- * The B_* / MB_* ids in the stage label table @ 0x080ED50C are SetMode GFX ids,
- * not modes, so handing one to a mode change never leaves the field. A boss
- * fight is a *stage*: gMode 132 (init = EnterStageArena @ 0x08028A44, frame =
- * the stage FSM @ 0x08028B40) plus a gStageCase index into the arena JT
- * @ 0x0802972C. EnterStageArena @ 0x080296D4 reads gStageCase, SetModes the
- * arena, loads its map and spawns both the player and the arena's actors.
+ * Every midboss and story boss owns a battle record whose id is the same number
+ * as its entry in the stage-label table @ 0x080ED50C: MB_EYENUS 227 … B_PSYME
+ * 255. Starting one is the call the overworld lure objects already make,
+ * TryStartBattle(id) @ 0x08014828 — the record's own command list picks the
+ * arena and spawns the boss, so nothing here pokes gStageCase or gMode.
  *
- * Cases 135-174 cover the four boss arenas in blocks of ten; each block is one
- * approach segment per case plus the single case that spawns just the boss.
- * Those boss cases are the ones listed here (verified with the arena's live
- * enemy count @ 0x03007080 == 1 in tools/mgba_boss_probe.c).
+ * Earlier revisions set gStageCase directly. gStageCase is an index into the
+ * same label table, and 135–174 are ICE_3_1…ICE_6_10, which is why those rows
+ * dropped into unrelated ice-planet missions instead of boss arenas.
  *
- * The other B_* / MB_* labels only get loaded as backdrops during a flight
- * battle, so they have no standalone entry to jump to.
+ * Rows are grouped per planet in story order. The planet is *not* in ROM: the
+ * label table groups missions by chapter (1-6), shared across planets, and the
+ * battle records carry no planet field. Each planet's own chapter is the first
+ * one its missions appear in — FOREST 1, FIRE 2, ICE 3, SAND 4, FORGOT 5,
+ * KRILL 6 — and the story bosses below are placed from that plus the walkthrough
+ * boss order. Midboss planets are thematic guesses and want in-game checking.
  */
-#define DEBUG_STAGE_HOST_MODE 132
-
 typedef struct {
-    char name[16];
-    u16 stageCase;
+    char name[24];
+    u16 battleId;
 } DebugBossEntry;
 
 APPEND_RODATA static const DebugBossEntry sDebugBosses[] = {
-    { "B_DRILL", 142 },
-    { "B_CONCENTRATOR", 147 },
-    { "B_BLUNE", 161 },
-    { "B_LAVAWORM", 165 },
+    /* Forest — chapter 1. Drill is the ch1 boss; Blune is hunted back on the
+     * Forest planet during ch3. */
+    { "Forest MB Greenone", 232 },
+    { "Forest MB Greenturkey", 234 },
+    { "Forest MB Vulturehead", 229 },
+    { "Forest MB Flower", 239 },
+    { "Forest B Drill", 246 },
+    { "Forest B Blune", 248 },
+    /* Fire — chapter 2. Lavaworm is the "big worm" that spits lava. */
+    { "Fire MB Tetrill", 231 },
+    { "Fire MB Centi", 237 },
+    { "Fire B Lavaworm", 249 },
+    /* Ice — chapter 3. Sevenspine's arena renders as the ice field. */
+    { "Ice MB Flice", 228 },
+    { "Ice MB Silverfish", 242 },
+    { "Ice MB Icepetals", 245 },
+    { "Ice B Sevenspine", 253 },
+    /* Sand — chapter 4. Gunorbship is the twin-orbiting-shield midboss. */
+    { "Sand MB Crab", 236 },
+    { "Sand MB Viper", 241 },
+    { "Sand MB Gunorbship", 244 },
+    { "Sand B Concentrator", 247 },
+    /* Forgotten — chapter 5, the haunted planet. Spectrodactyl is the Ghost of
+     * Iot; Doppelganger is the fighter that mirrors the player. */
+    { "Forgot MB Eyenus", 227 },
+    { "Forgot MB Boogey", 230 },
+    { "Forgot MB Innereye", 233 },
+    { "Forgot MB Doppelganger", 235 },
+    { "Forgot MB Sothoth", 243 },
+    { "Forgot B Spectrodactyl", 252 },
+    /* Krill / finale — chapter 6. Battleworm is the intro fight and its ch6
+     * rematch, Rrrobot the Sigma fleet assault, Meathead the Flesh Deity. */
+    { "Krill MB Helper", 238 },
+    { "Krill MB Cerebellum", 240 },
+    { "Krill B Battleworm", 251 },
+    { "Krill B Rrrobot", 254 },
+    { "Krill B Psyme", 255 },
+    { "Krill B Meathead", 250 },
 };
 
-#define DEBUG_BOSS_COUNT 4
+#define DEBUG_BOSS_COUNT 29
 
 enum {
     DBG_OPT_SAVE = 0,
@@ -762,14 +797,16 @@ static void DebugMenu_DoWarp(u32 modeId)
 static void DebugMenu_DoBoss(const DebugBossEntry *entry)
 {
 #if DEBUG_MENU_LOG
-    NoCashGBAPrintf("DBG boss stageCase=%u", (unsigned)entry->stageCase);
+    NoCashGBAPrintf("DBG boss battle=%u", (unsigned)entry->battleId);
 #endif
     /* Close first so Present cannot re-apply the overlay over the transition.
-     * Mode 132's own init loads the arena, so all this has to do is hand it
-     * the selector and start the same fade a warp uses. */
-    gStageCase = entry->stageCase;
+     * Clear the stage-clear latch: intro / skip-flight leaves it set and the
+     * arena would clear the instant it loads. */
+    gStageClearFlag = 0;
+    gStageClearGate = 0;
     DebugMenu_Close();
-    QueueModeFade(DEBUG_STAGE_HOST_MODE, QUEUE_FADE_SPEED);
+
+    TryStartBattle(entry->battleId);
 }
 
 static void DebugMenu_EnterSubmenu(u8 screen)

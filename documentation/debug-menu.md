@@ -7,6 +7,8 @@
 - [Introduction](#introduction)
 - [Plan](#plan)
 - [Controls](#controls)
+- [Warps](#warps)
+- [Boss fights](#boss-fights)
 - [Display model](#display-model)
 - [Engine cooperation](#engine-cooperation)
 - [Code Locations](#code-locations)
@@ -15,108 +17,129 @@
 
 ## Introduction
 
-Vanilla Sigma Star Saga only saves from the status / END-SAVE UI. For hack development that is awkward: you have to leave the field, open SELECT status, and hope the slot path still works.
+Vanilla Sigma Star Saga only saves from the status / END panel. This hack adds a **START** overlay on overworld field modes: save anywhere, warp via the NAV table, and jump straight into any midboss or story boss fight.
 
-This feature adds a **mode-preserving** overworld overlay:
-
-1. **START** on a walking field mode opens a black screen with a scrollable option list.
-2. **Save game** — **A** saves the current slot anywhere (END-SAVE style EEPROM commit).
-3. **Warp to scene...** — pick a NAV location (Starbase / planet / palace / …) and **A** queues that mode.
-4. **Boss fight...** — pick a boss and **A** drops you straight into that fight.
-5. **START / B** closes and restores the field (HUD, cameras, VRAM tiles).
-
-It deliberately **never** calls `StatusToggle`, `StatusPanel`, `SetMode(0x168)`, or `LeaveStatusRestore`. `gMode` stays on the overworld value while the menu is open; world sim is paused by LynJumps on the overworld frame, not by changing modes. Both warps and bosses close the overlay and then `QueueModeFade`; a boss additionally sets `gStageCase` first so the destination mode knows which arena to load.
-
-Toggle: `configs/runtime.c` → `.debug_menu`.
+Enable with `.debug_menu = TRUE` in `configs/runtime.c`.
 
 ## Plan
 
-| Layer | Behavior |
-|-------|----------|
-| Gate | `.debug_menu` + overworld field mode (mode JT entry = `OverworldMainFrame` @ `0x0800D610`) + status panel closed |
-| Open | START edge → snapshot display / HUD / cameras / charbase-2 → load debug font → black overlay |
-| Idle | World frame body skipped; menu owns BG0 text + BG1 black fill |
+Root options:
+
+1. **Save game** — EEPROM write to the current slot
+2. **Warp to scene...** — NAV location list; **A** fades to that mode
+3. **Boss fight...** — all 19 `MB_*` midbosses + 10 `B_*` story bosses; **A** starts that fight
+
+It deliberately **never** calls `StatusToggle`, `StatusPanel`, `SetMode(0x168)`, or `LeaveStatusRestore`. `gMode` stays on the overworld value while the menu is open; world sim is paused by LynJumps on the overworld frame, not by changing modes. Warps close the overlay and then `QueueModeFade`; bosses close it and call `TryStartBattle`.
+
+| Screen | Behaviour |
+| --- | --- |
 | Root | `Save game` / `Warp to scene...` / `Boss fight...` with UP/DOWN cursor |
-| Save | A → `Saving…` → `SetSaveSlot` → `FlushSaveMeta` → `WriteSave` → `Saved!` (~90 frames) |
 | Warp | A opens NAV location list; A again → close overlay → `QueueModeFade(modeId)` |
-| Boss | A opens the boss list; A again → set `gStageCase` → close → `QueueModeFade(132)` |
-| Close | START (any page) / B (root) → restore mirrors + cameras + font tiles → dirty all soft maps |
-| Toggle off | If `.debug_menu` is FALSE at runtime, any open menu force-closes and LynJumps leave vanilla frame code |
+| Boss | A opens the boss list; A again → `TryStartBattle(battleId)` |
 
 ```mermaid
 flowchart TD
-  field["Overworld field"]
-  open["START → DebugMenu_Begin"]
   root["Root: Save / Warp / Boss"]
-  warp["Warp location list"]
+  warp["Warp list"]
   boss["Boss list"]
-  save["A → DebugMenu_DoSave"]
   goWarp["A → Close + QueueModeFade"]
-  goBoss["A → gStageCase + Close + QueueModeFade(132)"]
-  close["START/B → DebugMenu_Close"]
-  field --> open --> root
-  root --> save --> root
+  goBoss["A → TryStartBattle(battleId)"]
+  close["B / START → Close"]
+  field["Field"]
   root --> warp
   root --> boss
   warp --> goWarp --> field
-  boss --> goBoss --> fight["Boss arena (gMode 132)"]
-  root --> close --> field
+  boss --> goBoss --> fight["Boss arena"]
   warp --> close --> field
   boss --> close --> field
 ```
 
 ## Controls
 
-| Input | When | Effect |
-|-------|------|--------|
-| START | Field, menu closed | Open menu |
-| UP / DOWN | Menu idle | Move cursor (list scrolls past 18 rows) |
-| A | Root → Save | Save current slot; show `Saving…` then `Saved!` |
+| Input | Context | Action |
+| --- | --- | --- |
+| START | Field (overworld frame) | Open / close menu |
+| UP / DOWN | Any list | Move cursor (scrolls when needed) |
 | A | Root → Warp / Boss | Enter that submenu |
 | A | Warp list | Close menu and `QueueModeFade` to that location's mode ID |
-| A | Boss list | Set `gStageCase`, close menu and `QueueModeFade` to the arena mode |
+| A | Boss list | Launch the selected boss |
 | B | Warp / Boss list | Back to root |
-| B / START | Root idle | Close and restore overworld |
-| START | Submenu | Close and restore overworld |
-| A / B / START | During `Saved!` timer | Dismiss status text early |
 
-SELECT / status is untouched. Opening status while the menu is somehow still marked open force-closes the overlay.
-
-### Warp destinations
-
-Names and mode IDs come from the vanilla NAV table @ `0x0824F348` (24 entries: `u32 modeId` + `name[0x20]`). Examples: `EARTH`→9, `STARBASE1`→18, `FOREST`→4, `FIRE`→5, `FORGOTTEN`→17, `PALACE`→16, `LAUNCH EARTH`→24.
+## Warps
 
 Warps use `QueueModeFade` (`0x0800D734`) — same path as StatusToggle: transition latch + fade-to-black + pending mode @ `0x03000D6C`. `FadeStep` applies `gMode` when the fade completes; map prep then runs from `OverworldMainFrame`.
 
-### Boss fights
+## Boss fights
 
-A boss fight is a **stage**, not a mode. The `B_*` / `MB_*` ids in the stage-label table (`0x080ED50C`) are `SetMode` GFX ids — feeding one to a mode change loads tiles but never leaves the field, which is why earlier `SetMode`-based attempts only produced VRAM garbage.
+The roster is the full vanilla set of 29 fights: 19 midbosses (`MB_EYENUS` … `MB_ICEPETALS`) and 10 story bosses (`B_DRILL` … `B_PSYME`).
 
-The arena the engine actually enters is selected by two values:
+### Stage labels, not arena packs
 
-| Value | Meaning |
+The stage-label table @ `0x080ED50C` is 270 entries of `u16 id` + `char name[0x26]` (stride `0x28`), and its index **is** `gStageCase`:
+
+| Label ids | Names |
 | --- | --- |
-| `gMode` 132 | init = `EnterStageArena` @ `0x08028A44`, frame = stage FSM @ `0x08028B40` |
-| `gStageCase` @ `0x03007738` | index into the arena jump table @ `0x0802972C` (0…268) |
+| 0–226 | missions: `TRAINING_MISSION`, `FOREST_1_1`…`FOREST_5_10`, `FIRE_2_1`…, `FORGOT_5_1`…, `ICE_3_1`…`ICE_6_10`, `KRILL_*`, `SAND_4_1`…`SAND_6_10` |
+| 227–245 | `MB_*` midbosses |
+| 246–255 | `B_*` story bosses |
+| 256–269 | `EARTH_*`, `END_GAME_DEATH_THROES`, `ALL_CLEAR`, `ENEMY_TESTER` |
 
-`EnterStageArena` @ `0x080296D4` reads `gStageCase`, `SetMode`s that arena, loads its map and spawns both the player and the arena's actors. So confirming a boss is just `gStageCase = case` then the ordinary warp fade:
+That table is why earlier revisions of this menu dropped the player into ice-planet missions: **135–174 are `ICE_3_1`…`ICE_6_10`**, so `gStageCase = 142` asked for `ICE_3_8`, not a Drill arena. The `setModeId` values that looked like boss labels (246, 247, …) are ids in `SetMode`'s own, larger id space and do not index the label table.
+
+`EnterStageArena`'s jump table @ `0x0802972C` is also indexed by label id, but only five boss labels have their own arena handler — `B_BLUNE` (248), `B_LAVAWORM` (249), `B_MEATHEAD` (250), `B_SEVENSPINE` (253), `B_PSYME` (255). The other 24 land on the shared epilogue `0x0802AD50`, which issues no `SetMode` at all, so poking `gStageCase` can never reach them.
+
+### Launching through the battle record
+
+Every boss instead owns a battle record whose **id equals its label id**, in the battle table @ `0x0824EE80` (count @ `0x080ED014`, 297 records). Starting one is the same call the overworld lure objects make, so the record's own command list picks the arena and spawns the boss:
 
 ```c
-gStageCase = entry->stageCase;
+gStageClearFlag = 0;
+gStageClearGate = 0;
 DebugMenu_Close();
-QueueModeFade(132, QUEUE_FADE_SPEED);
+TryStartBattle(entry->battleId); /* 227..255 */
 ```
 
-Cases 135–174 cover the four boss arenas in blocks of ten — one case per approach segment, plus the single case that spawns only the boss. Those are the four rows in the list:
+Record layout (20 bytes, from `TryStartBattle` @ `0x08014828` / `StartBattle` @ `0x08018C38`):
 
-| Row | `gStageCase` | Arena label |
+| Offset | Field |
+| --- | --- |
+| `+0` | `s32` battle id |
+| `+4` / `+8` | intro command count / pointer |
+| `+12` / `+16` | wave command count / pointer |
+
+Commands are 88-byte structs with a `u32` opcode at `+0` dispatched through the 18-entry table @ `0x0801870C`. Opcode 9 is the flight entry: `StartBattle` checks `intro[0].op == 9` and calls `ChangeMode(0x9B)`.
+
+### Planet grouping
+
+No ROM table links a boss to a planet. The label table groups missions by **chapter** (1–6), and chapters are shared across planets — `FOREST` spans chapters 1–5, `FIRE` 2–6, `ICE` 3–6, `SAND` 4–6, `FORGOT` 5–6, `KRILL` 6. Each planet's *own* chapter is therefore the first one its missions appear in, which matches the game's six chapters / six planets structure.
+
+Story boss placements come from that plus the walkthrough boss order; midboss placements are thematic and provisional.
+
+| Planet (chapter) | Midbosses | Story bosses |
 | --- | --- | --- |
-| `B_DRILL` | 142 | 246 |
-| `B_CONCENTRATOR` | 147 | 247 |
-| `B_BLUNE` | 161 | 248 |
-| `B_LAVAWORM` | 165 | 249 |
+| Forest (1) | Greenone 232, Greenturkey 234, Vulturehead 229, Flower 239 | Drill 246, Blune 248 |
+| Fire (2) | Tetrill 231, Centi 237 | Lavaworm 249 |
+| Ice (3) | Flice 228, Silverfish 242, Icepetals 245 | Sevenspine 253 |
+| Sand (4) | Crab 236, Viper 241, Gunorbship 244 | Concentrator 247 |
+| Forgotten (5) | Eyenus 227, Boogey 230, Innereye 233, Doppelganger 235, Sothoth 243 | Spectrodactyl 252 |
+| Krill / finale (6) | Helper 238, Cerebellum 240 | Battleworm 251, Rrrobot 254, Psyme 255, Meathead 250 |
 
-Each was checked end-to-end in `tools/mgba_boss_probe.c`: replay START / DOWN / A, then confirm `gMode` stays 132, the arena `SetMode` id matches and the live enemy count @ `0x03007080` is exactly 1 (the boss) for 20+ seconds.
+Anchors behind those placements:
+
+| Boss | Evidence |
+| --- | --- |
+| `B_DRILL` | chapter 1 boss ("The Big Drill") |
+| `B_LAVAWORM` | chapter 2 boss, the worm that spits lava and magma balls |
+| `B_SEVENSPINE` | arena renders as the ice field (probe screenshot) |
+| `B_CONCENTRATOR` | chapter 4 boss |
+| `B_BLUNE` | chapter 3 sends the player back to the Forest planet to kill Blune |
+| `B_SPECTRODACTYL` | chapter 5 "Ghost of Iot" on the haunted planet |
+| `B_MEATHEAD` | final boss — giant face, background holes, tentacles, eye beam |
+| `B_RRROBOT` | chapter 3 Sigma fleet assault ("Robotech wanna-be") |
+| `B_PSYME` | chapter 6 Battleworm rematch, flown by Psyme |
+| `MB_FLOWER` | Forest planet flying-flower midboss |
+| `MB_GUNORBSHIP` | Sand planet twin-orbiting-shield midboss |
+| `MB_DOPPELGANGER` | Forgotten planet fighter that mirrors the player |
 
 ## Display model
 
@@ -130,7 +153,7 @@ While open:
 
 Text is written **directly** into VRAM screenbase 30. Soft-text (`ClearSoftTextMap` / `DrawDebugText`) is avoided: those set `gSoftTextDirty`, and VBlank then DMA-reloads soft maps every frame and fights the overlay.
 
-Repaints only run when `gDebugMenuTextState` changes (cursor moves force `DBG_TEXT_NONE`), and they wait on VBlank first. Clearing the whole 32×32 map mid-frame was what made the text tear / flicker in and out.
+Repaints only run when `gDebugMenuTextState` changes (cursor moves force `DBG_TEXT_NONE`), and they wait on VBlank first.
 
 ## Engine cooperation
 
@@ -141,14 +164,7 @@ Two engine paths still run every frame from the main-loop epilogue @ `0x0800BB00
 | `HudSync(1)` | `0x08010E58`, called from `0x0800BB98` | Rebuilds HUD tilemap unless `gHudEnabled == 0` |
 | Status DISPCNT mirror | `gDisplayCtrlMirror` @ `0x03007194` | Re-applied to `REG_DISPCNT` every frame; menu drives this mirror, not hardware alone |
 
-On close, restore:
-
-1. `gDisplayCtrlMirror`, `gHudEnabled`, soft DISPCNT, hardware `BGxCNT`, blend/windows, IE/DISPSTAT.
-2. Full `gCameras` array (font load re-points layer 3; overlay zeroes active flags / scroll).
-3. Charbase-2 tile snapshot (`gDebugMenuVramSnap`, `0x4000` bytes).
-4. `gSoftTextDirty = 0x1F` so VBlank repaints every soft map the overlay wrote over.
-
-`gSoftBg2Pa` / `gSoftBg2Pb` (`0x03001E7C` / `0x03001F6C`) are **affine batch** mirrors, not BG0/BG1 soft CNT. Do not treat them as BGxCNT shadows.
+On close, restore cameras, VRAM snapshot, DISPCNT mirrors, and soft-text dirty bits as documented in prior revisions.
 
 ## Code Locations
 
@@ -157,18 +173,11 @@ On close, restore:
 | Runtime toggle | `.debug_menu` in `configs/runtime.c` | Enables LynJumps + menu logic |
 | Menu body | `DebugMenu_*` in `src_custom/debug_menu_hooks.c` | Open / present / save / warp / boss / close |
 | Public API | `DebugMenu_IsBlocking` / `DebugMenu_OnOverworldFrame` in `include/debug_menu.h` | Gate + per-frame entry |
-| Mode thunks | `ChangeMode` / `QueueModeFade` / `EnterModeScene` in `include/status.h` | Warp + special scene entry |
-| Boss table | `sDebugBosses` in `src_custom/debug_menu_hooks.c` | Name + `gStageCase` per boss arena |
-| Arena selector | `gStageCase` in `asm/ram_map_iwram.s` | Index into the arena JT @ `0x0802972C` |
-| Frame LynJumps | `OverworldMainFrame__Replacement` / `OverworldFrameTail__Replacement` | Skip world body / cameras while open; jump to epilogue `0x0800D6CF` when blocking |
-| Player gate | `DebugMenu_IsBlocking` call in `src_custom/flight_skip_hooks.c` | Freeze player update while menu open |
-| LynJump apply | `apply_debug_menu` in `tools/apply_lynjump.py` | Hooks @ `0xD610` (main) and `0xD66A` (tail) |
-| Save path | `SetSaveSlot` / `FlushSaveMeta` / `WriteSave` in `src/save.c` | END-SAVE style; not player-FSM `SaveCommitPrep` |
-| Warp table | ROM `0x0824F348` | NAV `modeId` + name (24 entries, stride `0x24`) |
-| EWRAM state | `gDebugMenu*` in `asm/ram_map_ewram.s` | Active, screen, scroll, text state, snapshots |
-| IWRAM mirrors | `gDisplayCtrlMirror` / `gHudEnabled` in `asm/ram_map_iwram.s` | Status-module DISPCNT shadow + HudSync enable |
-| Probe harness | `tools/mgba_debug_menu_probe.c` | Headless open / save / close + framebuffer dumps |
-| Boss probe | `tools/mgba_boss_probe.c` | Replays the boss rows; also sweeps `gStageCase` ranges |
+| Mode thunks | `ChangeMode` / `QueueModeFade` in `include/status.h` | Warp entry |
+| Battle entry | `TryStartBattle` in `include/overworld_encounters.h` | Boss entry |
+| Boss table | `sDebugBosses` in `src_custom/debug_menu_hooks.c` | Name + battle id (227–255) |
+| Arena selector | `gStageCase` in `asm/ram_map_iwram.s` | Dig arena case for host mode 132 |
+| Boss probe | `tools/mgba_boss_probe.c` | Replays boss rows; sweeps `gStageCase` |
 
 ## TODO
 
@@ -176,24 +185,19 @@ On close, restore:
 - [ ] Pin full BG palette bank 15 so text color does not inherit field leftovers
 - [ ] Drop temporary `DEBUG_MENU_LOG` / No$ prints once the overlay is considered stable
 - [ ] Optional non-blocking save (today `WriteSave` freezes the CPU for ~20 frames on EEPROM)
-- [ ] Friendlier warp / boss labels (Title Case, named bosses) and optional raw ID pickers
-- [ ] Reach the flight-battle bosses (`B_MEATHEAD`, `MB_*`, …) — they need a battle record, not a stage case
-- [ ] Optional rows for the approach segments of each boss stage (the other nine cases per block)
+- [ ] Friendlier warp labels and optional raw ID pickers
+- [ ] Confirm the provisional midboss planet placements in-game (story bosses are anchored; midbosses are thematic guesses)
+- [ ] Re-verify the 29 rows in `tools/mgba_bossbattle_probe.c`. Its boot drive lands on `gStageCase = 269` (`ENEMY_TESTER`) with a black frame, so its blank/working verdicts are not trustworthy — it needs a savestate taken in a real overworld field.
+- [x] Full 29-row roster (19 `MB_*` + 10 `B_*`) launched via `TryStartBattle`
 - [x] Fade-out before warp via `QueueModeFade` (StatusToggle path)
-- [x] Boss entry via `gStageCase` + `QueueModeFade(132)`
 
 ## Limitations & Bugs
 
 - Opens only when the current `gMode`'s main-loop JT slot points at `OverworldMainFrame` (`0x0800D610`). Flight, cutscenes, and status mode are out of scope.
 - Save uses the **current** `gSaveSlot`. There is no in-menu slot picker yet.
-- `WriteSave` polls EEPROM ready bits in ROM and blocks for roughly a frame per word; the menu shows `Saving…` so the freeze is intentional feedback, not a hang.
 - Warp uses `QueueModeFade` (fade then pending `gMode`); spawn position / facing come from whatever the destination mode's prep uses (not a full door-record teleport).
-- The boss list only holds the four **stage** bosses (`B_DRILL`, `B_CONCENTRATOR`, `B_BLUNE`, `B_LAVAWORM`). The remaining `B_*` / `MB_*` labels are backdrops loaded during a flight battle: their gModes (24–30, 151) do `SetMode` the arena, but they spawn no enemies, so the stage-clear check fires immediately and chains to the next stage. Reaching them needs a battle record, not a stage case.
-- Entering a boss stage skips whatever story flags the arena normally expects, so clearing it may advance the stage chain from wherever it thinks you are.
+- Midboss planet labels are provisional; the story boss labels are anchored to chapter order and arena screenshots.
+- Boss rows arm a vanilla battle from wherever the player is standing. A fight whose record expects story state (a specific chapter or planet) can still behave oddly; `MB_ICEPETALS` for one runs a chapter transition.
 - With `.skip_flight_battle` on, **SELECT+L** still force-clears an in-progress flight stage.
-- Text color can look cyan/orange/etc. depending on leftover entries in palette bank 15; only indices 0 and 1 are forced black / white.
-- Charbase 2 is shared with the HUD and some world layers; the overlay snapshots and restores it, but a failed close path will leave garbage glyphs in the field.
-- Soft BG0/BG1 CNT mirrors do not exist; snapshotting the old mislabeled affine symbols will not restore layer setup.
-- Headless mGBA may need `GBASavedataForceType(..., SAVEDATA_EEPROM512)` — autodetect can leave type unresolved and the ready poll never completes.
 
 Report save/restore/warp/boss glitches with the field `gMode`, destination / battle ID, whether `.debug_menu` was on, and a screenshot of the open and closed frames.
