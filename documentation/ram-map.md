@@ -63,7 +63,8 @@ Method: Thumb `LDR Rd,[PC,#imm]` literal pools only (not raw absolute words). Wo
 | `gGunLoadoutImpactAlt` | `0x0300078C` | Alternate equipped impact index |
 | `gGunLoadoutPrimaryFlag` | `0x030007EE` | Non-zero → primary impact |
 | `gPlayerPtr` | `0x03000DB8` | Flight player object pointer |
-| `gHeldKeys` | `0x03002774` | Mirrored key input |
+| `gKeysHeld` | `0x03001638` | Currently held keys (level) |
+| `gHeldKeys` | `0x03002774` | Newly pressed keys this frame (edge) |
 | `gLastEncounterBattleId` | `0x03000040` | `ScanEncounters` mode-0 dedup latch |
 | `gMapObjBasePtr` | `0x03006FF0` | Pointer to map-object array |
 | `gEncounterObjCount` | `0x03007034` | Encounter object index count |
@@ -77,6 +78,12 @@ Method: Thumb `LDR Rd,[PC,#imm]` literal pools only (not raw absolute words). Wo
 | `gOamCursor` | `0x03006910` | Soft OAM write cursor |
 | `gSoftOamCount` | `0x03006918` | Soft OAM entry count (128) |
 | `gCameras` | `0x030009C0` | Camera array (stride `0x84`) |
+| `gSoftDispCnt` | `0x03000BF4` | Soft `DISPCNT` (VBlank → `REG_DISPCNT`) |
+| `gSoftBg2Pa` | `0x03001E7C` | Affine batch (VBlank → `REG_BG2PA`) |
+| `gSoftBg2Pb` | `0x03001F6C` | Affine batch (VBlank → `REG_BG2PB`) |
+| `gDisplayCtrlMirror` | `0x03007194` | Status/HUD `DISPCNT` shadow, re-applied every frame (overrides `gSoftDispCnt`) |
+| `gHudEnabled` | `0x0300715C` | `HudSync` @ `0x08010E58` early-outs when `0` |
+| `gStatusMenuOpen` | `0x030076C4` | SELECT status UI open latch |
 | `gDialogueBankBases` | `0x03000018` | Runtime ptr to 7 talk-bank bases |
 | `gDialogueEntryOffsets` | `0x02000010` | Per-script halfword offsets into banks |
 | `gCutsceneStep` | `0x03007704` | Per-frame cutscene step / case index |
@@ -121,6 +128,14 @@ Method: Thumb `LDR Rd,[PC,#imm]` literal pools only (not raw absolute words). Wo
 | `gVanillaIwramHighWater` | `0x0300775C` | Last pool-backed vanilla global |
 | `gChargeShotPhase` | (free pool) | Charge Shot: 0 = charging, 1 = empowered |
 | `gChargeShotTimer` | (free pool) | Frames in the current charge/empowered phase |
+| `gSoftTextMap` | `0x030050F0` | Soft debug text map (32×22 halfwords) |
+| `gSoftTextDirty` | `0x03000C9C` | Soft text dirty flags (bit 8 = text map) |
+| `gCamScrollMirrorX` | `0x03000CF8` | Soft camera scroll X (`UpdateCameras`) |
+| `gCamScrollMirrorY` | `0x03001E70` | Soft camera scroll Y (`UpdateCameras`) |
+| `gSaveBusy` | `0x030070BC` | `WriteSave` busy latch |
+| `gDebugMenuActive` | (EWRAM free pool) | 0=closed, 1=START debug menu open |
+| `gDebugMenuTextState` | (EWRAM free pool) | String painted in the text map; gates repaints |
+| `gDebugMenuVramSnap` | (EWRAM free pool) | Private BG0/BG1 maps + black tile snapshot |
 
 Unknown pool-backed addresses use `gUnk_XXXXXXXX` in the `*_pool.inc` files. Promote to a named symbol in `ram_map_*.s` (+ `KNOWN_*` in the scanner) when the role is identified.
 

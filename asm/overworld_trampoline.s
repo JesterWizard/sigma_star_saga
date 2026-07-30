@@ -1,4 +1,4 @@
-@ OverworldPlayerUpdate @ 0x0801DC84 — 8-byte veneer; resume at movs r1,#0 (0x0801DC8C).
+@ OverworldPlayerUpdate @ 0x0801DC84 — 8-byte veneer; resume at movs r0,#0 path.
 	.section .append_text, "ax", %progbits
 	.thumb
 	.align 2

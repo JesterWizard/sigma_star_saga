@@ -103,6 +103,9 @@ C_SRCS := \
 	$(C_SUBDIR)/actor_death.c \
 	$(C_SUBDIR)/damage.c \
 	$(C_SUBDIR)/overworld_encounters.c \
+	$(C_SUBDIR)/overworld_frame.c \
+	$(C_SUBDIR)/debug_text.c \
+	$(C_SUBDIR)/save.c \
 	$(C_SUBDIR)/dialogue.c \
 	$(C_SUBDIR)/cutscene_ch1.c \
 	$(C_SUBDIR)/cutscene_stage.c \
@@ -111,6 +114,7 @@ C_SRCS := \
 CUSTOM_C_SRCS := \
 	$(CUSTOM_C_SUBDIR)/nocash.c \
 	$(CUSTOM_C_SUBDIR)/flight_skip_hooks.c \
+	$(CUSTOM_C_SUBDIR)/debug_menu_hooks.c \
 	$(CUSTOM_C_SUBDIR)/level_hud_hooks.c \
 	$(CUSTOM_C_SUBDIR)/data_structures.c \
 	$(CUSTOM_C_SUBDIR)/suction_hooks.c \

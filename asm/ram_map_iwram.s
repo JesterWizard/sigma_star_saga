@@ -96,6 +96,32 @@ SET_DATA gActorOamStart, 0x03000D60
 SET_DATA gUseYSorting, 0x03001658
 @ Camera array (stride 0x84; X @ +0x2C, Y @ +0x30, both 16.16).
 SET_DATA gCameras, 0x030009C0
+@ Soft display mirrors — VBlank copies these to IO (see SetMode @ 0x080079F0).
+SET_DATA gSoftDispCnt, 0x03000BF4
+@ VBlank affine batch @ 0x08003AC4 writes these to REG_BG2PA / REG_BG2PB (dest
+@ starts at 0x04000020), gated on the affine-mode byte @ 0x03000C4C. They are
+@ NOT BG0CNT/BG1CNT mirrors: BGxCNT is written straight to IO by the camera
+@ layer setup @ 0x080077D2 and never shadowed.
+SET_DATA gSoftBg2Pa, 0x03001E7C
+SET_DATA gSoftBg2Pb, 0x03001F6C
+@ Authoritative DISPCNT shadow owned by the status/HUD display module. It is
+@ re-applied to REG_DISPCNT every frame, so it — not gSoftDispCnt — decides
+@ which layers are visible (see 0x08010B30 cluster).
+SET_DATA gDisplayCtrlMirror, 0x03007194
+@ HudSync @ 0x08010E58 early-outs when this is 0 (no HUD tilemap rebuild).
+SET_DATA gHudEnabled, 0x0300715C
+SET_DATA gStatusMenuOpen, 0x030076C4
+@ Soft debug text map (32×22 halfwords) + dirty flags byte (bit 8 = text).
+SET_ARRAY gSoftTextMap, 0x030050F0, 0x580
+SET_DATA gSoftTextDirty, 0x03000C9C
+@ Soft camera scroll mirrors written by UpdateCameras @ 0x08008F50.
+SET_DATA gCamScrollMirrorX, 0x03000CF8
+SET_DATA gCamScrollMirrorY, 0x03001E70
+@ DrawDebugText / PresentDebugText latch (non-zero → text pending).
+SET_DATA gDebugTextActive, 0x0300692C
+@ Save busy latch / active slot (WriteSave @ 0x0800EC10).
+SET_DATA gSaveBusy, 0x030070BC
+SET_DATA gSaveSlot, 0x030070C0
 
 @ -- Dialogue / cutscene -------------------------------------------------------
 
@@ -140,7 +166,9 @@ SET_DATA gTalkPortraitExpr, 0x0300001E
 
 @ Dedup latch for ScanEncounters mode 0 (last walk-into battle ID).
 SET_DATA gLastEncounterBattleId, 0x03000040
-@ Mirrored key input (KEY_A=1, KEY_B=2, …).
+@ Currently held keys (level-triggered; KEY_A=1, KEY_B=2, START=8, …).
+SET_DATA gKeysHeld, 0x03001638
+@ Newly pressed keys this frame (edge; written by key poll @ 0x3EB8).
 SET_DATA gHeldKeys, 0x03002774
 @ Pointer to map-object array (16-byte records).
 SET_DATA gMapObjBasePtr, 0x03006FF0

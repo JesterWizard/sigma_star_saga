@@ -37,6 +37,7 @@ typedef struct {
     u8 custom_talk_helpers; /* LynJump StartTalk* / InitTalkBanks peels */
     u8 custom_event_runner; /* Drive known cutscenes from compile_events tables */
     u8 custom_gax_audio; /* GAX_SPEECH + custom music/voice catalogs / event ops */
+    u8 debug_menu; /* Overworld START → black debug menu (save anywhere) */
 } RuntimeConfig;
 
 extern const RuntimeConfig gRuntimeConfigRom;

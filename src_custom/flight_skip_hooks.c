@@ -5,6 +5,7 @@
 #include "data_structures.h"
 #include "suction.h"
 #include "nocash.h"
+#include "debug_menu.h"
 
 #define MAX_BOMBS 7
 
@@ -126,6 +127,9 @@ static void ApplyMaxLevel(void)
 /* Overworld walk update @ 0x0801DC84 — apply unlocks before flight stages. */
 APPEND_TEXT void OverworldPlayerUpdate__Replacement(void)
 {
+    if (DebugMenu_IsBlocking())
+        return;
+
     ApplyMaxLevel();
     ApplyToolsAndItems();
     ApplyGunDataCheatsOnce();

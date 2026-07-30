@@ -25,4 +25,5 @@ const RuntimeConfig gRuntimeConfigRom __attribute__((section(".runtime_config"))
     .custom_talk_helpers = FALSE,
     .custom_event_runner = TRUE, /* interpret compile_events opcode tables */
     .custom_gax_audio = TRUE, /* GAX_SPEECH + sound/ catalogs + PLAY_BGM/VOICE */
+    .debug_menu = TRUE, /* START on overworld → debug menu (save anywhere) */
 };

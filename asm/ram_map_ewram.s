@@ -65,3 +65,47 @@ _kernel_malloc_ewram_array gVoiceDecodeBuf, 0x14000
 @ Mutable FX wave set (175 × {addr,size}) + package copy so play can patch holes.
 _kernel_malloc_ewram_array gGaxFxWaveSetRam, 0x578
 _kernel_malloc_ewram_array gGaxPackageRam, 0x20
+
+@ Overworld START debug menu (runtime .debug_menu). Keep state in EWRAM —
+@ high IWRAM free-pool slots can be stomped by fades / engine stack traffic.
+_kernel_malloc_ewram gDebugMenuMagicA, 0x1
+_kernel_malloc_ewram gDebugMenuMagicB, 0x1
+_kernel_malloc_ewram gDebugMenuMagicC, 0x1
+_kernel_malloc_ewram gDebugMenuActive, 0x1
+_kernel_malloc_ewram gDebugMenuCursor, 0x1
+_kernel_malloc_ewram gDebugMenuStatusTimer, 0x1
+@ Which string is currently painted into the text map. Rewriting the tilemap
+@ during active display tears, so the menu only repaints when this changes.
+_kernel_malloc_ewram gDebugMenuTextState, 0x1
+_kernel_malloc_ewram gDebugMenuPrevKeys, 0x2
+_kernel_malloc_ewram gDebugMenuSavedDispCnt, 0x2
+_kernel_malloc_ewram gDebugMenuSavedBg0Cnt, 0x2
+_kernel_malloc_ewram gDebugMenuSavedBg1Cnt, 0x2
+_kernel_malloc_ewram gDebugMenuSavedBg2Cnt, 0x2
+_kernel_malloc_ewram gDebugMenuSavedBg3Cnt, 0x2
+_kernel_malloc_ewram gDebugMenuTextBg0Cnt, 0x2
+_kernel_malloc_ewram gDebugMenuSavedBgPal0, 0x2
+_kernel_malloc_ewram gDebugMenuSavedBgPal15, 0x2
+_kernel_malloc_ewram gDebugMenuSavedBldCnt, 0x2
+_kernel_malloc_ewram gDebugMenuSavedBldY, 0x2
+_kernel_malloc_ewram gDebugMenuSavedDispStat, 0x2
+_kernel_malloc_ewram gDebugMenuSavedIe, 0x2
+_kernel_malloc_ewram gDebugMenuSavedWin0H, 0x2
+_kernel_malloc_ewram gDebugMenuSavedWin0V, 0x2
+_kernel_malloc_ewram gDebugMenuSavedWin1H, 0x2
+_kernel_malloc_ewram gDebugMenuSavedWin1V, 0x2
+_kernel_malloc_ewram gDebugMenuSavedWinIn, 0x2
+_kernel_malloc_ewram gDebugMenuSavedWinOut, 0x2
+_kernel_malloc_ewram gDebugMenuSavedCamScrollX, 0x4
+_kernel_malloc_ewram gDebugMenuSavedCamScrollY, 0x4
+@ Status-module DISPCNT shadow + HudSync enable byte (both re-applied per
+@ frame by the engine, so the menu has to own and hand them back).
+_kernel_malloc_ewram gDebugMenuSavedDisplayCtrl, 0x2
+_kernel_malloc_ewram gDebugMenuSavedHudEnabled, 0x1
+@ Full camera array backup (4 × 0x84): the font load re-points camera layer 3
+@ and the overlay zeroes every layer's active flag / scroll.
+_kernel_malloc_ewram_array gDebugMenuCamSnap, 0x210
+@ Charbase-2 tile snapshot (0x4000) — the debug font load overwrites the tiles
+@ the HUD and world layers share. Tilemaps are repainted from the engine's
+@ soft maps instead of being snapshotted.
+_kernel_malloc_ewram_array gDebugMenuVramSnap, 0x4000

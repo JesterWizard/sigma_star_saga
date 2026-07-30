@@ -17,7 +17,8 @@ BOOL_RE = re.compile(
     r"all_key_items|all_tools|level_cap_255|start_max_level|custom_enemy_exp|"
     r"overworld_enemy_exp|custom_dialogue|"
     r"custom_gun_data|enemy_hp_bars|disable_random_battles|custom_cutscene_ch1|"
-    r"custom_cutscene_stage|custom_talk_helpers|custom_event_runner|custom_gax_audio)"
+    r"custom_cutscene_stage|custom_talk_helpers|custom_event_runner|custom_gax_audio|"
+    r"debug_menu)"
     r"\s*=\s*(TRUE|FALSE|true|false|1|0)",
     re.IGNORECASE,
 )
@@ -46,7 +47,13 @@ OVERWORLD_UNLOCK_FLAGS = (
     "start_max_level",
 )
 OVERWORLD_PLAYER_UPDATE_OFF = 0x1DC84
-
+# Overworld/field main-frame body (main-loop modes 3–9 / 15–24).
+OVERWORLD_MAIN_FRAME_OFF = 0xD610
+# Unaligned site (2-mod-4): replaces movs/bl 0x10E58 + movs/bl 0x8F50 before epilogue.
+# Veneer: ldr r3,[pc,#4]; bx r3; nop; .word hook|1  (12 bytes) @ 0xD66A.
+OVERWORLD_FRAME_TAIL_OFF = 0xD66A
+OVERWORLD_FRAME_TAIL_VENEER_LEN = 12
+OVERWORLD_FRAME_TAIL_VENEER_HEAD = struct.pack("<HHH", 0x4B01, 0x4718, 0x0000)
 FLIGHT_SKIP_OFF = 0x1749C
 FLIGHT_SKIP_LEN = 0x5E
 
@@ -285,6 +292,7 @@ def load_runtime_flags() -> dict[str, bool]:
         "custom_talk_helpers": False,
         "custom_event_runner": False,
         "custom_gax_audio": False,
+        "debug_menu": False,
     }
     for match in BOOL_RE.finditer(text):
         name = match.group(1)
@@ -388,6 +396,60 @@ def apply_overworld_unlocks(rom: bytearray, owners: dict, symbols: dict, flags: 
     print(
         f"runtime: overworld unlocks ({', '.join(on)}) → "
         f"0x{symbols[name]:08X}"
+    )
+
+
+def apply_debug_menu(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
+    """Gate overworld main frame + end-of-frame veneer for START debug menu."""
+    baserom = (ROOT / "baserom.gba").read_bytes()
+    if not enabled:
+        checked_write(
+            rom,
+            OVERWORLD_MAIN_FRAME_OFF,
+            baserom[
+                OVERWORLD_MAIN_FRAME_OFF : OVERWORLD_MAIN_FRAME_OFF + VENEER_LEN
+            ],
+            owners,
+            "runtime:debug_menu=FALSE:main",
+        )
+        checked_write(
+            rom,
+            OVERWORLD_FRAME_TAIL_OFF,
+            baserom[
+                OVERWORLD_FRAME_TAIL_OFF : OVERWORLD_FRAME_TAIL_OFF
+                + OVERWORLD_FRAME_TAIL_VENEER_LEN
+            ],
+            owners,
+            "runtime:debug_menu=FALSE:tail",
+        )
+        print("runtime: debug_menu=FALSE (vanilla 0xD610 / 0xD66A)")
+        return
+
+    main_name = "OverworldMainFrame__Replacement"
+    tail_name = "OverworldFrameTail__Replacement"
+    if main_name not in symbols:
+        raise KeyError(f"symbol {main_name} not found (needed for debug_menu)")
+    if tail_name not in symbols:
+        raise KeyError(f"symbol {tail_name} not found (needed for debug_menu)")
+
+    apply_veneer(
+        rom,
+        owners,
+        OVERWORLD_MAIN_FRAME_OFF,
+        symbols[main_name],
+        "runtime:debug_menu:main",
+    )
+    hook = symbols[tail_name] | 1
+    checked_write(
+        rom,
+        OVERWORLD_FRAME_TAIL_OFF,
+        OVERWORLD_FRAME_TAIL_VENEER_HEAD + struct.pack("<I", hook),
+        owners,
+        "runtime:debug_menu:tail",
+    )
+    print(
+        f"runtime: debug_menu → main 0x{symbols[main_name]:08X}, "
+        f"tail 0x{hook:08X}"
     )
 
 
@@ -1541,6 +1603,7 @@ def main():
     apply_always_run(rom, owners, flags["always_run"])
     apply_shooter_cheats(rom, owners, symbols, flags)
     apply_overworld_unlocks(rom, owners, symbols, flags)
+    apply_debug_menu(rom, owners, symbols, flags["debug_menu"])
     apply_exp_hooks(
         rom,
         owners,
