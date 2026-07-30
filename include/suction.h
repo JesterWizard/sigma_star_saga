@@ -19,6 +19,9 @@
 #define CANNON_AUTO_TARGET 28
 #define CANNON_ID_AUTO_TARGET 80
 #define CANNON_NUM_AUTO_TARGET 29
+#define CANNON_EQUALIZER 29
+#define CANNON_ID_EQUALIZER 83
+#define CANNON_NUM_EQUALIZER 30
 
 /* Vanilla Charge Shot (local index). */
 #define BULLET_CHARGE 3
@@ -41,6 +44,8 @@ u32 CalcShotDamage__Replacement(u32 shot_index, u32 arg1);
 u32 EquippedCannonIndex(void);
 u32 AutoTargetIsEquipped(void);
 void ApplyAutoTarget(void);
+u32 EqualizerIsEquipped(void);
+void ApplyEqualizer(void);
 u32 EquippedBulletIndex(void);
 u32 LaserIsEquipped(void);
 u32 ChargeIsEquipped(void);

@@ -128,6 +128,7 @@ extern u8 gHpBarTilesReady;
 extern u32 gHpBarTileScratch[];
 extern u8 gChargeShotPhase;
 extern u16 gChargeShotTimer;
+extern u16 gEqualizerPrevShotMask;
 
 /* Debug menu (EWRAM free pool — runtime .debug_menu). */
 extern u8 gDebugMenuMagicA;

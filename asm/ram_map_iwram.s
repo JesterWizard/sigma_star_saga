@@ -286,3 +286,5 @@ _kernel_malloc gHpBarTileScratch, 0x240
 _kernel_malloc gChargeShotPhase, 0x1
 @ Frames elapsed in the current charge / empowered phase.
 _kernel_malloc gChargeShotTimer, 0x2
+@ Shot-ring active mask from the prior frame (Equalizer spread on new spawns).
+_kernel_malloc gEqualizerPrevShotMask, 0x2

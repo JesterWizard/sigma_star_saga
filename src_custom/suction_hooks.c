@@ -492,6 +492,11 @@ APPEND_TEXT u32 AutoTargetIsEquipped(void)
     return EquippedCannonIndex() == CANNON_AUTO_TARGET;
 }
 
+APPEND_TEXT u32 EqualizerIsEquipped(void)
+{
+    return EquippedCannonIndex() == CANNON_EQUALIZER;
+}
+
 /* OnBullet @ 0x0802E240 reads the equipped bullet from gGunLoadout+4. */
 APPEND_TEXT u32 EquippedBulletIndex(void)
 {
@@ -799,6 +804,105 @@ APPEND_TEXT void ApplyAutoTarget(void)
         *(s32 *)(shot + ACTOR_OFF_VX) = cosine * (speed >> 8);
         *(s32 *)(shot + ACTOR_OFF_VY) = sine * (speed >> 8);
     }
+}
+
+/* EQUALIZER (30th Cannon Data): Rapid Cannon fire rate with spread that scales
+ * to on-screen enemy count — tight when alone, wide when the screen is packed. */
+#define EQUALIZER_SPREAD_MAX 8
+#define EQUALIZER_LANE_CENTER 4 /* center lane of the 10-shot ring */
+
+APPEND_TEXT static u32 CountLiveEnemies(void)
+{
+    u32 count = 0;
+    u32 i;
+
+    for (i = 1; i < ACTOR_COUNT; i++)
+    {
+        u8 *actor = &gActorPool[i * ACTOR_STRIDE];
+
+        if ((*(u16 *)(actor + ACTOR_OFF_FLAGS) & ACTOR_FLAG_ACTIVE) == 0)
+            continue;
+        if (actor[ACTOR_OFF_CLASS] != ACTOR_CLASS_ENEMY)
+            continue;
+        if (*(u32 *)(actor + ACTOR_OFF_HP) == 0)
+            continue;
+        count++;
+    }
+    return count;
+}
+
+APPEND_TEXT static void EqualizerSpreadShot(u8 *shot, u32 spread, u32 lane)
+{
+    s32 vx;
+    s32 vy;
+    s32 speed;
+    u32 angle;
+    s32 cosine;
+    s32 sine;
+    s32 offset;
+
+    if (spread == 0)
+        return;
+
+    vx = *(s32 *)(shot + ACTOR_OFF_VX);
+    vy = *(s32 *)(shot + ACTOR_OFF_VY);
+    speed = (vx < 0 ? -vx : vx) + (vy < 0 ? -vy : vy);
+    if (speed < 0x20000)
+        speed = 0x40000;
+
+    angle = CALC_ANGLE(0, 0, vx, vy) & 0xFF;
+    offset = (s32)lane - EQUALIZER_LANE_CENTER;
+    offset = (offset * (s32)spread) >> 1;
+    angle = (angle + offset) & 0xFF;
+    cosine = (s32)SIN_TABLE[angle + 64];
+    sine = (s32)SIN_TABLE[angle];
+    *(s32 *)(shot + ACTOR_OFF_VX) = cosine * (speed >> 8);
+    *(s32 *)(shot + ACTOR_OFF_VY) = sine * (speed >> 8);
+}
+
+APPEND_TEXT void ApplyEqualizer(void)
+{
+    u32 spread;
+    u32 activeMask;
+    u32 newMask;
+    u32 i;
+
+    if (!gRuntimeConfig.custom_gun_data || gPlayerPtr == NULL)
+        return;
+    if (!EqualizerIsEquipped())
+    {
+        gEqualizerPrevShotMask = 0;
+        return;
+    }
+    if (LaserIsEquipped())
+        return;
+
+    spread = CountLiveEnemies();
+    if (spread > EQUALIZER_SPREAD_MAX)
+        spread = EQUALIZER_SPREAD_MAX;
+
+    activeMask = 0;
+    for (i = 0; i < SHOT_RING_COUNT; i++)
+    {
+        u8 *shot = &gActorPool[(SHOT_RING_BASE + i) * ACTOR_STRIDE];
+
+        if ((*(u16 *)(shot + ACTOR_OFF_FLAGS) & ACTOR_FLAG_ACTIVE) == 0)
+            continue;
+        if (shot[ACTOR_OFF_CLASS] != ACTOR_CLASS_PLAYER_SHOT)
+            continue;
+        activeMask |= (1u << i);
+    }
+
+    newMask = activeMask & ~gEqualizerPrevShotMask;
+    for (i = 0; i < SHOT_RING_COUNT; i++)
+    {
+        if ((newMask & (1u << i)) == 0)
+            continue;
+        EqualizerSpreadShot(&gActorPool[(SHOT_RING_BASE + i) * ACTOR_STRIDE],
+                            spread, i);
+    }
+
+    gEqualizerPrevShotMask = (u16)activeMask;
 }
 
 /* Status UI ownership — unlock custom impacts before the ??? fallback. */

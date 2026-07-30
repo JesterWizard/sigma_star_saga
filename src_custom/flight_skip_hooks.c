@@ -57,7 +57,7 @@ static void SetGunDataBits(int idLo, int idHi)
         gGunDataBits[id >> 5] |= ((u32)1 << (id & 31));
 }
 
-#define CANNON_OWNED_MASK 0x1FFFFFFFu /* vanilla 28 + AUTO TARGET */
+#define CANNON_OWNED_MASK 0x3FFFFFFFu /* vanilla 28 + AUTO TARGET + EQUALIZER */
 #define BULLET_OWNED_MASK 0x000FFFFFu /* vanilla 20 pieces */
 #define IMPACT_OWNED_MASK 0x0FFFFFFFu /* vanilla 28 pieces */
 
@@ -174,6 +174,7 @@ APPEND_TEXT void UpdateShooterFrame__Replacement(void)
     ApplyPhoenixRevive();
     TickPhoenixRevivePopup();
     ApplyAutoTarget();
+    ApplyEqualizer();
     ApplyLaserBeam();
     ApplyChargeShot();
     ApplyToolsAndItems();

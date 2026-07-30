@@ -13,6 +13,18 @@
       "fire_from": 1,
       "fire_from_name": "rapid_cannon",
       "icon_png": "graphics/gun_data/cannon/29_auto_target.png"
+    },
+    {
+      "index": 29,
+      "id": 83,
+      "number": 30,
+      "name": "EQUALIZER",
+      "text": "spread widens as more enemies fill the screen",
+      "icon_from": 12,
+      "icon_from_name": "max_spread_cannon",
+      "fire_from": 1,
+      "fire_from_name": "rapid_cannon",
+      "icon_png": "graphics/gun_data/cannon/30_equalizer.png"
     }
   ]
 }
