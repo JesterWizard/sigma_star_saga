@@ -41,9 +41,13 @@
  * camera layer on close so VBlank repaints the maps it scribbled on. Only the
  * charbase-2 tiles (clobbered by the font load) need a real snapshot.
  *
- * Scene teleporter: NAV location table @ 0x0824F394 (name[0x20] + modeId).
- * Confirm closes the overlay then QueueMode(modeId) — same deferred ChangeMode
- * path doors / status use. Map prep JT @ 0x0801A1A0 indexes gMode-4.
+ * Scene teleporter: NAV location table @ 0x0824F348 (modeId + name[0x20]).
+ * Confirm closes the overlay then QueueModeFade(modeId) — StatusToggle's
+ * fade-to-black + pending-mode path (FadeStep applies gMode).
+ *
+ * Boss fights: a curated table of arena gModes (see sDebugBosses). Confirm
+ * takes the same QueueModeFade route as a warp; the destination mode's own
+ * init is what loads the arena.
  */
 
 #ifndef DEBUG_MENU_LOG
@@ -96,6 +100,7 @@
 
 #define DBG_SCR_ROOT 0
 #define DBG_SCR_WARP 1
+#define DBG_SCR_BOSS 2
 
 #define DBG_MAGIC_A 0xA5
 #define DBG_MAGIC_B 0x5A
@@ -126,16 +131,58 @@ typedef struct {
 #define DEBUG_WARP_TABLE ((const DebugWarpEntry *)0x0824F348)
 #define DEBUG_WARP_COUNT 24
 
+/* Boss fights.
+ *
+ * The B_* / MB_* ids in the stage label table @ 0x080ED50C are SetMode GFX ids,
+ * not modes, so handing one to a mode change never leaves the field. A boss
+ * fight is a *stage*: gMode 132 (init = EnterStageArena @ 0x08028A44, frame =
+ * the stage FSM @ 0x08028B40) plus a gStageCase index into the arena JT
+ * @ 0x0802972C. EnterStageArena @ 0x080296D4 reads gStageCase, SetModes the
+ * arena, loads its map and spawns both the player and the arena's actors.
+ *
+ * Cases 135-174 cover the four boss arenas in blocks of ten; each block is one
+ * approach segment per case plus the single case that spawns just the boss.
+ * Those boss cases are the ones listed here (verified with the arena's live
+ * enemy count @ 0x03007080 == 1 in tools/mgba_boss_probe.c).
+ *
+ * The other B_* / MB_* labels only get loaded as backdrops during a flight
+ * battle, so they have no standalone entry to jump to.
+ */
+#define DEBUG_STAGE_HOST_MODE 132
+
+typedef struct {
+    char name[16];
+    u16 stageCase;
+} DebugBossEntry;
+
+APPEND_RODATA static const DebugBossEntry sDebugBosses[] = {
+    { "B_DRILL", 142 },
+    { "B_CONCENTRATOR", 147 },
+    { "B_BLUNE", 161 },
+    { "B_LAVAWORM", 165 },
+};
+
+#define DEBUG_BOSS_COUNT 4
+
 enum {
     DBG_OPT_SAVE = 0,
     DBG_OPT_WARP,
+    DBG_OPT_BOSS,
     DBG_OPT_COUNT
 };
 
 APPEND_RODATA static const char sOptSave[] = "Save game";
 APPEND_RODATA static const char sOptWarp[] = "Warp to scene...";
+APPEND_RODATA static const char sOptBoss[] = "Boss fight...";
 APPEND_RODATA static const char sStatusSaved[] = "Saved!";
 APPEND_RODATA static const char sStatusSaving[] = "Saving...";
+
+static const DebugBossEntry *DebugMenu_BossEntry(u8 idx)
+{
+    if (idx >= DEBUG_BOSS_COUNT)
+        idx = 0;
+    return &sDebugBosses[idx];
+}
 
 static bool8 IsOverworldFieldMode(void)
 {
@@ -392,6 +439,8 @@ static u8 DebugMenu_OptionCount(void)
 {
     if (gDebugMenuScreen == DBG_SCR_WARP)
         return DEBUG_WARP_COUNT;
+    if (gDebugMenuScreen == DBG_SCR_BOSS)
+        return (u8)DEBUG_BOSS_COUNT;
     return DBG_OPT_COUNT;
 }
 
@@ -565,6 +614,7 @@ static void DebugMenu_PaintOptions(void)
     u8 row;
     u8 idx;
     u8 y = 0;
+    const char *label;
 
     DebugMenu_ClearTextMap();
     DebugMenu_ClampScroll();
@@ -576,12 +626,27 @@ static void DebugMenu_PaintOptions(void)
             break;
 
         if (gDebugMenuScreen == DBG_SCR_WARP)
-            DebugMenu_PutSelected(DEBUG_WARP_TABLE[idx].name, y,
-                                  idx == gDebugMenuCursor);
+        {
+            label = DEBUG_WARP_TABLE[idx].name;
+        }
+        else if (gDebugMenuScreen == DBG_SCR_BOSS)
+        {
+            label = DebugMenu_BossEntry(idx)->name;
+        }
         else if (idx == DBG_OPT_SAVE)
-            DebugMenu_PutSelected(sOptSave, y, idx == gDebugMenuCursor);
+        {
+            label = sOptSave;
+        }
+        else if (idx == DBG_OPT_WARP)
+        {
+            label = sOptWarp;
+        }
         else
-            DebugMenu_PutSelected(sOptWarp, y, idx == gDebugMenuCursor);
+        {
+            label = sOptBoss;
+        }
+
+        DebugMenu_PutSelected(label, y, idx == gDebugMenuCursor);
         y++;
     }
 }
@@ -687,10 +752,32 @@ static void DebugMenu_DoWarp(u32 modeId)
 #if DEBUG_MENU_LOG
     NoCashGBAPrintf("DBG warp mode=%u", (unsigned)modeId);
 #endif
-    /* Hand the field back before changing gMode — SetMode/map prep assume a
-     * live overworld surface, not the overlay mirrors. */
+    /* Close first so Present cannot re-apply the overlay after we leave.
+     * QueueModeFade matches StatusToggle: fade to black, then FadeStep
+     * writes gMode from the pending slot @ 0x03000D6C. */
     DebugMenu_Close();
-    QueueMode((u8)modeId);
+    QueueModeFade((u8)modeId, QUEUE_FADE_SPEED);
+}
+
+static void DebugMenu_DoBoss(const DebugBossEntry *entry)
+{
+#if DEBUG_MENU_LOG
+    NoCashGBAPrintf("DBG boss stageCase=%u", (unsigned)entry->stageCase);
+#endif
+    /* Close first so Present cannot re-apply the overlay over the transition.
+     * Mode 132's own init loads the arena, so all this has to do is hand it
+     * the selector and start the same fade a warp uses. */
+    gStageCase = entry->stageCase;
+    DebugMenu_Close();
+    QueueModeFade(DEBUG_STAGE_HOST_MODE, QUEUE_FADE_SPEED);
+}
+
+static void DebugMenu_EnterSubmenu(u8 screen)
+{
+    gDebugMenuScreen = screen;
+    gDebugMenuCursor = 0;
+    gDebugMenuScroll = 0;
+    gDebugMenuTextState = DBG_TEXT_NONE;
 }
 
 static void DebugMenu_Activate(void)
@@ -701,17 +788,22 @@ static void DebugMenu_Activate(void)
         return;
     }
 
+    if (gDebugMenuScreen == DBG_SCR_BOSS)
+    {
+        DebugMenu_DoBoss(DebugMenu_BossEntry(gDebugMenuCursor));
+        return;
+    }
+
     if (gDebugMenuCursor == DBG_OPT_SAVE)
     {
         DebugMenu_DoSave();
         return;
     }
 
-    /* Enter warp submenu. */
-    gDebugMenuScreen = DBG_SCR_WARP;
-    gDebugMenuCursor = 0;
-    gDebugMenuScroll = 0;
-    gDebugMenuTextState = DBG_TEXT_NONE;
+    if (gDebugMenuCursor == DBG_OPT_WARP)
+        DebugMenu_EnterSubmenu(DBG_SCR_WARP);
+    else
+        DebugMenu_EnterSubmenu(DBG_SCR_BOSS);
 }
 
 static void DebugMenu_UpdateMenu(void)
@@ -736,10 +828,13 @@ static void DebugMenu_UpdateMenu(void)
 
     if (pressed & B_BUTTON)
     {
-        if (gDebugMenuScreen == DBG_SCR_WARP)
+        if (gDebugMenuScreen == DBG_SCR_WARP
+            || gDebugMenuScreen == DBG_SCR_BOSS)
         {
+            gDebugMenuCursor = (u8)(gDebugMenuScreen == DBG_SCR_WARP
+                                    ? DBG_OPT_WARP
+                                    : DBG_OPT_BOSS);
             gDebugMenuScreen = DBG_SCR_ROOT;
-            gDebugMenuCursor = DBG_OPT_WARP;
             gDebugMenuScroll = 0;
             gDebugMenuTextState = DBG_TEXT_NONE;
         }
@@ -758,7 +853,10 @@ static void DebugMenu_UpdateMenu(void)
     if (pressed & A_BUTTON)
         DebugMenu_Activate();
 
-    DebugMenu_Present();
+    /* Warp / boss Activate closes the menu — do not Present (re-ApplyRegs)
+     * on top of the transition that just started. */
+    if (gDebugMenuActive == DBG_MENU)
+        DebugMenu_Present();
 }
 
 APPEND_TEXT bool8 DebugMenu_IsBlocking(void)

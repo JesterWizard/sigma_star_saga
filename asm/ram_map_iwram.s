@@ -71,6 +71,18 @@ SET_DATA gGaxMusicVol, 0x030011FC
 
 @ Main-loop mode byte (dispatch table @ ROM 0xBC04).
 SET_DATA gMode, 0x03001630
+@ Copied from gMode at end of mode-init (BA74); main loop runs AB64 when != gMode.
+SET_DATA gModeInitShadow, 0x030038B0
+@ Pending mode written by QueueModeFade / FadeStart; FadeStep applies to gMode.
+SET_DATA gPendingMode, 0x03000D6C
+@ SetMode() stores the active stage-label / GFX mode id here.
+SET_DATA gSetModeId, 0x03001EBC
+@ Cleared by boss-arena mode-init (B_DRILL @ 0x0800B0CC) before SetMode.
+SET_DATA gArenaEntryFlag, 0x03007004
+@ Cleared alongside arena entry; gates some MapPrep early-outs.
+SET_DATA gModeGfxReady, 0x03000D58
+@ Halfword pair touched by arena boot (B_DRILL clears +2).
+SET_DATA gArenaBootHw, 0x03002370
 @ Current actor index while AI / death-drop helpers run.
 SET_DATA gCurrentActorIndex, 0x03001634
 

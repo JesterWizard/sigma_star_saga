@@ -88,7 +88,7 @@ Method: Thumb `LDR Rd,[PC,#imm]` literal pools only (not raw absolute words). Wo
 | `gDialogueEntryOffsets` | `0x02000010` | Per-script halfword offsets into banks |
 | `gCutsceneStep` | `0x03007704` | Per-frame cutscene step / case index |
 | `gCutsceneParam` | `0x03007708` | Cutscene lerp pair (8 bytes) |
-| `gStageCase` | `0x03007738` | Stage FSM @ `0x0802B18C` outer JT index |
+| `gStageCase` | `0x03007738` | Stage FSM @ `0x0802B18C` outer JT index; also the arena selector read by `EnterStageArena` @ `0x080296D4` (JT @ `0x0802972C`) |
 | `gCutsceneGateHw` | `0x030038A8` | Stage intro case wait halfword |
 | `gWorldScrollX` | `0x03000C44` | World / cutscene scroll X (16.16) |
 | `gWorldScrollY` | `0x03000C6C` | World / cutscene scroll Y (16.16) |
@@ -134,10 +134,12 @@ Method: Thumb `LDR Rd,[PC,#imm]` literal pools only (not raw absolute words). Wo
 | `gCamScrollMirrorY` | `0x03001E70` | Soft camera scroll Y (`UpdateCameras`) |
 | `gSaveBusy` | `0x030070BC` | `WriteSave` busy latch |
 | `gDebugMenuActive` | (EWRAM free pool) | 0=closed, 1=START debug menu open |
-| `gDebugMenuScreen` | (EWRAM free pool) | Debug menu page (root / warp list) |
+| `gDebugMenuScreen` | (EWRAM free pool) | Debug menu page (root / warp / boss) |
 | `gDebugMenuScroll` | (EWRAM free pool) | First visible row when the option list scrolls |
 | `gDebugMenuTextState` | (EWRAM free pool) | String painted in the text map; gates repaints |
 | `gDebugMenuVramSnap` | (EWRAM free pool) | Private BG0/BG1 maps + black tile snapshot |
+| `gModeInitShadow` | `0x030038B0` | Latched `gMode`; main loop runs mode-init when it differs |
+| `gSetModeId` | `0x03001EBC` | Last `SetMode` stage-label / GFX id |
 
 Unknown pool-backed addresses use `gUnk_XXXXXXXX` in the `*_pool.inc` files. Promote to a named symbol in `ram_map_*.s` (+ `KNOWN_*` in the scanner) when the role is identified.
 

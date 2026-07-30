@@ -6,7 +6,7 @@
 /*
  * Vanilla SELECT status/map path (not yet peeled into src/).
  *
- * StatusToggle @ 0x08019094 — SELECT edge; QueueMode(0x8F) open / 0x8E close
+ * StatusToggle @ 0x08019094 — SELECT edge; QueueModeFade(0x8F, 0x800) open
  * StatusPanel  @ 0x08053BDC — mode 0x8F body; SetMode(0x168) + UI actors
  * LeaveStatus  @ 0x0803AB40 — mode 0x8E cleanup; SetMode(0xE8)
  * SetMode      @ 0x080079F0 — wipe cameras, load mode BG/GFX, write gSoftDispCnt
@@ -24,6 +24,7 @@
 
 typedef void (*SetModeFn)(u32 modeId, u32 flag);
 typedef void (*ChangeModeFn)(u32 modeId);
+typedef void (*QueueModeFadeFn)(u32 modeId, u32 fadeSpeed);
 typedef void (*VoidFn)(void);
 typedef void (*VoidU32Fn)(u32 a);
 typedef void (*FadeSpeedFn)(u32 speed);
@@ -32,8 +33,11 @@ typedef void (*FadeSpeedFn)(u32 speed);
 #define SetModeCallback ((VoidU32Fn)0x0800379D)
 /* ChangeMode @ 0x08004770 — write gMode (save previous @ 0x03000BEC). */
 #define ChangeMode ((ChangeModeFn)0x08004771)
-/* QueueMode @ 0x0800D71C — set transition latch + ChangeMode (door / status). */
+/* QueueMode @ 0x0800D71C — latch + immediate ChangeMode (unused by vanilla BL). */
 #define QueueMode ((ChangeModeFn)0x0800D71D)
+/* QueueModeFade @ 0x0800D734 — latch + FadeStart(speed) + pending mode @ 0x03000D6C.
+ * FadeStep applies gMode when fade-to-black completes (StatusToggle / door path). */
+#define QueueModeFade ((QueueModeFadeFn)0x0800D735)
 /* EnterModeScene @ 0x080191D4 — SetMode path for special scene modeIds. */
 #define EnterModeScene ((ChangeModeFn)0x080191D5)
 #define LeaveStatusRestore ((VoidFn)0x0803AB41)
@@ -41,6 +45,13 @@ typedef void (*FadeSpeedFn)(u32 speed);
 #define FadeOut ((FadeSpeedFn)0x08004191)   /* negated speed — fade from black */
 #define FadeStep ((VoidFn)0x080042E1)
 #define VBlankIntrWait ((VoidFn)0x08054475)
+/* PlayBgm @ 0x08000434 — load song module if different from current. */
+#define PlayBgm ((ChangeModeFn)0x08000435)
+/* ModeInitFinish @ 0x0800BA74 — shared mode-init epilogue (BA74). */
+#define ModeInitFinish ((VoidFn)0x0800BA75)
+
+/* Fade speed used by StatusToggle when opening the SELECT panel. */
+#define QUEUE_FADE_SPEED 0x800
 
 #define STATUS_GFX_MODE 0x168
 #define FIELD_RESUME_MODE 0xE8

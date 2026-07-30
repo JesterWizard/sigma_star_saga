@@ -53,6 +53,8 @@ SET_DATA UsedFreeEwramSpaceTop, FreeEwramSpaceBottom
 
 @ Halfword offset table into each talk bank (built by BuildTalkOffsets @ 0x10964).
 SET_DATA gDialogueEntryOffsets, 0x02000010
+@ QueueMode / QueueModeFade transition latch; ChangeMode runs D750 when set.
+SET_DATA gModeTransitionLatch, 0x02000AF0
 
 @ -- Pool-backed unknowns (auto-generated) -------------------------------------
 .include "ram_map_ewram_pool.inc"

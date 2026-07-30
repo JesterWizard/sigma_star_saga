@@ -16,6 +16,12 @@ extern u16 gGaxMusicVol; /* @ 0x030011FC */
 
 /* IWRAM — engine / player */
 extern u8 gMode;
+extern u8 gModeInitShadow; /* @ 0x030038B0 — AB64 when != gMode */
+extern u8 gPendingMode; /* @ 0x03000D6C — QueueModeFade destination */
+extern u32 gSetModeId; /* @ 0x03001EBC — last SetMode label */
+extern u8 gArenaEntryFlag; /* @ 0x03007004 — cleared before boss SetMode */
+extern u8 gModeGfxReady; /* @ 0x03000D58 */
+extern u16 gArenaBootHw[]; /* @ 0x03002370 — arena boot clears [1] */
 extern u8 gCurrentActorIndex;
 extern u8 *gPlayerPtr;
 extern u16 gKeysHeld;
@@ -61,6 +67,7 @@ extern u32 gWorldScrollY; /* World/cutscene scroll Y (16.16) @ 0x03000C6C */
 extern u16 gCutsceneWaveOutput[]; /* Case 62 waveform output @ 0x030036A0 */
 extern u8 gCutsceneWavePhase; /* Case 62 waveform phase @ 0x030076CC */
 extern u16 gDialogueEntryOffsets[]; /* Per-script halfword offsets @ 0x02000010 */
+extern u8 gModeTransitionLatch; /* @ 0x02000AF0 — QueueModeFade / ChangeMode latch */
 extern u8 gTalkState[]; /* Talk UI block @ 0x03007100; flags halfword at +14 */
 extern const u8 *gTalkStreamPtr; /* Active talk stream cursor @ 0x03007198 */
 extern u8 gTalkParamA;
