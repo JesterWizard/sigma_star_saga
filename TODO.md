@@ -14,7 +14,7 @@ Wiring the HQ blob in would never be called by GAX.
 [] Fix Recker's broken portrait palette during the final battle
 [] Fix the Forgotten Planet's softlock glitch
 [] Remove the Forgotten Planet's ghost overlay during the countdown (it's annoying shit)
-[] Add a debug scene teleporter
+[x] Add a debug scene teleporter
 [] Add a debug boss fight enabler
 [x] Allow level ups past 100 (maybe to 255?)
 [] Add custom gun data to boost defense

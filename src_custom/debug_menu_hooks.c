@@ -40,6 +40,10 @@
  * Restore relies on the engine's own soft tilemaps: the overlay dirties every
  * camera layer on close so VBlank repaints the maps it scribbled on. Only the
  * charbase-2 tiles (clobbered by the font load) need a real snapshot.
+ *
+ * Scene teleporter: NAV location table @ 0x0824F394 (name[0x20] + modeId).
+ * Confirm closes the overlay then QueueMode(modeId) — same deferred ChangeMode
+ * path doors / status use. Map prep JT @ 0x0801A1A0 indexes gMode-4.
  */
 
 #ifndef DEBUG_MENU_LOG
@@ -60,6 +64,7 @@
 #define DBG_TEXT_PALBANK 15
 #define DBG_TEXT_X 1
 #define DEBUG_STATUS_FRAMES 90
+#define DBG_VISIBLE_ROWS 18
 
 /* gDebugMenuTextState — which string the map currently holds. NONE forces the
  * first repaint after the menu opens. */
@@ -89,6 +94,9 @@
 #define DBG_CLOSED 0
 #define DBG_MENU 1
 
+#define DBG_SCR_ROOT 0
+#define DBG_SCR_WARP 1
+
 #define DBG_MAGIC_A 0xA5
 #define DBG_MAGIC_B 0x5A
 #define DBG_MAGIC_C 0xC3
@@ -99,25 +107,45 @@
  * to repaint every tilemap the overlay wrote over. */
 #define DBG_DIRTY_ALL 0x1F
 
+/* Main-loop mode JT @ 0x0800BC04; overworld field bodies land on D610. */
+#define MODE_JT_BASE 0x0800BC04
+#define OVERWORLD_FRAME_ADDR 0x0800D610
+
 typedef void (*SetupCamLayerFn)(u32 layer, u32 fileId, u32 scrBase, u32 charBase,
                                 u32 a, u32 b);
 
 #define SetupCamLayerGfx ((SetupCamLayerFn)0x08007475)
 
+/* Vanilla NAV location table: u32 modeId + 0x20-byte name (stride 0x24).
+ * Name-first parsing pairs each title with the *next* row's mode. */
+typedef struct {
+    u32 modeId;
+    char name[0x20];
+} DebugWarpEntry;
+
+#define DEBUG_WARP_TABLE ((const DebugWarpEntry *)0x0824F348)
+#define DEBUG_WARP_COUNT 24
+
 enum {
     DBG_OPT_SAVE = 0,
+    DBG_OPT_WARP,
     DBG_OPT_COUNT
 };
 
-APPEND_RODATA static const char sOptSaveSel[] = "> Save game";
+APPEND_RODATA static const char sOptSave[] = "Save game";
+APPEND_RODATA static const char sOptWarp[] = "Warp to scene...";
 APPEND_RODATA static const char sStatusSaved[] = "Saved!";
 APPEND_RODATA static const char sStatusSaving[] = "Saving...";
 
 static bool8 IsOverworldFieldMode(void)
 {
     u8 mode = gMode;
+    const u32 *jt;
 
-    return (mode >= 4 && mode <= 9) || (mode >= 15 && mode <= 23);
+    if (mode == 0)
+        return FALSE;
+    jt = (const u32 *)MODE_JT_BASE;
+    return jt[mode - 1] == OVERWORLD_FRAME_ADDR;
 }
 
 static void DebugMenu_ResetState(void)
@@ -125,6 +153,8 @@ static void DebugMenu_ResetState(void)
     gDebugMenuActive = DBG_CLOSED;
     gDebugMenuCursor = 0;
     gDebugMenuStatusTimer = 0;
+    gDebugMenuScreen = DBG_SCR_ROOT;
+    gDebugMenuScroll = 0;
     gDebugMenuPrevKeys = 0;
 }
 
@@ -311,14 +341,19 @@ static u16 DebugMenu_GlyphEntry(u8 ch)
     return (u16)(tile | (DBG_TEXT_PALBANK << 12));
 }
 
-static void DebugMenu_PutText(const char *str, u8 x, u8 y)
+static void DebugMenu_ClearTextMap(void)
 {
     vu16 *map = DebugMenu_ScreenMap(DBG_BG0_CNT);
     u16 i;
-    u8 col = x;
 
     for (i = 0; i < 32 * 32; i++)
         map[i] = 0;
+}
+
+static void DebugMenu_PutLine(const char *str, u8 x, u8 y)
+{
+    vu16 *map = DebugMenu_ScreenMap(DBG_BG0_CNT);
+    u8 col = x;
 
     while (*str != '\0' && col < 32)
     {
@@ -326,6 +361,81 @@ static void DebugMenu_PutText(const char *str, u8 x, u8 y)
         str++;
         col++;
     }
+}
+
+static void DebugMenu_PutSelected(const char *label, u8 y, bool8 selected)
+{
+    char line[32];
+    u8 i = 0;
+    u8 j = 0;
+
+    if (selected)
+    {
+        line[i++] = '>';
+        line[i++] = ' ';
+    }
+    else
+    {
+        line[i++] = ' ';
+        line[i++] = ' ';
+    }
+
+    while (label[j] != '\0' && i < 31)
+    {
+        line[i++] = label[j++];
+    }
+    line[i] = '\0';
+    DebugMenu_PutLine(line, DBG_TEXT_X, y);
+}
+
+static u8 DebugMenu_OptionCount(void)
+{
+    if (gDebugMenuScreen == DBG_SCR_WARP)
+        return DEBUG_WARP_COUNT;
+    return DBG_OPT_COUNT;
+}
+
+static void DebugMenu_ClampScroll(void)
+{
+    u8 count = DebugMenu_OptionCount();
+    u8 maxScroll;
+
+    if (gDebugMenuCursor >= count)
+        gDebugMenuCursor = (u8)(count - 1);
+
+    if (count <= DBG_VISIBLE_ROWS)
+    {
+        gDebugMenuScroll = 0;
+        return;
+    }
+
+    maxScroll = (u8)(count - DBG_VISIBLE_ROWS);
+    if (gDebugMenuCursor < gDebugMenuScroll)
+        gDebugMenuScroll = gDebugMenuCursor;
+    else if (gDebugMenuCursor >= (u8)(gDebugMenuScroll + DBG_VISIBLE_ROWS))
+        gDebugMenuScroll = (u8)(gDebugMenuCursor - DBG_VISIBLE_ROWS + 1);
+
+    if (gDebugMenuScroll > maxScroll)
+        gDebugMenuScroll = maxScroll;
+}
+
+static void DebugMenu_MoveCursor(s8 delta)
+{
+    u8 count = DebugMenu_OptionCount();
+    s16 next;
+
+    if (count == 0)
+        return;
+
+    next = (s16)gDebugMenuCursor + delta;
+    if (next < 0)
+        next = (s16)(count - 1);
+    else if (next >= count)
+        next = 0;
+
+    gDebugMenuCursor = (u8)next;
+    DebugMenu_ClampScroll();
+    gDebugMenuTextState = DBG_TEXT_NONE;
 }
 
 static void DebugMenu_LoadFont(void)
@@ -449,23 +559,56 @@ static void DebugMenu_ApplyRegs(void)
     REG_WINOUT = 0;
 }
 
+static void DebugMenu_PaintOptions(void)
+{
+    u8 count = DebugMenu_OptionCount();
+    u8 row;
+    u8 idx;
+    u8 y = 0;
+
+    DebugMenu_ClearTextMap();
+    DebugMenu_ClampScroll();
+
+    for (row = 0; row < DBG_VISIBLE_ROWS; row++)
+    {
+        idx = (u8)(gDebugMenuScroll + row);
+        if (idx >= count)
+            break;
+
+        if (gDebugMenuScreen == DBG_SCR_WARP)
+            DebugMenu_PutSelected(DEBUG_WARP_TABLE[idx].name, y,
+                                  idx == gDebugMenuCursor);
+        else if (idx == DBG_OPT_SAVE)
+            DebugMenu_PutSelected(sOptSave, y, idx == gDebugMenuCursor);
+        else
+            DebugMenu_PutSelected(sOptWarp, y, idx == gDebugMenuCursor);
+        y++;
+    }
+}
+
 static void DebugMenu_Repaint(u8 state)
 {
     /* Clearing and refilling the tilemap takes long enough to straddle the
      * scanlines it feeds, so the repaint has to sit inside VBlank or the text
      * tears in and out. */
-    const char *str;
-
-    if (state == DBG_TEXT_SAVED)
-        str = sStatusSaved;
-    else if (state == DBG_TEXT_SAVING)
-        str = sStatusSaving;
-    else
-        str = sOptSaveSel;
-
     VBlankIntrWait();
     DebugMenu_PrepareSurface();
-    DebugMenu_PutText(str, DBG_TEXT_X, 0);
+
+    if (state == DBG_TEXT_SAVED)
+    {
+        DebugMenu_ClearTextMap();
+        DebugMenu_PutLine(sStatusSaved, DBG_TEXT_X, 0);
+    }
+    else if (state == DBG_TEXT_SAVING)
+    {
+        DebugMenu_ClearTextMap();
+        DebugMenu_PutLine(sStatusSaving, DBG_TEXT_X, 0);
+    }
+    else
+    {
+        DebugMenu_PaintOptions();
+    }
+
     gSoftTextDirty = 0;
     gDebugTextActive = 0;
     gDebugMenuTextState = state;
@@ -486,6 +629,8 @@ static void DebugMenu_Begin(void)
     DBG_LOG("DBG begin");
     gDebugMenuCursor = 0;
     gDebugMenuStatusTimer = 0;
+    gDebugMenuScreen = DBG_SCR_ROOT;
+    gDebugMenuScroll = 0;
     gDebugMenuTextState = DBG_TEXT_NONE;
     DebugMenu_Snapshot();
 #if DEBUG_MENU_LOG
@@ -503,6 +648,8 @@ static void DebugMenu_Close(void)
     DebugMenu_RestoreRegs();
     gDebugMenuActive = DBG_CLOSED;
     gDebugMenuStatusTimer = 0;
+    gDebugMenuScreen = DBG_SCR_ROOT;
+    gDebugMenuScroll = 0;
 }
 
 static void DebugMenu_ForceQuietClose(void)
@@ -513,6 +660,8 @@ static void DebugMenu_ForceQuietClose(void)
     gDebugTextActive = 0;
     gDebugMenuActive = DBG_CLOSED;
     gDebugMenuStatusTimer = 0;
+    gDebugMenuScreen = DBG_SCR_ROOT;
+    gDebugMenuScroll = 0;
 }
 
 static void DebugMenu_DoSave(void)
@@ -533,6 +682,38 @@ static void DebugMenu_DoSave(void)
     DBG_LOG("DBG saved");
 }
 
+static void DebugMenu_DoWarp(u32 modeId)
+{
+#if DEBUG_MENU_LOG
+    NoCashGBAPrintf("DBG warp mode=%u", (unsigned)modeId);
+#endif
+    /* Hand the field back before changing gMode — SetMode/map prep assume a
+     * live overworld surface, not the overlay mirrors. */
+    DebugMenu_Close();
+    QueueMode((u8)modeId);
+}
+
+static void DebugMenu_Activate(void)
+{
+    if (gDebugMenuScreen == DBG_SCR_WARP)
+    {
+        DebugMenu_DoWarp(DEBUG_WARP_TABLE[gDebugMenuCursor].modeId);
+        return;
+    }
+
+    if (gDebugMenuCursor == DBG_OPT_SAVE)
+    {
+        DebugMenu_DoSave();
+        return;
+    }
+
+    /* Enter warp submenu. */
+    gDebugMenuScreen = DBG_SCR_WARP;
+    gDebugMenuCursor = 0;
+    gDebugMenuScroll = 0;
+    gDebugMenuTextState = DBG_TEXT_NONE;
+}
+
 static void DebugMenu_UpdateMenu(void)
 {
     u16 pressed = KeysPressed();
@@ -547,14 +728,35 @@ static void DebugMenu_UpdateMenu(void)
         return;
     }
 
-    if (pressed & (B_BUTTON | START_BUTTON))
+    if (pressed & START_BUTTON)
     {
         DebugMenu_Close();
         return;
     }
 
+    if (pressed & B_BUTTON)
+    {
+        if (gDebugMenuScreen == DBG_SCR_WARP)
+        {
+            gDebugMenuScreen = DBG_SCR_ROOT;
+            gDebugMenuCursor = DBG_OPT_WARP;
+            gDebugMenuScroll = 0;
+            gDebugMenuTextState = DBG_TEXT_NONE;
+        }
+        else
+        {
+            DebugMenu_Close();
+            return;
+        }
+    }
+
+    if (pressed & DPAD_UP)
+        DebugMenu_MoveCursor(-1);
+    if (pressed & DPAD_DOWN)
+        DebugMenu_MoveCursor(1);
+
     if (pressed & A_BUTTON)
-        DebugMenu_DoSave();
+        DebugMenu_Activate();
 
     DebugMenu_Present();
 }

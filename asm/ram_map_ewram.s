@@ -74,6 +74,10 @@ _kernel_malloc_ewram gDebugMenuMagicC, 0x1
 _kernel_malloc_ewram gDebugMenuActive, 0x1
 _kernel_malloc_ewram gDebugMenuCursor, 0x1
 _kernel_malloc_ewram gDebugMenuStatusTimer, 0x1
+@ Root vs Warp submenu (see DBG_SCR_* in debug_menu_hooks.c).
+_kernel_malloc_ewram gDebugMenuScreen, 0x1
+@ First visible row when the option list scrolls past DBG_VISIBLE_ROWS.
+_kernel_malloc_ewram gDebugMenuScroll, 0x1
 @ Which string is currently painted into the text map. Rewriting the tilemap
 @ during active display tears, so the menu only repaints when this changes.
 _kernel_malloc_ewram gDebugMenuTextState, 0x1

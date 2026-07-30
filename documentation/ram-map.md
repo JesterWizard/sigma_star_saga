@@ -134,6 +134,8 @@ Method: Thumb `LDR Rd,[PC,#imm]` literal pools only (not raw absolute words). Wo
 | `gCamScrollMirrorY` | `0x03001E70` | Soft camera scroll Y (`UpdateCameras`) |
 | `gSaveBusy` | `0x030070BC` | `WriteSave` busy latch |
 | `gDebugMenuActive` | (EWRAM free pool) | 0=closed, 1=START debug menu open |
+| `gDebugMenuScreen` | (EWRAM free pool) | Debug menu page (root / warp list) |
+| `gDebugMenuScroll` | (EWRAM free pool) | First visible row when the option list scrolls |
 | `gDebugMenuTextState` | (EWRAM free pool) | String painted in the text map; gates repaints |
 | `gDebugMenuVramSnap` | (EWRAM free pool) | Private BG0/BG1 maps + black tile snapshot |
 

@@ -23,12 +23,19 @@
  */
 
 typedef void (*SetModeFn)(u32 modeId, u32 flag);
+typedef void (*ChangeModeFn)(u32 modeId);
 typedef void (*VoidFn)(void);
 typedef void (*VoidU32Fn)(u32 a);
 typedef void (*FadeSpeedFn)(u32 speed);
 
 #define SetMode ((SetModeFn)0x080079F1)
 #define SetModeCallback ((VoidU32Fn)0x0800379D)
+/* ChangeMode @ 0x08004770 — write gMode (save previous @ 0x03000BEC). */
+#define ChangeMode ((ChangeModeFn)0x08004771)
+/* QueueMode @ 0x0800D71C — set transition latch + ChangeMode (door / status). */
+#define QueueMode ((ChangeModeFn)0x0800D71D)
+/* EnterModeScene @ 0x080191D4 — SetMode path for special scene modeIds. */
+#define EnterModeScene ((ChangeModeFn)0x080191D5)
 #define LeaveStatusRestore ((VoidFn)0x0803AB41)
 #define FadeStart ((FadeSpeedFn)0x080041B5) /* positive speed — fade to black */
 #define FadeOut ((FadeSpeedFn)0x08004191)   /* negated speed — fade from black */
