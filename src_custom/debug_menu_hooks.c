@@ -230,6 +230,11 @@ static bool8 IsOverworldFieldMode(void)
     return jt[mode - 1] == OVERWORLD_FRAME_ADDR;
 }
 
+static bool8 IsConversationActive(void)
+{
+    return gTalkUiLatch != 0;
+}
+
 static void DebugMenu_ResetState(void)
 {
     gDebugMenuActive = DBG_CLOSED;
@@ -915,7 +920,7 @@ APPEND_TEXT bool8 DebugMenu_OnOverworldFrame(void)
         return FALSE;
     }
 
-    if (!IsOverworldFieldMode() || gStatusMenuOpen != 0)
+    if (!IsOverworldFieldMode() || gStatusMenuOpen != 0 || IsConversationActive())
     {
         if (gDebugMenuActive != DBG_CLOSED)
             DebugMenu_ForceQuietClose();

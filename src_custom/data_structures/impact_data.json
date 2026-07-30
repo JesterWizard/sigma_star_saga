@@ -31,6 +31,16 @@
       "icon_from": 0,
       "icon_from_name": "absorb",
       "icon_png": "graphics/gun_data/impact/31_phoenix.png"
+    },
+    {
+      "index": 31,
+      "id": 82,
+      "number": 32,
+      "name": "TRAINING WEIGHTS",
+      "text": "halves ATK but awards 50% more EXP",
+      "icon_from": 22,
+      "icon_from_name": "revenge",
+      "icon_png": "graphics/gun_data/impact/32_training_weights.png"
     }
   ]
 }

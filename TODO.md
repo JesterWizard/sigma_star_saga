@@ -30,7 +30,7 @@ Wiring the HQ blob in would never be called by GAX.
 ## Impact Data:
 [x] 29. Suction - Pull in EXP drops from afar
 [] 30. Training Weights - Cut your ATK power in half for 50% more EXP gain
-[] 31. Phoenix - One revival to full health on death per map
+[x] 31. Phoenix - One revival to full health on death per map
 
 ## Bullet Data:
 [x] 4. Rework charge shot to build up charge and fire independently of the ship

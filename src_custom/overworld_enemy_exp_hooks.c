@@ -71,7 +71,7 @@ APPEND_TEXT static void AwardOverworldFaunaExp(u8 *actor)
         return;
 
     *(u32 *)(actor + ACTOR_OFF_EXP) = OW_EXP_AWARDED_MARK;
-    AddExperience(amount);
+    AddExperience__Replacement(amount);
 
     gPlayerExpDisplay = gPlayerExp;
     ((void (*)(u32))0x08010E59)(1);

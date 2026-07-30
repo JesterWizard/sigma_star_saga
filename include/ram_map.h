@@ -68,6 +68,7 @@ extern u16 gCutsceneWaveOutput[]; /* Case 62 waveform output @ 0x030036A0 */
 extern u8 gCutsceneWavePhase; /* Case 62 waveform phase @ 0x030076CC */
 extern u16 gDialogueEntryOffsets[]; /* Per-script halfword offsets @ 0x02000010 */
 extern u8 gModeTransitionLatch; /* @ 0x02000AF0 — QueueModeFade / ChangeMode latch */
+extern u8 gTalkUiLatch; /* Talk textbox visible; StatusToggle early-out @ 0x08018FE0 */
 extern u8 gTalkState[]; /* Talk UI block @ 0x03007100; flags halfword at +14 */
 extern const u8 *gTalkStreamPtr; /* Active talk stream cursor @ 0x03007198 */
 extern u8 gTalkParamA;

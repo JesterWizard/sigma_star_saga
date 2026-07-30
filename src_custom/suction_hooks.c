@@ -42,6 +42,8 @@ void LeechGemUpdate__Continue(void);
 void GetGunDataIconFrame__Continue(u32 type, u32 local, u32 owned, u16 *out);
 u32 IsGunDataOwned__Continue(u32 type, u32 local);
 void AbsorbShot__Continue(u32 shot_index);
+u32 CalcAtk__Continue(void);
+u32 CalcShotDamage__Continue(u32 shot_index, u32 arg1);
 
 /*
  * Green "REVIVE" popup — same ANM layout as shooter file 0x71 ("+ EXP").
@@ -111,6 +113,50 @@ APPEND_TEXT u32 PhoenixIsEquipped(void)
         return 1;
 
     return 0;
+}
+
+APPEND_TEXT u32 ImpactIdIsTrainingWeights(u32 id)
+{
+    id &= 0xFF;
+    return id == IMPACT_TRAINING_WEIGHTS
+        || id == IMPACT_ID_TRAINING_WEIGHTS
+        || id == IMPACT_NUM_TRAINING_WEIGHTS;
+}
+
+APPEND_TEXT u32 TrainingWeightsIsEquipped(void)
+{
+    u32 idx = EquippedImpactIndex();
+    u32 primary = gGunLoadoutImpact & 0xFF;
+    u32 alt = gGunLoadoutImpactAlt & 0xFF;
+
+    if (ImpactIdIsTrainingWeights(idx)
+        || ImpactIdIsTrainingWeights(primary)
+        || ImpactIdIsTrainingWeights(alt))
+        return 1;
+
+    return 0;
+}
+
+/* Status-screen ATK @ 0x080304D0 — bullet-type offset added to gPlayerLevel. */
+APPEND_TEXT u32 CalcAtk__Replacement(void)
+{
+    u32 atk = CalcAtk__Continue();
+
+    if (TrainingWeightsIsEquipped())
+        atk >>= 1;
+
+    return atk;
+}
+
+/* Combat shot damage @ 0x080305C8 — used by every player hit path. */
+APPEND_TEXT u32 CalcShotDamage__Replacement(u32 shot_index, u32 arg1)
+{
+    u32 dmg = CalcShotDamage__Continue(shot_index, arg1);
+
+    if (TrainingWeightsIsEquipped())
+        dmg >>= 1;
+
+    return dmg;
 }
 
 /* Stage-type HP stock matches vanilla init @ 0x08021338. */
@@ -758,7 +804,7 @@ APPEND_TEXT void ApplyAutoTarget(void)
 /* Status UI ownership — unlock custom impacts before the ??? fallback. */
 APPEND_TEXT u32 IsGunDataOwned__Replacement(u32 type, u32 local)
 {
-    EnsureCustomImpactsOwned();
+    ApplyGunDataCheats();
     return IsGunDataOwned__Continue(type, local);
 }
 

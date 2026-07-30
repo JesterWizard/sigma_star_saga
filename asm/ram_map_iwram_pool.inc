@@ -244,7 +244,7 @@ SET_DATA gUnk_030027DC, 0x030027DC  @ pool hits=2
 SET_DATA gUnk_030027E0, 0x030027E0  @ pool hits=1
 SET_DATA gUnk_03002B40, 0x03002B40  @ pool hits=6
 SET_DATA gUnk_03003680, 0x03003680  @ pool hits=9
-SET_DATA gUnk_03003684, 0x03003684  @ pool hits=35
+@ gUnk_03003684 promoted → gTalkUiLatch
 @ gUnk_03003688 / gUnk_0300368C promoted → gCutsceneCounter / gActorAllocIndex
 SET_DATA gUnk_03003690, 0x03003690  @ pool hits=5
 SET_DATA gUnk_030036A0, 0x030036A0  @ pool hits=11

@@ -152,6 +152,8 @@ SET_DATA gWorldScrollX, 0x03000C44
 SET_DATA gWorldScrollY, 0x03000C6C
 @ Case 62 waveform output (160 u16 entries).
 SET_ARRAY gCutsceneWaveOutput, 0x030036A0, 0x140
+@ Talk textbox visible latch (StatusToggle @ 0x08018FE0; cleared when talk ends).
+SET_DATA gTalkUiLatch, 0x03003684
 @ Case 62 waveform phase byte.
 SET_DATA gCutsceneWavePhase, 0x030076CC
 

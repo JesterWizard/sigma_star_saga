@@ -40,8 +40,11 @@ SHOOTER_CHEAT_FLAGS = (
     "custom_gun_data",  # Phoenix per-frame revive via UpdateShooterFrame
 )
 
-# Overworld unlocks (tools / items / max level) before flight.
+# Overworld unlocks (tools / items / gun data / max level) before flight.
 OVERWORLD_UNLOCK_FLAGS = (
+    "all_cannon_data",
+    "all_bullet_data",
+    "all_impact_data",
     "all_key_items",
     "all_tools",
     "start_max_level",
@@ -184,6 +187,8 @@ BULLET_DATA_JSON = ROOT / "src_custom" / "data_structures" / "bullet_data.json"
 CUSTOM_BULLET_ENTRY_SIZE = 0x4C  # matches CustomBulletEntry in data_structures.h
 CUSTOM_BULLET_DESC_OFF = 5  # index, id, number, icon_from, shot_from
 ABSORB_SHOT_OFF = 0x2F58C  # despawn player shot on hit (Pass Through skips this)
+CALC_ATK_OFF = 0x304D0  # status-screen ATK from bullet type + gPlayerLevel
+CALC_SHOT_DAMAGE_OFF = 0x305C8  # combat shot damage (many callers)
 
 
 def load_symbols(elf_path: pathlib.Path):
@@ -518,15 +523,16 @@ def apply_exp_hooks(
     multiplier: int,
     custom_enemy_exp: bool,
     level_cap_255: bool,
+    custom_gun_data: bool,
 ):
-    """Veneer AddExperience for exp_multiplier and/or level_cap_255.
+    """Veneer AddExperience for exp_multiplier, level_cap_255, and/or Training Weights.
 
     custom_enemy_exp is catalog / by-id data for tools and future hooks — it must
     not rewrite gem awards by amount (gems already carry the full actor+0x3C pool).
     """
     del custom_enemy_exp  # kept in signature for call-site compatibility
     baserom = (ROOT / "baserom.gba").read_bytes()
-    need_veneer = multiplier != 1 or level_cap_255
+    need_veneer = multiplier != 1 or level_cap_255 or custom_gun_data
 
     if not need_veneer:
         checked_write(
@@ -551,6 +557,7 @@ def apply_exp_hooks(
         )
         print(
             f"runtime: exp_multiplier={multiplier} level_cap_255={level_cap_255} "
+            f"custom_gun_data={custom_gun_data} "
             f"→ 0x{hook:08X}"
         )
 
@@ -857,6 +864,8 @@ def apply_suction(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
             (PLAYER_SHIP_UPDATE_OFF, LONG_VENEER_LEN, "player_ship"),
             (PLAYER_DEATH_FX_OFF, VENEER_LEN, "player_death_fx"),
             (DELETE_ACTOR_OFF, VENEER_LEN, "delete_actor"),
+            (CALC_ATK_OFF, VENEER_LEN, "calc_atk"),
+            (CALC_SHOT_DAMAGE_OFF, VENEER_LEN, "calc_shot_damage"),
         ):
             for offset in range(off, off + length):
                 owners.pop(offset, None)
@@ -1215,6 +1224,8 @@ def apply_suction(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
         ("GetGunDataIconFrame__Replacement", GUN_ICON_FRAME_OFF, "icon", True),
         ("PlayerDeathFx__Replacement", PLAYER_DEATH_FX_OFF, "player_death_fx", False),
         ("AbsorbShot__Replacement", ABSORB_SHOT_OFF, "absorb_shot", False),
+        ("CalcAtk__Replacement", CALC_ATK_OFF, "calc_atk", False),
+        ("CalcShotDamage__Replacement", CALC_SHOT_DAMAGE_OFF, "calc_shot_damage", False),
     ):
         if sym not in symbols:
             raise KeyError(f"symbol {sym} not found (needed for custom_gun_data)")
@@ -1611,6 +1622,7 @@ def main():
         exp_multiplier,
         flags["custom_enemy_exp"],
         flags["level_cap_255"],
+        flags["custom_gun_data"],
     )
     apply_custom_dialogue(rom, owners, symbols, flags["custom_dialogue"])
     apply_suction(rom, owners, symbols, flags["custom_gun_data"])

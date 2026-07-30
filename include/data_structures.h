@@ -109,6 +109,9 @@ u32 LookupOverworldEnemyExp(u16 enemy_id, u16 anim);
 /* If local is a custom impact, return icon_from; else local. */
 u8 RemapCustomImpactIcon(u8 type, u8 local);
 
+/* Apply .all_*_data unlocks (idempotent; safe from status screen + save loads). */
+void ApplyGunDataCheats(void);
+
 /* Mark JSON custom impacts owned (status screen does not run flight cheats). */
 void EnsureCustomImpactsOwned(void);
 

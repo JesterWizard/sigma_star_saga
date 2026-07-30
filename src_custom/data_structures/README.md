@@ -33,7 +33,8 @@ that same value (not pool/10).
 | `exp` | Full pool / `AddExperience` amount (must match actor `+0x3C`) |
 
 `.custom_enemy_exp` builds the by-id catalog only. Award scaling at runtime is
-`.exp_multiplier` alone — do not treat this JSON as an amount remap table.
+`.exp_multiplier` (and **Training Weights** +50% on top of the multiplied amount
+when equipped). Do not treat this JSON as an amount remap table.
 Some type ids appear more than once with different `exp` (spawn variants).
 
 ## `overworld_enemy_exp.json`
@@ -72,6 +73,7 @@ Defines custom Impact Data pieces after the vanilla 28.
 | **SUCTION** | Pulls every EXP gem on screen (vanilla magnet speed) |
 | **SUCTION+** | Same pull at **2×** speed |
 | **PHOENIX** | One full HP revival when dying, once per battle |
+| **TRAINING WEIGHTS** | Halves ATK; awards **50%** more EXP |
 
 Unlock with `.all_impact_data` and/or `.custom_gun_data` (status screen auto-unlocks
 JSON pieces when `.custom_gun_data` is on). Each `icon_png` is injected as an ANM

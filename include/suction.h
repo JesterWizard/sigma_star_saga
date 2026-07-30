@@ -11,6 +11,9 @@
 #define IMPACT_PHOENIX 30
 #define IMPACT_ID_PHOENIX 79
 #define IMPACT_NUM_PHOENIX 31 /* status-screen badge number */
+#define IMPACT_TRAINING_WEIGHTS 31
+#define IMPACT_ID_TRAINING_WEIGHTS 82
+#define IMPACT_NUM_TRAINING_WEIGHTS 32 /* status-screen badge number */
 
 /* Custom Cannon Data (local index / Gun Data id / badge number). */
 #define CANNON_AUTO_TARGET 28
@@ -31,7 +34,10 @@
 #define SUCTION_ICON_FRAME_BASE 196
 
 u32 EquippedImpactIndex(void);
+u32 TrainingWeightsIsEquipped(void);
 u32 PhoenixIsEquipped(void);
+u32 CalcAtk__Replacement(void);
+u32 CalcShotDamage__Replacement(u32 shot_index, u32 arg1);
 u32 EquippedCannonIndex(void);
 u32 AutoTargetIsEquipped(void);
 void ApplyAutoTarget(void);

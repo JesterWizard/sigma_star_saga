@@ -9,5 +9,6 @@
 
 void CalcExpToNextLevel(void);
 bool8 AddExperience(u32 amount);
+bool8 AddExperience__Replacement(u32 amount);
 
 #endif // GUARD_LEVEL_UP_H

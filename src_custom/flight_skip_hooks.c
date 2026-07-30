@@ -57,31 +57,45 @@ static void SetGunDataBits(int idLo, int idHi)
         gGunDataBits[id >> 5] |= ((u32)1 << (id & 31));
 }
 
-/* Gun-data unlocks are persistent — apply once. Re-writing gun bits every
- * frame trips per-entity "owned" branches. Tools/items re-apply each frame
- * (like the CodeBreaker continuous write) so save loads cannot clear them.
- * Latch lives in free IWRAM (gInventoryCheatsApplied) — not C static/.bss. */
-static void ApplyGunDataCheatsOnce(void)
+#define CANNON_OWNED_MASK 0x1FFFFFFFu /* vanilla 28 + AUTO TARGET */
+#define BULLET_OWNED_MASK 0x000FFFFFu /* vanilla 20 pieces */
+#define IMPACT_OWNED_MASK 0x0FFFFFFFu /* vanilla 28 pieces */
+
+static bool8 GunDataCheatsSatisfied(void)
 {
-    if (gInventoryCheatsApplied)
+    if (gRuntimeConfig.all_cannon_data && (gCannonOwned & CANNON_OWNED_MASK) != CANNON_OWNED_MASK)
+        return FALSE;
+    if (gRuntimeConfig.all_bullet_data && (gBulletOwned & BULLET_OWNED_MASK) != BULLET_OWNED_MASK)
+        return FALSE;
+    if (gRuntimeConfig.all_impact_data && (gImpactOwned & IMPACT_OWNED_MASK) != IMPACT_OWNED_MASK)
+        return FALSE;
+    return TRUE;
+}
+
+/* Gun-data unlocks are idempotent OR-writes. Latch skips repeat work, but
+ * save loads can clear ownership while the latch stays set — re-apply when the
+ * expected masks are incomplete. Status screen calls this via IsGunDataOwned. */
+APPEND_TEXT void ApplyGunDataCheats(void)
+{
+    if (gInventoryCheatsApplied && GunDataCheatsSatisfied())
         return;
     gInventoryCheatsApplied = 1;
 
     if (gRuntimeConfig.all_cannon_data)
     {
-        gCannonOwned |= 0x1FFFFFFFu; /* vanilla 28 + AUTO TARGET */
+        gCannonOwned |= CANNON_OWNED_MASK;
         SetGunDataBits(CANNON_ID_LO, CANNON_ID_HI);
     }
 
     if (gRuntimeConfig.all_bullet_data)
     {
-        gBulletOwned |= 0x000FFFFFu; /* vanilla 20 pieces */
+        gBulletOwned |= BULLET_OWNED_MASK;
         SetGunDataBits(BULLET_ID_LO, BULLET_ID_HI);
     }
 
     if (gRuntimeConfig.all_impact_data)
     {
-        gImpactOwned |= 0x0FFFFFFFu; /* vanilla 28 pieces */
+        gImpactOwned |= IMPACT_OWNED_MASK;
         SetGunDataBits(IMPACT_ID_LO, IMPACT_ID_HI);
     }
 
@@ -132,7 +146,7 @@ APPEND_TEXT void OverworldPlayerUpdate__Replacement(void)
 
     ApplyMaxLevel();
     ApplyToolsAndItems();
-    ApplyGunDataCheatsOnce();
+    ApplyGunDataCheats();
     OverworldPlayerUpdate__Continue();
 }
 
@@ -163,12 +177,29 @@ APPEND_TEXT void UpdateShooterFrame__Replacement(void)
     ApplyLaserBeam();
     ApplyChargeShot();
     ApplyToolsAndItems();
-    ApplyGunDataCheatsOnce();
+    ApplyGunDataCheats();
 }
 
-/* Veneered over AddExperience @ 0x0800FDC4 when exp_multiplier != 1
- * and/or level_cap_255. Must match vanilla: only mutate gPlayerExp / level.
+/* Veneered over AddExperience @ 0x0800FDC4 when exp_multiplier != 1,
+ * level_cap_255, and/or custom_gun_data (Training Weights EXP).
+ * Must match vanilla: only mutate gPlayerExp / level.
  * Do NOT write gPlayerExpDisplay — HudSync copies + RebuildExpDigits when they differ. */
+APPEND_TEXT static u32 ScaleExperienceAmount(u32 amount)
+{
+    u32 mult = gRuntimeConfig.exp_multiplier;
+    u32 scaled;
+
+    if (mult == 0)
+        mult = 1;
+
+    scaled = amount * mult;
+
+    if (gRuntimeConfig.custom_gun_data && TrainingWeightsIsEquipped())
+        scaled += scaled / 2;
+
+    return scaled;
+}
+
 APPEND_TEXT bool8 AddExperience__Replacement(u32 amount)
 {
     u8 level = gPlayerLevel;
@@ -177,7 +208,7 @@ APPEND_TEXT bool8 AddExperience__Replacement(u32 amount)
     if (level > maxLevel - 1)
         return FALSE;
 
-    amount *= gRuntimeConfig.exp_multiplier;
+    amount = ScaleExperienceAmount(amount);
 
     gPlayerExp += amount;
 
