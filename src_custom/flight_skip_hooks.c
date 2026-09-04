@@ -6,6 +6,7 @@
 #include "suction.h"
 #include "nocash.h"
 #include "debug_menu.h"
+#include "overworld_encounters.h"
 
 #define MAX_BOMBS 7
 
@@ -144,6 +145,7 @@ APPEND_TEXT void OverworldPlayerUpdate__Replacement(void)
     if (DebugMenu_IsBlocking())
         return;
 
+    RandomBattle_RecoverTrapBeforeWalk();
     ApplyMaxLevel();
     ApplyToolsAndItems();
     ApplyGunDataCheats();

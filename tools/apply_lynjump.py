@@ -121,6 +121,7 @@ DRAW_ACTORS_OFF = 0x6C0C
 INIT_ACTOR_PARAMS_OFF = 0x318B4
 ACTOR_DEATH_AWARD_OFF = 0x319B0
 # True random-encounter starter @ 0x1DA5C (not ScanEncounters / lure circles).
+OW_ENC_FOLLOWUP_OFF = 0x1DBB8
 # CodeBreaker "no random battles" writes 0x01 to IWRAM 0x03007685 (byte1 of the
 # cooldown word at 0x03007684); non-zero cooldown makes 0x1DA5C early-out.
 RANDOM_BATTLE_START_OFF = 0x1DA5C
@@ -1487,15 +1488,20 @@ def apply_talk_helpers(rom: bytearray, owners: dict, symbols: dict, enabled: boo
         print(f"runtime: custom_talk_helpers=TRUE → {name} 0x{symbols[name]:08X}")
 
 
-def apply_disable_random_battles(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
-    """No-op TryStartRandomBattle @ 0x1DA5C when enabled.
+def apply_disable_random_battles(
+    rom: bytearray, owners: dict, symbols: dict, enabled: bool, debug_menu: bool
+):
+    """Gate TryStartRandomBattle @ 0x1DA5C.
 
-    Matches CodeBreaker cheat B581C8AEE38E → write 0x01 @ 0x03007685 (cooldown).
-    Lure / ScanEncounters / EnterLureZone stay vanilla.
+    LynJump to TryStartRandomBattle__Replacement when .disable_random_battles or
+    .debug_menu is on (the debug menu toggles gDebugMenuToggleRandomBattlesOff in
+    EWRAM at runtime). Otherwise restore vanilla. Lure / ScanEncounters stay vanilla.
     """
-    del symbols  # kept in signature for call-site uniformity
     baserom = (ROOT / "baserom.gba").read_bytes()
     owner = "runtime:disable_random_battles"
+    vanilla_head = baserom[
+        RANDOM_BATTLE_START_OFF : RANDOM_BATTLE_START_OFF + VENEER_LEN
+    ]
 
     # Always undo any older ScanEncounters patches from earlier attempts.
     for off, length in SCAN_ENCOUNTERS_CLEANUP_SITES:
@@ -1507,30 +1513,48 @@ def apply_disable_random_battles(rom: bytearray, owners: dict, symbols: dict, en
             f"{owner}:scan_cleanup@{off:X}",
         )
 
-    if not enabled:
+    if not enabled and not debug_menu:
         checked_write(
             rom,
             RANDOM_BATTLE_START_OFF,
-            baserom[
-                RANDOM_BATTLE_START_OFF : RANDOM_BATTLE_START_OFF
-                + len(RANDOM_BATTLE_START_DISABLE)
-            ],
+            vanilla_head,
+            owners,
+            f"{owner}=FALSE",
+        )
+        checked_write(
+            rom,
+            OW_ENC_FOLLOWUP_OFF,
+            baserom[OW_ENC_FOLLOWUP_OFF : OW_ENC_FOLLOWUP_OFF + VENEER_LEN],
             owners,
             f"{owner}=FALSE",
         )
         print("runtime: disable_random_battles=FALSE (vanilla TryStartRandomBattle)")
         return
 
-    checked_write(
+    name = "TryStartRandomBattle__Replacement"
+    if name not in symbols:
+        raise KeyError(f"symbol {name} not found — build random_battle_hooks.c")
+    apply_veneer(
         rom,
-        RANDOM_BATTLE_START_OFF,
-        RANDOM_BATTLE_START_DISABLE,
         owners,
+        RANDOM_BATTLE_START_OFF,
+        symbols[name],
+        owner,
+    )
+    follow_name = "OwEncFollowUp__Replacement"
+    if follow_name not in symbols:
+        raise KeyError(f"symbol {follow_name} not found — build random_battle_hooks.c")
+    apply_veneer(
+        rom,
+        owners,
+        OW_ENC_FOLLOWUP_OFF,
+        symbols[follow_name],
         owner,
     )
     print(
-        "runtime: disable_random_battles=TRUE → "
-        "TryStartRandomBattle 0x1DA5C bx lr (CB cooldown gate)"
+        f"runtime: TryStartRandomBattle → {name} 0x{symbols[name]:08X}; "
+        f"OwEncFollowUp → {follow_name} 0x{symbols[follow_name]:08X} "
+        f"(disable_random_battles={enabled}, debug_menu={debug_menu})"
     )
 
 
@@ -1634,7 +1658,13 @@ def main():
         flags["overworld_enemy_exp"],
         flags["custom_gun_data"],
     )
-    apply_disable_random_battles(rom, owners, symbols, flags["disable_random_battles"])
+    apply_disable_random_battles(
+        rom,
+        owners,
+        symbols,
+        flags["disable_random_battles"],
+        flags["debug_menu"],
+    )
     apply_cutscene_ch1(
         rom,
         owners,

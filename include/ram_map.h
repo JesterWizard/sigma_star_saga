@@ -95,6 +95,7 @@ extern u32 gExpToNextLevel;
 extern u8 gStageClearFlag;
 extern u32 gRandomBattleCooldown; /* Overworld RNG encounter delay @ 0x1DA5C */
 extern u8 gEventFlags[]; /* Story/tool bitfield @ 0x03000020 (GetFlag/SetFlag) */
+extern u8 gOwStep; /* Overworld step counter for random-encounter tables @ 0x0300708C */
 extern u8 gEquippedTool; /* Active overworld tool index 0..5 @ 0x03007064 */
 extern u8 gStageClearGate; /* 0 = allow clear (CB Clear Stage target) */
 
@@ -163,6 +164,7 @@ extern s32 gDebugMenuSavedCamScrollX;
 extern s32 gDebugMenuSavedCamScrollY;
 extern u16 gDebugMenuSavedDisplayCtrl;
 extern u8 gDebugMenuSavedHudEnabled;
+extern u8 gDebugMenuToggleRandomBattlesOff; /* 1 = no step random battles (debug menu) */
 extern u8 gDebugMenuCamSnap[]; /* 0x210: 4 camera structs (stride 0x84) */
 extern u8 gDebugMenuVramSnap[]; /* 0x4000: charbase-2 tiles */
 

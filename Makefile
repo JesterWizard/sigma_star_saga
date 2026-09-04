@@ -243,7 +243,8 @@ $(CONFIG_BUILDDIR)/%.o: $(CONFIG_SUBDIR)/%.c
 		-o $@ $<
 
 # Compile editable src_custom/dialogue macros → APPEND_RODATA banks.
-$(DIALOGUE_BANKS_C): $(COMPILE_DIALOGUE) $(DIALOGUE_SCENE_SRCS) $(DIALOGUE_SRC_DIR)/README.md
+# Needs gax_catalog.h so VOICE(GAX_VOICE_*) ids resolve (parallel-safe).
+$(DIALOGUE_BANKS_C): $(COMPILE_DIALOGUE) $(DIALOGUE_SCENE_SRCS) $(DIALOGUE_SRC_DIR)/README.md $(GAX_CATALOG_H)
 	@mkdir -p $(dir $@)
 	python3 $(COMPILE_DIALOGUE) --src $(DIALOGUE_SRC_DIR) --out $@
 
@@ -275,7 +276,8 @@ $(DATA_STRUCT_TABLES_O): $(DATA_STRUCT_TABLES_C)
 		-o $@ $<
 
 # Pack sound/ music+voice → append GAX catalogs.
-$(GAX_CATALOG_C) $(GAX_CATALOG_H): $(BUILD_GAX_CATALOG) $(GAX_SOUND_MUSIC) $(GAX_SOUND_VOICE) $(GAX_SOUND_WAVS) \
+# &: grouped target — one recipe for both outputs (avoids -j duplicate pack runs).
+$(GAX_CATALOG_C) $(GAX_CATALOG_H) &: $(BUILD_GAX_CATALOG) $(GAX_SOUND_MUSIC) $(GAX_SOUND_VOICE) $(GAX_SOUND_WAVS) \
 		$(TOOLS_DIR)/pack_gax_voice_fx.py $(TOOLS_DIR)/pack_gax_song.py
 	@mkdir -p $(dir $(GAX_CATALOG_C))
 	python3 $(BUILD_GAX_CATALOG) --out-c $(GAX_CATALOG_C) --out-h $(GAX_CATALOG_H)

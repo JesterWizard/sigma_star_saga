@@ -110,7 +110,7 @@ Method: Thumb `LDR Rd,[PC,#imm]` literal pools only (not raw absolute words). Wo
 | `gEventFlags` | `0x03000020` | Story/tool bitfield (`GetFlag` / `SetFlag`) |
 | `gEquippedTool` | `0x03007064` | Active overworld tool index (0–5) |
 | `gStageClearFlag` | `0x03007668` | Stage-clear latch |
-| `gRandomBattleCooldown` | `0x03007684` | Overworld RNG encounter delay (`0x1DA5C`; CB writes `+1`) |
+| `gRandomBattleCooldown` | `0x03007684` | Overworld RNG encounter delay; byte @ +1 is the debug-menu / CB disable gate |
 | `gStageClearGate` | `0x03007730` | Clear-sequence gate (0 = allow; CB Clear Stage) |
 | `gGaxParams` | `0x030008C0` | GAX2_PARAMS (flags @ +0x0E; `GAX_SPEECH` = `0x40`) |
 | `gGaxCurrentSong` | `0x030008B0` | PlayBgm song-module latch |
@@ -134,6 +134,7 @@ Method: Thumb `LDR Rd,[PC,#imm]` literal pools only (not raw absolute words). Wo
 | `gCamScrollMirrorY` | `0x03001E70` | Soft camera scroll Y (`UpdateCameras`) |
 | `gSaveBusy` | `0x030070BC` | `WriteSave` busy latch |
 | `gDebugMenuActive` | (EWRAM free pool) | 0=closed, 1=START debug menu open |
+| `gDebugMenuToggleRandomBattlesOff` | (EWRAM free pool) | Debug menu: 1 = no step random battles |
 | `gDebugMenuScreen` | (EWRAM free pool) | Debug menu page (root / warp / boss) |
 | `gDebugMenuScroll` | (EWRAM free pool) | First visible row when the option list scrolls |
 | `gDebugMenuTextState` | (EWRAM free pool) | String painted in the text map; gates repaints |

@@ -203,6 +203,7 @@ enum {
     DBG_OPT_SAVE = 0,
     DBG_OPT_WARP,
     DBG_OPT_BOSS,
+    DBG_OPT_NO_RANDOM,
     DBG_OPT_COUNT
 };
 
@@ -211,6 +212,21 @@ APPEND_RODATA static const char sOptWarp[] = "Warp to scene...";
 APPEND_RODATA static const char sOptBoss[] = "Boss fight...";
 APPEND_RODATA static const char sStatusSaved[] = "Saved!";
 APPEND_RODATA static const char sStatusSaving[] = "Saving...";
+
+static void DebugMenu_NoRandomLabel(char *line)
+{
+    const char *prefix = "No random battles: ";
+    const char *state = RandomBattlesDisabled() ? "ON" : "OFF";
+    u8 i = 0;
+    u8 j = 0;
+
+    while (prefix[j] != '\0' && i < 31)
+        line[i++] = prefix[j++];
+    j = 0;
+    while (state[j] != '\0' && i < 31)
+        line[i++] = state[j++];
+    line[i] = '\0';
+}
 
 static const DebugBossEntry *DebugMenu_BossEntry(u8 idx)
 {
@@ -258,6 +274,7 @@ static void DebugMenu_EnsureInit(void)
     gDebugMenuMagicA = DBG_MAGIC_A;
     gDebugMenuMagicB = DBG_MAGIC_B;
     gDebugMenuMagicC = DBG_MAGIC_C;
+    RandomBattle_EnsureInit();
     DebugMenu_ResetState();
 }
 
@@ -681,9 +698,18 @@ static void DebugMenu_PaintOptions(void)
         {
             label = sOptWarp;
         }
-        else
+        else if (idx == DBG_OPT_BOSS)
         {
             label = sOptBoss;
+        }
+        else
+        {
+            char noRandomLine[32];
+
+            DebugMenu_NoRandomLabel(noRandomLine);
+            DebugMenu_PutSelected(noRandomLine, y, idx == gDebugMenuCursor);
+            y++;
+            continue;
         }
 
         DebugMenu_PutSelected(label, y, idx == gDebugMenuCursor);
@@ -842,6 +868,13 @@ static void DebugMenu_Activate(void)
         return;
     }
 
+    if (gDebugMenuCursor == DBG_OPT_NO_RANDOM)
+    {
+        RandomBattlesSetDisabled((bool8)!RandomBattlesDisabled());
+        gDebugMenuTextState = DBG_TEXT_NONE;
+        return;
+    }
+
     if (gDebugMenuCursor == DBG_OPT_WARP)
         DebugMenu_EnterSubmenu(DBG_SCR_WARP);
     else
@@ -981,6 +1014,7 @@ APPEND_TEXT __attribute__((naked)) void OverworldFrameTail__Replacement(void)
         "ldr r3, =0x08008F51\n"
         "bl 3f\n"
         "bl DebugMenu_OnOverworldFrame\n"
+        "bl RandomBattle_RecoverOverworldIfStuck\n"
         "pop {r0}\n"
         "mov lr, r0\n"
         "ldr r3, =0x0800D677\n"
@@ -988,6 +1022,7 @@ APPEND_TEXT __attribute__((naked)) void OverworldFrameTail__Replacement(void)
         "1:\n"
         /* Body skipped — r4 unset; avoid D67E path that loads [r4]. */
         "bl DebugMenu_OnOverworldFrame\n"
+        "bl RandomBattle_RecoverOverworldIfStuck\n"
         "pop {r0}\n"
         "mov lr, r0\n"
         "ldr r3, =0x0800D6CF\n"

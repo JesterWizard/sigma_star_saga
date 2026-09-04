@@ -108,6 +108,8 @@ _kernel_malloc_ewram gDebugMenuSavedCamScrollY, 0x4
 @ frame by the engine, so the menu has to own and hand them back).
 _kernel_malloc_ewram gDebugMenuSavedDisplayCtrl, 0x2
 _kernel_malloc_ewram gDebugMenuSavedHudEnabled, 0x1
+@ Debug-menu runtime toggles (one byte each; do not alias vanilla IWRAM).
+_kernel_malloc_ewram gDebugMenuToggleRandomBattlesOff, 0x1
 @ Full camera array backup (4 × 0x84): the font load re-points camera layer 3
 @ and the overlay zeroes every layer's active flag / scroll.
 _kernel_malloc_ewram_array gDebugMenuCamSnap, 0x210

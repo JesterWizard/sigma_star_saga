@@ -28,12 +28,13 @@ Root options:
 1. **Save game** — EEPROM write to the current slot
 2. **Warp to scene...** — NAV location list; **A** fades to that mode
 3. **Boss fight...** — all 19 `MB_*` midbosses + 10 `B_*` story bosses; **A** starts that fight
+4. **No random battles: ON/OFF** — toggles step RNG encounters (lure circles unchanged)
 
 It deliberately **never** calls `StatusToggle`, `StatusPanel`, `SetMode(0x168)`, or `LeaveStatusRestore`. `gMode` stays on the overworld value while the menu is open; world sim is paused by LynJumps on the overworld frame, not by changing modes. Warps close the overlay and then `QueueModeFade`; bosses close it and call `TryStartBattle`.
 
 | Screen | Behaviour |
 | --- | --- |
-| Root | `Save game` / `Warp to scene...` / `Boss fight...` with UP/DOWN cursor |
+| Root | `Save game` / `Warp to scene...` / `Boss fight...` / `No random battles: ON/OFF` with UP/DOWN cursor |
 | Warp | A opens NAV location list; A again → close overlay → `QueueModeFade(modeId)` |
 | Boss | A opens the boss list; A again → `TryStartBattle(battleId)` |
 
@@ -61,6 +62,7 @@ flowchart TD
 | START | Field (overworld frame) | Open / close menu |
 | UP / DOWN | Any list | Move cursor (scrolls when needed) |
 | A | Root → Warp / Boss | Enter that submenu |
+| A | Root → No random battles | Toggle step RNG encounters on/off |
 | A | Warp list | Close menu and `QueueModeFade` to that location's mode ID |
 | A | Boss list | Launch the selected boss |
 | B | Warp / Boss list | Back to root |
@@ -175,6 +177,8 @@ On close, restore cameras, VRAM snapshot, DISPCNT mirrors, and soft-text dirty b
 | Public API | `DebugMenu_IsBlocking` / `DebugMenu_OnOverworldFrame` in `include/debug_menu.h` | Gate + per-frame entry |
 | Mode thunks | `ChangeMode` / `QueueModeFade` in `include/status.h` | Warp entry |
 | Battle entry | `TryStartBattle` in `include/overworld_encounters.h` | Boss entry |
+| Random battle gate | `RandomBattlesSetDisabled` / `gDebugMenuToggleRandomBattlesOff` (EWRAM) in `src_custom/random_battle_hooks.c` | Debug menu toggle; does not touch vanilla `gRandomBattleCooldown` |
+| Random battle hook | `TryStartRandomBattle__Replacement` in `src_custom/random_battle_hooks.c` | LynJump gate @ `0x1DA5C` |
 | Boss table | `sDebugBosses` in `src_custom/debug_menu_hooks.c` | Name + battle id (227–255) |
 | Arena selector | `gStageCase` in `asm/ram_map_iwram.s` | Dig arena case for host mode 132 |
 | Boss probe | `tools/mgba_boss_probe.c` | Replays boss rows; sweeps `gStageCase` |

@@ -32,9 +32,22 @@ u8 TryStartBattle(u16 battleId)
 
 /*
  * TryStartRandomBattle — baserom @ 0x0801DA5C.
- * Only caller: overworld walk @ 0x1F0C2. Gated by gRandomBattleCooldown;
- * when the word is non-zero the routine decrements and returns. Disable
- * patch: in-place `bx lr` via apply_lynjump when .disable_random_battles.
+ * Only caller: overworld walk @ 0x1F0C2.
+ *
+ * Roll flow:
+ *   - Skip when gTalkUiLatch @ 0x03003684 is set
+ *   - RandomChance(0x21) @ 0x080117EC
+ *   - Encounter rate from gOwStep @ 0x0300708C + mode table (gMode @ 0x03001630)
+ *   - gRandomBattleCooldown word: non-zero → decrement and return
+ *
+ * Prep on success (leaves the field if the transition completes):
+ *   - gTalkUiLatch = 1, player state 0x36, gOwEncStep @ 0x030076B0 = 0
+ *   - While gOwEncActive @ 0x030076E0 == 0 the walk path @ 0x1F030 can force
+ *     state 0x39 — the invisible-box soft-lock when prep is not cleared.
+ *
+ * LynJump hook: src_custom/random_battle_hooks.c gates via
+ * gDebugMenuToggleRandomBattlesOff (EWRAM), runs vanilla via __Continue when
+ * enabled, and clears failed prep when still on the overworld field.
  */
 void TryStartRandomBattle(void)
 {

@@ -214,6 +214,8 @@ SET_DATA gRandomBattleCooldown, 0x03007684
 @ Event / tool ownership bitfield (GetFlag/SetFlag). CB "all tools" fills
 @ halfwords that cover flags 31, 59, 88, 118, 155.
 SET_DATA gEventFlags, 0x03000020
+@ Overworld step counter indexed into random-encounter ROM tables.
+SET_DATA gOwStep, 0x0300708C
 @ Currently selected overworld tool (0..5).
 SET_DATA gEquippedTool, 0x03007064
 @ Clear-sequence gate: 1 while battle active, 0 allows clear (CB Clear Stage).
