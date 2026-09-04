@@ -36,8 +36,6 @@
 void TryStartRandomBattle__Continue(void);
 void OwEncFollowUp__Continue(void);
 
-static u8 sRandomBattleInit;
-
 static bool8 RandomBattle_IsOverworldField(void)
 {
     u8 mode = gMode;
@@ -114,9 +112,9 @@ static void RandomBattle_ClearFailedTransition(void)
 
 void RandomBattle_EnsureInit(void)
 {
-    if (sRandomBattleInit)
+    if (gRandomBattleInit)
         return;
-    sRandomBattleInit = 1;
+    gRandomBattleInit = 1;
     if (gRuntimeConfig.disable_random_battles)
         gDebugMenuToggleRandomBattlesOff = 1;
 }

@@ -290,3 +290,5 @@ _kernel_malloc gChargeShotPhase, 0x1
 _kernel_malloc gChargeShotTimer, 0x2
 @ Shot-ring active mask from the prior frame (Equalizer spread on new spawns).
 _kernel_malloc gEqualizerPrevShotMask, 0x2
+@ One-shot latch for RandomBattle_EnsureInit (must not live in .bss @ 0x03000000).
+_kernel_malloc gRandomBattleInit, 0x1
