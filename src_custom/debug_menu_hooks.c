@@ -103,10 +103,6 @@
 #define DBG_SCR_WARP 1
 #define DBG_SCR_BOSS 2
 
-/* Frames the overlay may block without the engine's frame counter moving
- * before the watchdog closes it (~1.7 s at 60 fps). */
-#define DBG_STALL_FRAMES 100
-
 #define DBG_MAGIC_A 0xA5
 #define DBG_MAGIC_B 0x5A
 #define DBG_MAGIC_C 0xC3
@@ -246,6 +242,13 @@ static const DebugBossEntry *DebugMenu_BossEntry(u8 idx)
     return &sDebugBosses[idx];
 }
 
+/* Walkable field modes (see include/overworld_frame.h): the planets and
+ * starbases in the NAV table, i.e. 0x04-0x09 and 0x0F-0x17. */
+#define FIELD_MODE_LO_FIRST 0x04
+#define FIELD_MODE_LO_LAST 0x09
+#define FIELD_MODE_HI_FIRST 0x0F
+#define FIELD_MODE_HI_LAST 0x17
+
 static bool8 IsOverworldFieldMode(void)
 {
     u8 mode = gMode;
@@ -253,6 +256,17 @@ static bool8 IsOverworldFieldMode(void)
 
     if (mode == 0)
         return FALSE;
+
+    /* The JT check alone is far too loose: 129 of the mode slots point at
+     * OverworldMainFrame, including the save/load screen (0x8F) and the 2D
+     * flight stage (0x84). Opening the overlay on those reprograms BG0/BG1 and
+     * DISPCNT (0x1E08 / 0x1F0B / 0x0300) over a screen that never restores
+     * them, which is the black save-select screen with menu music still
+     * playing. Require a real walkable field mode as well. */
+    if (!((mode >= FIELD_MODE_LO_FIRST && mode <= FIELD_MODE_LO_LAST)
+          || (mode >= FIELD_MODE_HI_FIRST && mode <= FIELD_MODE_HI_LAST)))
+        return FALSE;
+
     jt = (const u32 *)MODE_JT_BASE;
     return jt[mode - 1] == OVERWORLD_FRAME_ADDR;
 }
@@ -262,20 +276,22 @@ static bool8 IsConversationActive(void)
     return gTalkUiLatch != 0;
 }
 
-/* Frame counter bumped by the vanilla overworld body @0x0800D634-0x0800D63A.
- * It stops while the overlay blocks the frame, which is how the stall below is
- * detected. */
-#define gOverworldFrameCounter (*(vu32 *)0x03003688)
-
 /* TRUE while a cutscene owns the frame. Opening the overlay here is fatal:
  * OverworldMainFrame__Replacement skips the whole frame body while blocking,
  * including the frame counters at 0x0800D62C-0x0800D642. The Ch.1 opener's
  * step 0 waits on one of those (0x03003688 > 0x2C), so a single START press
  * during the intro freezes the counter and the cutscene can never advance —
- * a permanent black screen that only B/START (talk-advance) appears to fix. */
+ * a permanent black screen that only B/START (talk-advance) appears to fix.
+ *
+ * Polarity: 0x030002D5 is *player control enabled*, not "cutscene active".
+ * The walk routine @ 0x0802C81C reads it and, when NON-zero, primes the input
+ * accumulators it is about to fill (0x2C826-0x2C832); when zero it branches
+ * past movement entirely. Measured over 30000 ordinary field frames it stays 1
+ * the whole time, so testing `!= 0` blocked the overlay everywhere and START
+ * did nothing on any map. A cutscene is therefore the byte being ZERO. */
 static bool8 IsCutsceneActive(void)
 {
-    return gActorCtrlLock != 0;
+    return gActorCtrlLock == 0;
 }
 
 static void DebugMenu_ResetState(void)
@@ -795,8 +811,6 @@ static void DebugMenu_Begin(void)
     NoCashGBAPrintf("DBG bg0=%x", gDebugMenuTextBg0Cnt);
 #endif
     gDebugMenuActive = DBG_MENU;
-    gDebugMenuStallFrames = 0;
-    gDebugMenuLastFrameCounter = gOverworldFrameCounter;
     DebugMenu_Present();
 }
 
@@ -992,31 +1006,20 @@ APPEND_TEXT bool8 DebugMenu_OnOverworldFrame(void)
 
     if (gDebugMenuActive == DBG_MENU)
     {
-        /* Watchdog for saves stuck by the pre-fix build (and any future path
-         * that opens the overlay over a frame the engine still needs): while
-         * the overlay blocks, the vanilla body — and its frame counter — never
-         * runs. A cutscene waiting on that counter would hang forever, so if
-         * the counter has not moved for DBG_STALL_FRAMES, close and hand the
-         * frame back. Normal field use always ticks it, so this never fires
-         * during ordinary menu browsing. */
-        if (gOverworldFrameCounter != gDebugMenuLastFrameCounter)
-        {
-            gDebugMenuLastFrameCounter = gOverworldFrameCounter;
-            gDebugMenuStallFrames = 0;
-        }
-        else if (gDebugMenuStallFrames < 0xFF)
-        {
-            gDebugMenuStallFrames++;
-        }
-
-        if (gDebugMenuStallFrames >= DBG_STALL_FRAMES)
-        {
-            DebugMenu_ForceQuietClose();
-            gDebugMenuStallFrames = 0;
-            DebugMenu_StorePrevKeys();
-            return FALSE;
-        }
-
+        /* No frame-counter watchdog here. A previous revision closed the
+         * overlay when gOverworldFrameCounter stood still for
+         * DBG_STALL_FRAMES, on the assumption that "normal field use always
+         * ticks it". It does not: OverworldMainFrame__Replacement skips the
+         * whole vanilla body — including the counter bump @0x0800D634 — for
+         * exactly as long as the overlay blocks, which is the overlay working
+         * as designed. The counter therefore froze the instant the menu
+         * opened and the watchdog force-closed it ~1.7 s later, every time,
+         * on every field map.
+         *
+         * The hazard it was aimed at (a cutscene FSM waiting on that counter)
+         * is already covered above: IsCutsceneActive() closes the overlay
+         * whenever the actor-control lock is held, both on the open path and
+         * on every frame it stays open. */
         DebugMenu_UpdateMenu();
         DebugMenu_StorePrevKeys();
         return TRUE;

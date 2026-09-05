@@ -139,8 +139,6 @@ extern u8 gDebugMenuMagicC;
 extern u8 gDebugMenuActive;
 extern u8 gDebugMenuCursor;
 extern u8 gDebugMenuStatusTimer;
-extern u8 gDebugMenuStallFrames;
-extern u32 gDebugMenuLastFrameCounter;
 extern u8 gDebugMenuScreen; /* DBG_SCR_ROOT / DBG_SCR_WARP */
 extern u8 gDebugMenuScroll; /* First visible row when list scrolls */
 extern u8 gDebugMenuTextState; /* String currently painted; gates map repaints */

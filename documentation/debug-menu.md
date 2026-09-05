@@ -177,7 +177,7 @@ On close, restore cameras, VRAM snapshot, DISPCNT mirrors, and soft-text dirty b
 | Public API | `DebugMenu_IsBlocking` / `DebugMenu_OnOverworldFrame` in `include/debug_menu.h` | Gate + per-frame entry |
 | Mode thunks | `ChangeMode` / `QueueModeFade` in `include/status.h` | Warp entry |
 | Battle entry | `TryStartBattle` in `include/overworld_encounters.h` | Boss entry |
-| Random battle gate | `RandomBattlesSetDisabled` / `gDebugMenuToggleRandomBattlesOff` (EWRAM) in `src_custom/random_battle_hooks.c` | Debug menu toggle; does not touch vanilla `gRandomBattleCooldown` |
+| Random battle gate | `RandomBattlesSetDisabled` / `gDebugMenuToggleRandomBattlesOff` (EWRAM) in `src_custom/random_battle_hooks.c` | Debug menu toggle; does not touch vanilla `gRandomBattleCooldown`, nor the engine's encounter selector `0x03007680` |
 | Random battle hook | `TryStartRandomBattle__Replacement` in `src_custom/random_battle_hooks.c` | LynJump gate @ `0x1DA5C` |
 | Boss table | `sDebugBosses` in `src_custom/debug_menu_hooks.c` | Name + battle id (227–255) |
 | Arena selector | `gStageCase` in `asm/ram_map_iwram.s` | Dig arena case for host mode 132 |
@@ -197,11 +197,13 @@ On close, restore cameras, VRAM snapshot, DISPCNT mirrors, and soft-text dirty b
 
 ## Limitations & Bugs
 
-- Opens only when the current `gMode`'s main-loop JT slot points at `OverworldMainFrame` (`0x0800D610`). Flight, cutscenes, and status mode are out of scope.
+- Opens only on a real walkable field mode: `gMode` in `0x04`-`0x09` or `0x0F`-`0x17` (the NAV planets / starbases) **and** whose main-loop JT slot points at `OverworldMainFrame` (`0x0800D610`). The JT test alone is not sufficient — 129 mode slots share that handler, including the status panel (`0x8F`) and the 2D flight stages (`0x84` / `0x97`). Opening the overlay there reprogrammed `BG0`/`BG1`/`DISPCNT` to `0x1E08` / `0x1F0B` / `0x0300` over a screen that never restores them, giving a black screen with the menu music still playing.
 - Save uses the **current** `gSaveSlot`. There is no in-menu slot picker yet.
 - Warp uses `QueueModeFade` (fade then pending `gMode`); spawn position / facing come from whatever the destination mode's prep uses (not a full door-record teleport).
 - Midboss planet labels are provisional; the story boss labels are anchored to chapter order and arena screenshots.
 - Boss rows arm a vanilla battle from wherever the player is standing. A fight whose record expects story state (a specific chapter or planet) can still behave oddly; `MB_ICEPETALS` for one runs a chapter transition.
 - With `.skip_flight_battle` on, **SELECT+L** still force-clears an in-progress flight stage.
+- The cutscene guard reads `0x030002D5` as **player-control-enabled**, so a cutscene is that byte being **zero**. The walk routine @ `0x0802C81C` primes its input accumulators when the byte is non-zero and skips movement entirely when it is zero; measured over 30000 ordinary field frames it stays `1` the whole time. An earlier revision tested `!= 0` for "cutscene active", which blocked the overlay on every map and made START do nothing.
+- The overlay must **never** be closed on a stalled `gOverworldFrameCounter` (`0x03003688`). A watchdog that did so was added and reverted: blocking the vanilla body is exactly how the overlay pauses the world, so that counter is frozen for as long as the menu is open by design. The watchdog therefore fired on every ordinary use and force-closed the menu after ~1.7 s on every field map. Cutscene safety is handled by `IsCutsceneActive()` (actor-control lock `0x030002D5`), which gates both opening the overlay and every frame it stays open.
 
 Report save/restore/warp/boss glitches with the field `gMode`, destination / battle ID, whether `.debug_menu` was on, and a screenshot of the open and closed frames.

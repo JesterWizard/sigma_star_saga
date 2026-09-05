@@ -113,6 +113,7 @@ Method: Thumb `LDR Rd,[PC,#imm]` literal pools only (not raw absolute words). Wo
 | `gEquippedTool` | `0x03007064` | Active overworld tool index (0–5) |
 | `gStageClearFlag` | `0x03007668` | Stage-clear latch |
 | `gRandomBattleCooldown` | `0x03007684` | Overworld RNG encounter delay; byte @ +1 is the debug-menu / CB disable gate |
+| encounter selector | `0x03007680` | Encounter/arena set, chosen from `gMode` by `TryStartRandomBattle` @ `0x1DB20`-`0x1DB8E` (4→1, 5→0, 6→4, 7→3, 17→5) and consumed by battle setup @ `0x1234A`. **`0` is FIRE's value, not "none"** — custom code must not zero it to "clear" an encounter |
 | `gStageClearGate` | `0x03007730` | Clear-sequence gate (0 = allow; CB Clear Stage) |
 | `gGaxParams` | `0x030008C0` | GAX2_PARAMS (flags @ +0x0E; `GAX_SPEECH` = `0x40`) |
 | `gGaxCurrentSong` | `0x030008B0` | PlayBgm song-module latch |

@@ -24,10 +24,16 @@
 
 #define OW_ENC_ACTIVE  ((vu8 *)0x030076E0)
 #define OW_ENC_STEP    ((vu8 *)0x030076B0)
-#define OW_ENC_MODE    ((vu8 *)0x03007680)
-#define OW_ENC_SLOT    ((vu8 *)0x030076C0)
-#define OW_ENC_PENDING ((vu8 *)0x03007670)
 #define OW_ENC_ARMED   ((vu8 *)0x03007688)
+
+/*
+ * Engine-owned, deliberately NOT written here (see RandomBattle_RestoreWalk):
+ *   0x03007680  encounter/arena selector, chosen from gMode by
+ *               TryStartRandomBattle @ 0x1DB20-0x1DB8E and consumed by the
+ *               battle setup @ 0x1234A. 0 is FIRE's value, not "none".
+ *   0x030076C0  encounter slot, written alongside it @ 0x1DB1A
+ *   0x03007670  pending-encounter scratch
+ */
 
 #define OW_PLAYER_STATE_ENCOUNTER 0x36
 #define OW_PLAYER_STATE_TRAP      0x39
@@ -36,6 +42,14 @@
 void TryStartRandomBattle__Continue(void);
 void OwEncFollowUp__Continue(void);
 
+/* Walkable field modes only (see include/overworld_frame.h). The JT check on
+ * its own matches 129 modes — the save/load screen (0x8F) and the flight stage
+ * (0x84) among them — and the recovery writes below must never fire there. */
+#define FIELD_MODE_LO_FIRST 0x04
+#define FIELD_MODE_LO_LAST 0x09
+#define FIELD_MODE_HI_FIRST 0x0F
+#define FIELD_MODE_HI_LAST 0x17
+
 static bool8 RandomBattle_IsOverworldField(void)
 {
     u8 mode = gMode;
@@ -43,19 +57,34 @@ static bool8 RandomBattle_IsOverworldField(void)
 
     if (mode == 0)
         return FALSE;
+
+    if (!((mode >= FIELD_MODE_LO_FIRST && mode <= FIELD_MODE_LO_LAST)
+          || (mode >= FIELD_MODE_HI_FIRST && mode <= FIELD_MODE_HI_LAST)))
+        return FALSE;
+
     jt = (const u32 *)MODE_JT_BASE;
     return jt[mode - 1] == OVERWORLD_FRAME_ADDR;
 }
 
+/*
+ * Undo a *failed* encounter transition and hand the walk back.
+ *
+ * Only the latch/arm state belongs to us. In particular OW_ENC_MODE
+ * (0x03007680) must be left alone: TryStartRandomBattle @ 0x1DB20-0x1DB8E
+ * selects it from gMode (4->1, 5->0, 6->4, 7->3, 17->5, else 0) and the battle
+ * setup @ 0x1234A dispatches on it to pick the encounter/arena set. Forcing it
+ * to 0 does not "clear" it — 0 is a *valid* selector (FIRE's) — so every later
+ * battle loaded the wrong planet's set, which is why the Startbase-1 intro
+ * sequence replayed over and over after toggling random battles from the debug
+ * menu. OW_ENC_SLOT / OW_ENC_PENDING are written by the same engine paths and
+ * are likewise not ours to reset.
+ */
 static void RandomBattle_RestoreWalk(void)
 {
     u8 *player = gPlayerPtr;
 
     gTalkUiLatch = 0;
     *OW_ENC_ARMED = 0;
-    *OW_ENC_MODE = 0;
-    *OW_ENC_SLOT = 0;
-    *OW_ENC_PENDING = 0;
     *OW_ENC_STEP = 1;
     *OW_ENC_ACTIVE = 1;
 
