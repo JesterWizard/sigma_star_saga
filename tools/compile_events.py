@@ -334,6 +334,28 @@ def encode_op(name: str, args: list[str], talk_id: int | None) -> dict | None:
     return None
 
 
+def strip_c_comments(text: str) -> str:
+    """Remove // and /* */ comments so CHOREO_RE ignores examples in block comments."""
+    out: list[str] = []
+    i = 0
+    n = len(text)
+    while i < n:
+        if text[i : i + 2] == "//":
+            i += 2
+            while i < n and text[i] not in "\r\n":
+                i += 1
+            continue
+        if text[i : i + 2] == "/*":
+            i += 2
+            while i < n - 1 and text[i : i + 2] != "*/":
+                i += 1
+            i += 2 if i < n - 1 else 0
+            continue
+        out.append(text[i])
+        i += 1
+    return "".join(out)
+
+
 def parse_scene(path: Path) -> dict | None:
     text = path.read_text(encoding="utf-8")
     m = SCRIPT_RE.search(text)
@@ -341,7 +363,7 @@ def parse_scene(path: Path) -> dict | None:
         return None
     addr = int(m.group(1), 16)
     name = m.group(2)
-    body = m.group(3)
+    body = strip_c_comments(m.group(3))
     meta = KNOWN_CUTSCENE_SCENES.get(name, {})
     talk_id = meta.get("talk_id")
     ops = []

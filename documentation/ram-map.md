@@ -32,8 +32,8 @@ Method: Thumb `LDR Rd,[PC,#imm]` literal pools only (not raw absolute words). Wo
 | IWRAM hardware | `0x03000000`–`0x03008000` | 32 KiB | — |
 | IWRAM vanilla (pool high water) | `0x03000000`–`0x0300775C` | — | **USED** (431+ named pool symbols) |
 | IWRAM pad | `0x0300775C`–`0x03007780` | 36 B | leave alone |
-| IWRAM custom free | `0x03007780`–`0x03007CA0` | **1 312 B** | **SAFE** via `_kernel_malloc` |
-| IWRAM user stack | `0x03007CA0`–`0x03007FA0` | 768 B | **USED** (grows down) |
+| IWRAM custom free | `0x03007780`–`0x03007B00` | **896 B** | **SAFE** via `_kernel_malloc` |
+| IWRAM user stack | `0x03007B00`–`0x03007FA0` | 1 184 B | **USED** (grows down, measured) |
 | IWRAM IRQ stack | `0x03007FA0`–`0x03008000` | 96 B | **USED** |
 | EWRAM hardware | `0x02000000`–`0x02040000` | 256 KiB | — |
 | EWRAM dense pool use | `0x02000000`–`~0x02005E00` | — | **USED** (142 `gUnk_*`) |
@@ -44,6 +44,8 @@ Method: Thumb `LDR Rd,[PC,#imm]` literal pools only (not raw absolute words). Wo
 
 \* EWRAM free floor lowered to `0x0202B000` after `tools/mgba_ewram_canary_probe.c` (last dirty `0x020071C0`). Fits `gVoiceDecodeBuf` (80 KiB) + FX wave-set/package RAM.  
 \*\* Not cart save; verify before use. Pool scan found no trustworthy SRAM-bus globals.
+
+**IWRAM free ceiling** lowered from `0x03007CA0` to `0x03007B00`: the BIOS `SP_usr` value is not the real floor. Field frames descend to at least `0x03007B70` (BIOS `CpuFastSet` calls take their source buffer off the stack at `0x03007B70` / `0x03007B78`), and a canary over `0x03007B76`–`0x03007CA0` comes back fully dirty after ~900 field frames. `gRandomBattleInit`, `gChargeShotPhase`, `gChargeShotTimer`, `gEqualizerPrevShotMask` and `gHpBarTileScratch` sat in that window and were rewritten every frame; they now live in the EWRAM pool. `asm/ram_map_iwram.s` `.error`-guards the bump allocator against the new bound.
 
 ## Macros
 
@@ -126,8 +128,9 @@ Method: Thumb `LDR Rd,[PC,#imm]` literal pools only (not raw absolute words). Wo
 | `gCannonOwned` | `0x03007744` | Cannon Gun Data word |
 | `gImpactOwned` | `0x03007748` | Impact Gun Data word |
 | `gVanillaIwramHighWater` | `0x0300775C` | Last pool-backed vanilla global |
-| `gChargeShotPhase` | (free pool) | Charge Shot: 0 = charging, 1 = empowered |
-| `gChargeShotTimer` | (free pool) | Frames in the current charge/empowered phase |
+| `gChargeShotPhase` | (EWRAM free pool) | Charge Shot: 0 = charging, 1 = empowered |
+| `gChargeShotTimer` | (EWRAM free pool) | Frames in the current charge/empowered phase |
+| `gRandomBattleInit` | (EWRAM free pool) | One-shot latch seeding the random-battle toggle |
 | `gSoftTextMap` | `0x030050F0` | Soft debug text map (32×22 halfwords) |
 | `gSoftTextDirty` | `0x03000C9C` | Soft text dirty flags (bit 8 = text map) |
 | `gCamScrollMirrorX` | `0x03000CF8` | Soft camera scroll X (`UpdateCameras`) |

@@ -103,6 +103,10 @@
 #define DBG_SCR_WARP 1
 #define DBG_SCR_BOSS 2
 
+/* Frames the overlay may block without the engine's frame counter moving
+ * before the watchdog closes it (~1.7 s at 60 fps). */
+#define DBG_STALL_FRAMES 100
+
 #define DBG_MAGIC_A 0xA5
 #define DBG_MAGIC_B 0x5A
 #define DBG_MAGIC_C 0xC3
@@ -116,6 +120,13 @@
 /* Main-loop mode JT @ 0x0800BC04; overworld field bodies land on D610. */
 #define MODE_JT_BASE 0x0800BC04
 #define OVERWORLD_FRAME_ADDR 0x0800D610
+
+/* Actor-control lock written by Helper_2CD40 (@0x0802CD40 stores its first arg
+ * here). Non-zero while a cutscene FSM holds player control — the Ch.1 opener
+ * calls SET_ACTOR_CTRL(1,0) every frame of steps 0-1. 129 of the mode-JT slots
+ * point at OVERWORLD_FRAME_ADDR, including the Ch.1 intro's mode 0x84, so
+ * IsOverworldFieldMode() alone cannot tell a walkable field from a cutscene. */
+#define gActorCtrlLock (*(vu8 *)0x030002D5)
 
 typedef void (*SetupCamLayerFn)(u32 layer, u32 fileId, u32 scrBase, u32 charBase,
                                 u32 a, u32 b);
@@ -249,6 +260,22 @@ static bool8 IsOverworldFieldMode(void)
 static bool8 IsConversationActive(void)
 {
     return gTalkUiLatch != 0;
+}
+
+/* Frame counter bumped by the vanilla overworld body @0x0800D634-0x0800D63A.
+ * It stops while the overlay blocks the frame, which is how the stall below is
+ * detected. */
+#define gOverworldFrameCounter (*(vu32 *)0x03003688)
+
+/* TRUE while a cutscene owns the frame. Opening the overlay here is fatal:
+ * OverworldMainFrame__Replacement skips the whole frame body while blocking,
+ * including the frame counters at 0x0800D62C-0x0800D642. The Ch.1 opener's
+ * step 0 waits on one of those (0x03003688 > 0x2C), so a single START press
+ * during the intro freezes the counter and the cutscene can never advance —
+ * a permanent black screen that only B/START (talk-advance) appears to fix. */
+static bool8 IsCutsceneActive(void)
+{
+    return gActorCtrlLock != 0;
 }
 
 static void DebugMenu_ResetState(void)
@@ -768,6 +795,8 @@ static void DebugMenu_Begin(void)
     NoCashGBAPrintf("DBG bg0=%x", gDebugMenuTextBg0Cnt);
 #endif
     gDebugMenuActive = DBG_MENU;
+    gDebugMenuStallFrames = 0;
+    gDebugMenuLastFrameCounter = gOverworldFrameCounter;
     DebugMenu_Present();
 }
 
@@ -953,7 +982,8 @@ APPEND_TEXT bool8 DebugMenu_OnOverworldFrame(void)
         return FALSE;
     }
 
-    if (!IsOverworldFieldMode() || gStatusMenuOpen != 0 || IsConversationActive())
+    if (!IsOverworldFieldMode() || gStatusMenuOpen != 0 || IsConversationActive()
+        || IsCutsceneActive())
     {
         if (gDebugMenuActive != DBG_CLOSED)
             DebugMenu_ForceQuietClose();
@@ -962,12 +992,39 @@ APPEND_TEXT bool8 DebugMenu_OnOverworldFrame(void)
 
     if (gDebugMenuActive == DBG_MENU)
     {
+        /* Watchdog for saves stuck by the pre-fix build (and any future path
+         * that opens the overlay over a frame the engine still needs): while
+         * the overlay blocks, the vanilla body — and its frame counter — never
+         * runs. A cutscene waiting on that counter would hang forever, so if
+         * the counter has not moved for DBG_STALL_FRAMES, close and hand the
+         * frame back. Normal field use always ticks it, so this never fires
+         * during ordinary menu browsing. */
+        if (gOverworldFrameCounter != gDebugMenuLastFrameCounter)
+        {
+            gDebugMenuLastFrameCounter = gOverworldFrameCounter;
+            gDebugMenuStallFrames = 0;
+        }
+        else if (gDebugMenuStallFrames < 0xFF)
+        {
+            gDebugMenuStallFrames++;
+        }
+
+        if (gDebugMenuStallFrames >= DBG_STALL_FRAMES)
+        {
+            DebugMenu_ForceQuietClose();
+            gDebugMenuStallFrames = 0;
+            DebugMenu_StorePrevKeys();
+            return FALSE;
+        }
+
         DebugMenu_UpdateMenu();
         DebugMenu_StorePrevKeys();
         return TRUE;
     }
 
-    if ((KeysPressed() & START_BUTTON) != 0)
+    /* Never open during a cutscene — blocking the frame there freezes the
+     * counters the cutscene FSM waits on (see IsCutsceneActive). */
+    if ((KeysPressed() & START_BUTTON) != 0 && !IsCutsceneActive())
         DebugMenu_Begin();
 
     DebugMenu_StorePrevKeys();

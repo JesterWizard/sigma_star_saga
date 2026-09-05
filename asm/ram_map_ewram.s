@@ -76,6 +76,10 @@ _kernel_malloc_ewram gDebugMenuMagicC, 0x1
 _kernel_malloc_ewram gDebugMenuActive, 0x1
 _kernel_malloc_ewram gDebugMenuCursor, 0x1
 _kernel_malloc_ewram gDebugMenuStatusTimer, 0x1
+@ Watchdog for a blocking overlay over a frame the engine still needs: last
+@ seen 0x03003688 and how many frames it has stood still (see debug_menu_hooks).
+_kernel_malloc_ewram gDebugMenuStallFrames, 0x1
+_kernel_malloc_ewram gDebugMenuLastFrameCounter, 0x4
 @ Root vs Warp submenu (see DBG_SCR_* in debug_menu_hooks.c).
 _kernel_malloc_ewram gDebugMenuScreen, 0x1
 @ First visible row when the option list scrolls past DBG_VISIBLE_ROWS.
@@ -110,6 +114,21 @@ _kernel_malloc_ewram gDebugMenuSavedDisplayCtrl, 0x2
 _kernel_malloc_ewram gDebugMenuSavedHudEnabled, 0x1
 @ Debug-menu runtime toggles (one byte each; do not alias vanilla IWRAM).
 _kernel_malloc_ewram gDebugMenuToggleRandomBattlesOff, 0x1
+@ One-shot latch for RandomBattle_EnsureInit. EWRAM, not the IWRAM free pool:
+@ the pool tail is live user stack, so the latch read back as garbage and any
+@ frame that happened to see 0 re-seeded the toggle from
+@ .disable_random_battles — which is why the debug-menu row would not stay OFF.
+_kernel_malloc_ewram gRandomBattleInit, 0x1
+@ Charge Shot rework: 0 = charging, 1 = empowered (10x window).
+_kernel_malloc_ewram gChargeShotPhase, 0x1
+@ Frames elapsed in the current charge / empowered phase (word-aligned here;
+@ the IWRAM slot it came from was an unaligned halfword as well as stack).
+_kernel_malloc_ewram gChargeShotTimer, 0x2
+@ Shot-ring active mask from the prior frame (Equalizer spread on new spawns).
+_kernel_malloc_ewram gEqualizerPrevShotMask, 0x2
+@ Scratch for the one-time HP-bar tile encode (9 × 2 × 32 = 0x240); u32 encode
+@ plus DMA source, so it stays word-aligned.
+_kernel_malloc_ewram_array gHpBarTileScratch, 0x240
 @ Full camera array backup (4 × 0x84): the font load re-points camera layer 3
 @ and the overlay zeroes every layer's active flag / scroll.
 _kernel_malloc_ewram_array gDebugMenuCamSnap, 0x210
@@ -117,3 +136,16 @@ _kernel_malloc_ewram_array gDebugMenuCamSnap, 0x210
 @ the HUD and world layers share. Tilemaps are repainted from the engine's
 @ soft maps instead of being snapshotted.
 _kernel_malloc_ewram_array gDebugMenuVramSnap, 0x4000
+
+@ Build guard: the downward bump allocator must not pass FreeEwramSpaceTop.
+@ NOTE: it currently DOES — gDebugMenuVramSnap (0x4000) puts UsedFreeEwramSpaceTop
+@ at ~0x020275xx, about 15 KiB below the 0x0202B000 floor. That floor is a
+@ conservative estimate (canary probe found the last dirty slot at 0x020071C0,
+@ so the region below is very likely unused), and the buffer is only touched
+@ while the debug menu is open. Guard is .warning rather than .error so the
+@ pre-existing overrun does not break the build, but any NEW growth is visible.
+@ Fix properly by re-running tools/mgba_ewram_canary_probe.c to lower the floor,
+@ or by moving the snapshot somewhere it does not need to be resident.
+.if UsedFreeEwramSpaceTop < FreeEwramSpaceTop
+    .warning "EWRAM free pool grew below FreeEwramSpaceTop (see note above)"
+.endif

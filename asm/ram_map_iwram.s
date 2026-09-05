@@ -23,20 +23,27 @@
 @   0x0300775C – 0x03007780   pad (do not touch)
 @   0x03007780 ── FreeRamSpaceTop ──────────── SAFE custom pool (FREE)
 @              bump _kernel_malloc grows UP toward Bottom (away from stack)
-@   0x03007CA0 ── FreeRamSpaceBottom / user SP  (1 312 B free)
-@   0x03007CA0 – 0x03007FA0   user/sys stack   (USED — grows down)
+@   0x03007B00 ── FreeRamSpaceBottom            (896 B free)
+@   0x03007B00 – 0x03007FA0   user/sys stack   (USED — grows down)
 @   0x03007FA0 ── IRQ SP
 @   0x03007FA0 – 0x03008000   IRQ stack        (USED)
 @   0x03007FF8 / 0x03007FFC   bootstrap / IRQ words (not free)
 @   0x03008000  end of IWRAM
 @
-@ Safe leftover for custom code: ONLY 0x03007780–0x03007CA0 via _kernel_malloc.
+@ Safe leftover for custom code: ONLY 0x03007780–0x03007B00 via _kernel_malloc.
 @ Grow from Top upward so the first byte is NOT under the user SP.
 @ Full unknown inventory: ram_map_iwram_pool.inc (431 gUnk_* symbols).
+@
+@ Bottom is the MEASURED stack floor, not the 0x03007CA0 that BIOS SP_usr
+@ suggests: field frames descend to at least 0x03007B70 (BIOS CpuFastSet
+@ calls take their source buffer off the stack at 0x03007B70 / 0x03007B78),
+@ and a canary written over 0x03007B76–0x03007CA0 comes back fully dirty
+@ after ~900 field frames. Anything allocated up there is rewritten every
+@ frame, so the pool now ends at 0x03007B00 and is .error-guarded below.
 @ =============================================================================
 
 SET_DATA FreeRamSpaceTop, 0x03007780
-SET_DATA FreeRamSpaceBottom, 0x03007CA0
+SET_DATA FreeRamSpaceBottom, 0x03007B00
 SET_DATA UsedFreeRamSpaceTop, FreeRamSpaceTop
 
 SET_DATA gUserStackTop, 0x03007CA0
@@ -277,18 +284,16 @@ _kernel_malloc gActorMaxHpAlignPad, 0x3
 _kernel_malloc gActorMaxHp, 0xA0
 @ 1 = HP-bar tiles queued into OBJ VRAM this session.
 _kernel_malloc gHpBarTilesReady, 0x1
-@ Pad so gHpBarTileScratch is word-aligned (u32 encode + DMA src).
-_kernel_malloc gHpBarTileScratchAlignPad, 0x3
-@ Scratch for one-time bar tile encode (9 × 2 × 32 = 0x240).
-_kernel_malloc gHpBarTileScratch, 0x240
 @ 1 = custom GAX speech table installed into workspace object.
 @ (moved: gGaxSpeechInstalled is derived from the workspace at runtime — the
 @ free pool overlaps user-stack headroom and gets thrashed; see gax-audio.md)
-@ Charge Shot rework: 0 = charging, 1 = empowered (10x window).
-_kernel_malloc gChargeShotPhase, 0x1
-@ Frames elapsed in the current charge / empowered phase.
-_kernel_malloc gChargeShotTimer, 0x2
-@ Shot-ring active mask from the prior frame (Equalizer spread on new spawns).
-_kernel_malloc gEqualizerPrevShotMask, 0x2
-@ One-shot latch for RandomBattle_EnsureInit (must not live in .bss @ 0x03000000).
-_kernel_malloc gRandomBattleInit, 0x1
+
+@ Moved to the EWRAM pool — gHpBarTileScratch, gChargeShotPhase,
+@ gChargeShotTimer, gEqualizerPrevShotMask and gRandomBattleInit all landed
+@ above the measured stack floor (see the header note) and were rewritten by
+@ ordinary call frames every frame.
+
+@ Build guard: the bump allocator must never reach the stack floor.
+.if UsedFreeRamSpaceTop > FreeRamSpaceBottom
+    .error "IWRAM free pool overflowed into the user stack"
+.endif
