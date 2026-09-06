@@ -1513,18 +1513,22 @@ def apply_disable_random_battles(
             f"{owner}:scan_cleanup@{off:X}",
         )
 
+    # 0x1DBB8 is unrelated field-transition logic, not a random-encounter
+    # follow-up. Always restore it to undo the obsolete hook once emitted by
+    # this patcher.
+    checked_write(
+        rom,
+        OW_ENC_FOLLOWUP_OFF,
+        baserom[OW_ENC_FOLLOWUP_OFF : OW_ENC_FOLLOWUP_OFF + VENEER_LEN],
+        owners,
+        f"{owner}:obsolete_followup_cleanup",
+    )
+
     if not enabled and not debug_menu:
         checked_write(
             rom,
             RANDOM_BATTLE_START_OFF,
             vanilla_head,
-            owners,
-            f"{owner}=FALSE",
-        )
-        checked_write(
-            rom,
-            OW_ENC_FOLLOWUP_OFF,
-            baserom[OW_ENC_FOLLOWUP_OFF : OW_ENC_FOLLOWUP_OFF + VENEER_LEN],
             owners,
             f"{owner}=FALSE",
         )
@@ -1541,19 +1545,8 @@ def apply_disable_random_battles(
         symbols[name],
         owner,
     )
-    follow_name = "OwEncFollowUp__Replacement"
-    if follow_name not in symbols:
-        raise KeyError(f"symbol {follow_name} not found — build random_battle_hooks.c")
-    apply_veneer(
-        rom,
-        owners,
-        OW_ENC_FOLLOWUP_OFF,
-        symbols[follow_name],
-        owner,
-    )
     print(
-        f"runtime: TryStartRandomBattle → {name} 0x{symbols[name]:08X}; "
-        f"OwEncFollowUp → {follow_name} 0x{symbols[follow_name]:08X} "
+        f"runtime: TryStartRandomBattle → {name} 0x{symbols[name]:08X} "
         f"(disable_random_battles={enabled}, debug_menu={debug_menu})"
     )
 

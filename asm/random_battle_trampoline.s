@@ -25,15 +25,3 @@ TryStartRandomBattle__Continue:
 	ldr r3, =0x0801DA65
 	bx r3
 	.pool
-
-@ OwEncFollowUp @ 0x0801DBB8 — encounter prep consumer (runs after walk trap).
-	.global OwEncFollowUp__Continue
-	.thumb_func
-OwEncFollowUp__Continue:
-	push {lr}
-	ldr r0, =0x03007688
-	ldrb r1, [r0, #0]
-	cmp r1, #0
-	ldr r3, =0x0801DBC1
-	bx r3
-	.pool

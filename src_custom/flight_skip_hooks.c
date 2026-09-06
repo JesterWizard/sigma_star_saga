@@ -145,7 +145,6 @@ APPEND_TEXT void OverworldPlayerUpdate__Replacement(void)
     if (DebugMenu_IsBlocking())
         return;
 
-    RandomBattle_RecoverTrapBeforeWalk();
     ApplyMaxLevel();
     ApplyToolsAndItems();
     ApplyGunDataCheats();

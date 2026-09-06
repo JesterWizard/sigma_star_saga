@@ -31,10 +31,4 @@ void RandomBattlesSetDisabled(bool8 disabled);
 /* Seeds gDebugMenuToggleRandomBattlesOff from .disable_random_battles (once). */
 void RandomBattle_EnsureInit(void);
 
-/* Clear failed vanilla prep after walk epilogue @ 0x8020494. */
-void RandomBattle_RecoverOverworldIfStuck(void);
-
-/* Clear trap state 0x39 before the walk collision box @ 0x1F030. */
-void RandomBattle_RecoverTrapBeforeWalk(void);
-
 #endif /* GUARD_OVERWORLD_ENCOUNTERS_H */

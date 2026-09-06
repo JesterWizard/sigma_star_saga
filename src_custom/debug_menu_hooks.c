@@ -63,9 +63,7 @@
 
 #define VRAM_BASE 0x06000000
 #define PLTT_BG_ADDR 0x05000000
-#define OAM_ADDR 0x07000000
 
-#define ATTR0_HIDE 0x0200
 #define DBG_TEXT_PALBANK 15
 #define DBG_TEXT_X 1
 #define DEBUG_STATUS_FRAMES 90
@@ -116,13 +114,6 @@
 /* Main-loop mode JT @ 0x0800BC04; overworld field bodies land on D610. */
 #define MODE_JT_BASE 0x0800BC04
 #define OVERWORLD_FRAME_ADDR 0x0800D610
-
-/* Actor-control lock written by Helper_2CD40 (@0x0802CD40 stores its first arg
- * here). Non-zero while a cutscene FSM holds player control — the Ch.1 opener
- * calls SET_ACTOR_CTRL(1,0) every frame of steps 0-1. 129 of the mode-JT slots
- * point at OVERWORLD_FRAME_ADDR, including the Ch.1 intro's mode 0x84, so
- * IsOverworldFieldMode() alone cannot tell a walkable field from a cutscene. */
-#define gActorCtrlLock (*(vu8 *)0x030002D5)
 
 typedef void (*SetupCamLayerFn)(u32 layer, u32 fileId, u32 scrBase, u32 charBase,
                                 u32 a, u32 b);
@@ -273,25 +264,10 @@ static bool8 IsOverworldFieldMode(void)
 
 static bool8 IsConversationActive(void)
 {
-    return gTalkUiLatch != 0;
-}
-
-/* TRUE while a cutscene owns the frame. Opening the overlay here is fatal:
- * OverworldMainFrame__Replacement skips the whole frame body while blocking,
- * including the frame counters at 0x0800D62C-0x0800D642. The Ch.1 opener's
- * step 0 waits on one of those (0x03003688 > 0x2C), so a single START press
- * during the intro freezes the counter and the cutscene can never advance —
- * a permanent black screen that only B/START (talk-advance) appears to fix.
- *
- * Polarity: 0x030002D5 is *player control enabled*, not "cutscene active".
- * The walk routine @ 0x0802C81C reads it and, when NON-zero, primes the input
- * accumulators it is about to fill (0x2C826-0x2C832); when zero it branches
- * past movement entirely. Measured over 30000 ordinary field frames it stays 1
- * the whole time, so testing `!= 0` blocked the overlay everywhere and START
- * did nothing on any map. A cutscene is therefore the byte being ZERO. */
-static bool8 IsCutsceneActive(void)
-{
-    return gActorCtrlLock == 0;
+    /* Each individual talk flag can remain stale after load/menu paths, while
+     * gTalkUiLatch is also used by random-encounter prep. A live textbox has
+     * both an active renderer and a non-NULL stream cursor. */
+    return gTalkActive != 0 && gTalkStreamPtr != NULL;
 }
 
 static void DebugMenu_ResetState(void)
@@ -349,29 +325,6 @@ static vu32 *DebugMenu_CharBase(u16 bgcnt)
     u32 block = (bgcnt >> 2) & 3;
 
     return (vu32 *)(VRAM_BASE + block * 0x4000);
-}
-
-static void DebugMenu_HideAllSprites(void)
-{
-    u16 i;
-    vu16 *hw = (vu16 *)OAM_ADDR;
-
-    for (i = 0; i < 128; i++)
-    {
-        u16 *e = &gSoftOam[i * 4];
-
-        e[0] = ATTR0_HIDE;
-        e[1] = 0;
-        e[2] = 0;
-        e[3] = 0;
-
-        hw[i * 4] = ATTR0_HIDE;
-        hw[i * 4 + 1] = 0;
-        hw[i * 4 + 2] = 0;
-        hw[i * 4 + 3] = 0;
-    }
-    gOamCursor = 0;
-    gSoftOamCount = 0;
 }
 
 /* Tile pixels only — the debug font load overwrites charbase 2, which the HUD
@@ -676,7 +629,9 @@ static void DebugMenu_PrepareSurface(void)
     pal15[0] = 0;
     pal15[1] = 0x7FFF;
 
-    DebugMenu_HideAllSprites();
+    /* DISPCNT hides OBJ while the overlay is active. Do not clear gSoftOam:
+     * it contains persistent effect records used by the random-encounter ship
+     * summon, not just disposable output for the current frame. */
 }
 
 /* Display registers only. These must be the last writes before scanline 0:
@@ -996,8 +951,10 @@ APPEND_TEXT bool8 DebugMenu_OnOverworldFrame(void)
         return FALSE;
     }
 
-    if (!IsOverworldFieldMode() || gStatusMenuOpen != 0 || IsConversationActive()
-        || IsCutsceneActive())
+    /* A real status/items screen has a non-field gMode. Do not additionally
+     * gate on gStatusMenuOpen: that latch can remain stale after loading until
+     * the nested item/gun-data UI has been visited. */
+    if (!IsOverworldFieldMode() || IsConversationActive())
     {
         if (gDebugMenuActive != DBG_CLOSED)
             DebugMenu_ForceQuietClose();
@@ -1016,18 +973,14 @@ APPEND_TEXT bool8 DebugMenu_OnOverworldFrame(void)
          * opened and the watchdog force-closed it ~1.7 s later, every time,
          * on every field map.
          *
-         * The hazard it was aimed at (a cutscene FSM waiting on that counter)
-         * is already covered above: IsCutsceneActive() closes the overlay
-         * whenever the actor-control lock is held, both on the open path and
-         * on every frame it stays open. */
+         * The known hazardous Ch.1 opener runs in mode 0x84, which the strict
+         * walkable-mode allowlist above rejects before this path. */
         DebugMenu_UpdateMenu();
         DebugMenu_StorePrevKeys();
         return TRUE;
     }
 
-    /* Never open during a cutscene — blocking the frame there freezes the
-     * counters the cutscene FSM waits on (see IsCutsceneActive). */
-    if ((KeysPressed() & START_BUTTON) != 0 && !IsCutsceneActive())
+    if ((KeysPressed() & START_BUTTON) != 0)
         DebugMenu_Begin();
 
     DebugMenu_StorePrevKeys();
@@ -1074,7 +1027,6 @@ APPEND_TEXT __attribute__((naked)) void OverworldFrameTail__Replacement(void)
         "ldr r3, =0x08008F51\n"
         "bl 3f\n"
         "bl DebugMenu_OnOverworldFrame\n"
-        "bl RandomBattle_RecoverOverworldIfStuck\n"
         "pop {r0}\n"
         "mov lr, r0\n"
         "ldr r3, =0x0800D677\n"
@@ -1082,7 +1034,6 @@ APPEND_TEXT __attribute__((naked)) void OverworldFrameTail__Replacement(void)
         "1:\n"
         /* Body skipped — r4 unset; avoid D67E path that loads [r4]. */
         "bl DebugMenu_OnOverworldFrame\n"
-        "bl RandomBattle_RecoverOverworldIfStuck\n"
         "pop {r0}\n"
         "mov lr, r0\n"
         "ldr r3, =0x0800D6CF\n"

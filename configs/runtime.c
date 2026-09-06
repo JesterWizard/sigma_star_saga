@@ -19,7 +19,7 @@ const RuntimeConfig gRuntimeConfigRom __attribute__((section(".runtime_config"))
     .custom_dialogue = TRUE, /* needed for TALK VOICE(...) cues in custom banks */
     .custom_gun_data = TRUE,
     .enemy_hp_bars = FALSE,
-    .disable_random_battles = TRUE,
+    .disable_random_battles = FALSE,
     .custom_cutscene_ch1 = TRUE,
     .custom_cutscene_stage = TRUE,
     .custom_talk_helpers = FALSE,
