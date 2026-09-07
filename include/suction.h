@@ -61,6 +61,7 @@ u32 PhoenixDeathFxShouldSkip(void);
 void SpawnPhoenixRevivePopup(void);
 void TickPhoenixRevivePopup(void);
 u32 PlayerLooksCrashed(u8 *player);
+u32 FullShipHpForPlayer(u8 *player);
 void LogPhoenixDeathFxEntry(void);
 void LogPhoenixCrashProbe(const char *tag);
 /* Overworld fauna kill EXP (DamageApply primary + PlayerDeathFx fallback). */

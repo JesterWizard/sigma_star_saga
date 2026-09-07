@@ -166,6 +166,11 @@ extern s32 gDebugMenuSavedCamScrollY;
 extern u16 gDebugMenuSavedDisplayCtrl;
 extern u8 gDebugMenuSavedHudEnabled;
 extern u8 gDebugMenuToggleRandomBattlesOff; /* 1 = no step random battles (debug menu) */
+extern u8 gDebugMenuToggleMaxHealthOn; /* Live override for always_max_health (debug menu) */
+extern u8 gDebugMenuToggleMaxBombsOn; /* Live override for always_max_bombs (debug menu) */
+extern u8 gDebugMenuToggleAllItemsOn; /* Live override for all_key_items/all_tools (debug menu) */
+extern u8 gDebugMenuToggleHpBarsOn; /* Live override for enemy_hp_bars (debug menu) */
+extern u8 gDebugTogglesInit; /* One-shot latch seeding the four toggles above from RuntimeConfig */
 extern u8 gDebugMenuCamSnap[]; /* 0x210: 4 camera structs (stride 0x84) */
 extern u8 gDebugMenuVramSnap[]; /* 0x4000: charbase-2 tiles */
 

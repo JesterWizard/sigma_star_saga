@@ -202,6 +202,10 @@ enum {
     DBG_OPT_WARP,
     DBG_OPT_BOSS,
     DBG_OPT_NO_RANDOM,
+    DBG_OPT_MAX_HEALTH,
+    DBG_OPT_MAX_BOMBS,
+    DBG_OPT_ALL_ITEMS,
+    DBG_OPT_HP_BARS,
     DBG_OPT_COUNT
 };
 
@@ -211,10 +215,9 @@ APPEND_RODATA static const char sOptBoss[] = "Boss fight...";
 APPEND_RODATA static const char sStatusSaved[] = "Saved!";
 APPEND_RODATA static const char sStatusSaving[] = "Saving...";
 
-static void DebugMenu_NoRandomLabel(char *line)
+static void DebugMenu_ToggleLabel(char *line, const char *prefix, bool8 on)
 {
-    const char *prefix = "No random battles: ";
-    const char *state = RandomBattlesDisabled() ? "ON" : "OFF";
+    const char *state = on ? "ON" : "OFF";
     u8 i = 0;
     u8 j = 0;
 
@@ -702,10 +705,28 @@ static void DebugMenu_PaintOptions(void)
         }
         else
         {
-            char noRandomLine[32];
+            char toggleLine[32];
 
-            DebugMenu_NoRandomLabel(noRandomLine);
-            DebugMenu_PutSelected(noRandomLine, y, idx == gDebugMenuCursor);
+            switch (idx)
+            {
+            case DBG_OPT_NO_RANDOM:
+                DebugMenu_ToggleLabel(toggleLine, "No random battles: ", RandomBattlesDisabled());
+                break;
+            case DBG_OPT_MAX_HEALTH:
+                DebugMenu_ToggleLabel(toggleLine, "Max health: ", DebugToggle_MaxHealthEnabled());
+                break;
+            case DBG_OPT_MAX_BOMBS:
+                DebugMenu_ToggleLabel(toggleLine, "Max bombs: ", DebugToggle_MaxBombsEnabled());
+                break;
+            case DBG_OPT_ALL_ITEMS:
+                DebugMenu_ToggleLabel(toggleLine, "All items/tools: ", DebugToggle_AllItemsEnabled());
+                break;
+            default:
+                DebugMenu_ToggleLabel(toggleLine, "Enemy HP bars: ", DebugToggle_HpBarsEnabled());
+                break;
+            }
+
+            DebugMenu_PutSelected(toggleLine, y, idx == gDebugMenuCursor);
             y++;
             continue;
         }
@@ -869,6 +890,34 @@ static void DebugMenu_Activate(void)
     if (gDebugMenuCursor == DBG_OPT_NO_RANDOM)
     {
         RandomBattlesSetDisabled((bool8)!RandomBattlesDisabled());
+        gDebugMenuTextState = DBG_TEXT_NONE;
+        return;
+    }
+
+    if (gDebugMenuCursor == DBG_OPT_MAX_HEALTH)
+    {
+        DebugToggle_SetMaxHealth((bool8)!DebugToggle_MaxHealthEnabled());
+        gDebugMenuTextState = DBG_TEXT_NONE;
+        return;
+    }
+
+    if (gDebugMenuCursor == DBG_OPT_MAX_BOMBS)
+    {
+        DebugToggle_SetMaxBombs((bool8)!DebugToggle_MaxBombsEnabled());
+        gDebugMenuTextState = DBG_TEXT_NONE;
+        return;
+    }
+
+    if (gDebugMenuCursor == DBG_OPT_ALL_ITEMS)
+    {
+        DebugToggle_SetAllItems((bool8)!DebugToggle_AllItemsEnabled());
+        gDebugMenuTextState = DBG_TEXT_NONE;
+        return;
+    }
+
+    if (gDebugMenuCursor == DBG_OPT_HP_BARS)
+    {
+        DebugToggle_SetHpBars((bool8)!DebugToggle_HpBarsEnabled());
         gDebugMenuTextState = DBG_TEXT_NONE;
         return;
     }

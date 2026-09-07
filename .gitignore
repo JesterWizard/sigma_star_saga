@@ -23,8 +23,9 @@ tools/bin/
 .DS_Store
 .idea/
 Thumbs.db
-baserom.gba
+*.gba
 *.sa*
 *.sgm
 *.sna
 .fuse_hidden*
+*.ss*

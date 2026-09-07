@@ -64,7 +64,7 @@ Method: Thumb `LDR Rd,[PC,#imm]` literal pools only (not raw absolute words). Wo
 | `gGunLoadoutImpact` | `0x03000728` | Primary equipped impact index |
 | `gGunLoadoutImpactAlt` | `0x0300078C` | Alternate equipped impact index |
 | `gGunLoadoutPrimaryFlag` | `0x030007EE` | Non-zero → primary impact |
-| `gPlayerPtr` | `0x03000DB8` | Flight player object pointer |
+| `gPlayerPtr` | `0x03000DB8` | Flight player object pointer **in some flight-stage variants only** — confirmed live-zero (target reads all-zero for 3600+ frames of active combat) in the Ch.1-opener stage and in a later story flight stage reached from a real save; confirmed live-populated in `PlayerHitUpdate`/`PlayerStateMachine`/`PlayerShipUpdate` per their own disassembly. Do not assume it's populated for a stage you haven't checked — see "Confirmed live: the real flight ship" below and use `gActorPool[0]` instead unless you've verified this pointer for that specific stage. |
 | `gKeysHeld` | `0x03001638` | Currently held keys (level) |
 | `gHeldKeys` | `0x03002774` | Newly pressed keys this frame (edge) |
 | `gLastEncounterBattleId` | `0x03000040` | `ScanEncounters` mode-0 dedup latch |
@@ -73,7 +73,7 @@ Method: Thumb `LDR Rd,[PC,#imm]` literal pools only (not raw absolute words). Wo
 | `gPlayerMapObjIndex` | `0x0300704C` | Player map-object index |
 | `gEncounterObjIndices` | `0x03007070` | Encounter object index list |
 | `gExpGemPtr` | `0x03006FE0` | Current EXP gem during `ExpGemUpdate` |
-| `gActorPool` | `0x03002780` | Actor pool (stride `0x60`; flight + cutscenes) |
+| `gActorPool` | `0x03002780` | Actor pool (stride `0x60`; flight + cutscenes). **`gActorPool[0]` is the flight ship** in every stage checked so far — confirmed live via position tracking player input and `+0x34` reading a real HP value (`FullShipHpForPlayer()`'s number, e.g. `5`) that decrements on a real hit. See "Confirmed live: the real flight ship" below before assuming `gPlayerPtr` instead. |
 | `gActorAllocIndex` | `0x0300368C` | `SpawnActor` free-slot scan start |
 | `gCutsceneCounter` | `0x03003688` | Cutscene wait counter / spawn gate |
 | `gSoftOam` | `0x03001F70` | Soft OAM shadow (128 × 8 bytes) |
@@ -147,6 +147,48 @@ Method: Thumb `LDR Rd,[PC,#imm]` literal pools only (not raw absolute words). Wo
 | `gSetModeId` | `0x03001EBC` | Last `SetMode` stage-label / GFX id |
 
 Unknown pool-backed addresses use `gUnk_XXXXXXXX` in the `*_pool.inc` files. Promote to a named symbol in `ram_map_*.s` (+ `KNOWN_*` in the scanner) when the role is identified.
+
+## Confirmed live: the real flight ship
+
+Two separate investigations (see `documentation/debug-menu.md`'s Max
+Health entries) independently re-derived this from scratch before it was
+written down here — don't make it a third time.
+
+**`gActorPool[0]` (`0x03002780`) is the flight ship**, not `gPlayerPtr`
+(`0x03000DB8`). Confirmed via mGBA live probe two different ways, in two
+different stage types:
+
+- Position tracking: holding a movement key for hundreds of frames moved
+  `gActorPool[0]+0x40`/`+0x4C` (actor X/Y) in lockstep, while `gPlayerPtr`'s
+  target stayed all-zero the entire time.
+- HP tracking: `gActorPool[0]+0x34` reads a real, small integer
+  (`FullShipHpForPlayer()`'s value — `5` in the stage tested) that visibly
+  decrements to `0` on a real hit and is restorable, matching
+  `ACTOR_OFF_HP` in `include/actor.h`.
+
+`gPlayerPtr` is not simply "wrong" — it's genuinely populated and read by
+vanilla code (`PlayerHitUpdate`, `PlayerStateMachine`, `PlayerShipUpdate`,
+all disassembly-confirmed to dereference it), just apparently **not** in
+every flight-stage variant. Every stage checked so far (`CutsceneCh1Opener`
+intro flight, and a later story flight stage reached from a real save) had
+it zeroed. No stage has yet been found where `gPlayerPtr` is populated
+during live gameplay — if one is, record it here with the stage/mode and
+how it was reached, since that would be the first confirmed counter-example
+and change the recommended default.
+
+**Practical rule**: default to `gActorPool[0]` for "the ship" in new hook
+code. Only use `gPlayerPtr` if you've confirmed it's live for the *specific*
+stage your hook runs in (same live-probe technique as above) — don't trust
+its name or that other vanilla functions use it as proof it's populated
+everywhere.
+
+**Known gap, not yet root-caused**: pinning `gActorPool[0]+0x34` to a safe
+value (even brute-force, every frame) does not by itself prevent every
+death — at least one specific attack/collision was confirmed to write
+`0x98` (game-over) to `gPendingMode` (`0x03000D6C`) via a code path that
+never touches this HP field first. See `documentation/debug-menu.md`'s Max
+Health follow-up note and the `gba-causal-trace-hunt` skill before assuming
+an HP pin alone is sufficient for a new death-prevention hook.
 
 ## Practical rules
 

@@ -190,6 +190,7 @@ CUSTOM_BULLET_DESC_OFF = 5  # index, id, number, icon_from, shot_from
 ABSORB_SHOT_OFF = 0x2F58C  # despawn player shot on hit (Pass Through skips this)
 CALC_ATK_OFF = 0x304D0  # status-screen ATK from bullet type + gPlayerLevel
 CALC_SHOT_DAMAGE_OFF = 0x305C8  # combat shot damage (many callers)
+QUEUE_MODE_FADE_OFF = 0xD734  # latch + FadeStart + pending mode (many callers, incl. debug menu warps)
 
 
 def load_symbols(elf_path: pathlib.Path):
@@ -457,6 +458,37 @@ def apply_debug_menu(rom: bytearray, owners: dict, symbols: dict, enabled: bool)
         f"runtime: debug_menu → main 0x{symbols[main_name]:08X}, "
         f"tail 0x{hook:08X}"
     )
+
+
+def apply_queue_mode_fade_hook(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
+    """Veto QueueModeFade(0x98) (game over) while the debug-menu Max Health
+    toggle is on. Confirmed live via mGBA that a specific lethal collision
+    queues mode 0x98 without ever writing a losing HP value first, so the
+    DamageApply / ApplyMaxHealth HP pins alone cannot stop it — see the
+    comment above QueueModeFade__Replacement in flight_skip_hooks.c.
+
+    Installed whenever the debug menu exists (same condition Max Health's
+    own toggle row requires): every other caller (warps, status panel,
+    story/boss mode changes) passes through unaffected.
+    """
+    baserom = (ROOT / "baserom.gba").read_bytes()
+    if not enabled:
+        checked_write(
+            rom,
+            QUEUE_MODE_FADE_OFF,
+            baserom[QUEUE_MODE_FADE_OFF : QUEUE_MODE_FADE_OFF + VENEER_LEN],
+            owners,
+            "runtime:debug_menu=FALSE:queue_mode_fade",
+        )
+        return
+
+    name = "QueueModeFade__Replacement"
+    if name not in symbols:
+        raise KeyError(f"symbol {name} not found (needed for debug_menu Max Health)")
+    apply_veneer(
+        rom, owners, QUEUE_MODE_FADE_OFF, symbols[name], "runtime:debug_menu:queue_mode_fade"
+    )
+    print(f"runtime: debug_menu Max Health death-veto → 0x{symbols[name]:08X}")
 
 
 def apply_custom_dialogue(rom: bytearray, owners: dict, symbols: dict, enabled: bool):
@@ -1632,6 +1664,7 @@ def main():
     apply_shooter_cheats(rom, owners, symbols, flags)
     apply_overworld_unlocks(rom, owners, symbols, flags)
     apply_debug_menu(rom, owners, symbols, flags["debug_menu"])
+    apply_queue_mode_fade_hook(rom, owners, symbols, flags["debug_menu"])
     apply_exp_hooks(
         rom,
         owners,
@@ -1643,7 +1676,12 @@ def main():
     )
     apply_custom_dialogue(rom, owners, symbols, flags["custom_dialogue"])
     apply_suction(rom, owners, symbols, flags["custom_gun_data"])
-    apply_enemy_hp_bars(rom, owners, symbols, flags["enemy_hp_bars"])
+    # Debug menu ships a live "Enemy HP bars" toggle (src_custom/debug_toggles.c)
+    # that overrides the RuntimeConfig default at runtime, so the hook must be
+    # installed whenever the menu is available even if enemy_hp_bars=FALSE.
+    apply_enemy_hp_bars(
+        rom, owners, symbols, flags["enemy_hp_bars"] or flags["debug_menu"]
+    )
     apply_overworld_enemy_exp(
         rom,
         owners,

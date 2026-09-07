@@ -115,6 +115,16 @@ _kernel_malloc_ewram gDebugMenuToggleRandomBattlesOff, 0x1
 @ frame that happened to see 0 re-seeded the toggle from
 @ .disable_random_battles — which is why the debug-menu row would not stay OFF.
 _kernel_malloc_ewram gRandomBattleInit, 0x1
+@ Additional debug-menu runtime toggles: live EWRAM flag seeded once from the
+@ ROM RuntimeConfig default, then flipped in place. Unlike
+@ gDebugMenuToggleRandomBattlesOff these are the sole runtime source of truth
+@ (not ANDed with the RuntimeConfig field at the call site), so switching one
+@ on works even when the ROM shipped with that cheat off.
+_kernel_malloc_ewram gDebugMenuToggleMaxHealthOn, 0x1
+_kernel_malloc_ewram gDebugMenuToggleMaxBombsOn, 0x1
+_kernel_malloc_ewram gDebugMenuToggleAllItemsOn, 0x1
+_kernel_malloc_ewram gDebugMenuToggleHpBarsOn, 0x1
+_kernel_malloc_ewram gDebugTogglesInit, 0x1
 @ Charge Shot rework: 0 = charging, 1 = empowered (10x window).
 _kernel_malloc_ewram gChargeShotPhase, 0x1
 @ Frames elapsed in the current charge / empowered phase (word-aligned here;

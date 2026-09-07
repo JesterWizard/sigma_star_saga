@@ -173,6 +173,20 @@ CalcShotDamage__Continue:
 	bx r3
 	.pool
 
+@ QueueModeFade @ 0x0800D734 — 8-byte veneer overwrites the byte-clamp
+@ prologue (push {lr}; lsls/lsrs r0,#24; lsls r1,#16); reissue it and
+@ resume at 0x0800D73D (the lsrs r1,r1,#16 the veneer didn't reach).
+	.global QueueModeFade__Continue
+	.thumb_func
+QueueModeFade__Continue:
+	push {lr}
+	lsls r0, r0, #24
+	lsrs r0, r0, #24
+	lsls r1, r1, #16
+	ldr r3, =0x0800D73D
+	bx r3
+	.pool
+
 	.section .append_text, "ax", %progbits
 	.thumb
 	.align 2

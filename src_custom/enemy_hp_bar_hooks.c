@@ -3,6 +3,7 @@
 #include "ram_map.h"
 #include "actor.h"
 #include "gba/defines.h"
+#include "debug_menu.h"
 
 /*
  * Enemy HP bars — LynJump DrawActors / InitActorParams.
@@ -171,7 +172,7 @@ APPEND_TEXT static void DrawEnemyHpBars(void)
 APPEND_TEXT void DrawActors__Replacement(void)
 {
     DrawActors__Continue();
-    if (gRuntimeConfig.enemy_hp_bars)
+    if (DebugToggle_HpBarsEnabled())
         DrawEnemyHpBars();
 }
 
@@ -180,6 +181,6 @@ APPEND_TEXT void InitActorParams__Replacement(u8 index, s32 hp, s32 param38, s32
     /* Decompiled body lives in src/actor.c (append); baserom entry is veneered. */
     InitActorParams(index, hp, param38, expPool, kind);
 
-    if (gRuntimeConfig.enemy_hp_bars && index < ACTOR_COUNT && hp > 0 && hp <= 0xFFFF)
+    if (DebugToggle_HpBarsEnabled() && index < ACTOR_COUNT && hp > 0 && hp <= 0xFFFF)
         gActorMaxHp[index] = (u32)hp;
 }

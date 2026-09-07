@@ -6,6 +6,8 @@
 #include "level_up.h"
 #include "data_structures.h"
 #include "overworld_enemy_ids.h"
+#include "debug_menu.h"
+#include "suction.h"
 
 /*
  * Overworld fauna kill EXP — C only (no ASM continues).
@@ -107,6 +109,23 @@ APPEND_TEXT bool8 DamageApply__Replacement(u8 index, s32 damage, u16 flags)
         return DamageApply(index, damage, flags);
 
     actor = &gActorPool[(u32)index * ACTOR_STRIDE];
+
+    /* Max health cheat: veto ship damage at the source instead of racing a
+     * once-per-frame HP restore against whatever reads HP right after this
+     * call (HUD, lethal-state checks) in the same frame.
+     *
+     * gActorPool[0] is the flight ship (see ram_map.h), NOT *gPlayerPtr —
+     * confirmed live via mGBA probe: in-flight gPlayerPtr's target reads all
+     * zero for thousands of frames (it is not populated in every flight-stage
+     * variant), while gActorPool[0]'s position/velocity track the ship every
+     * frame. `actor == gPlayerPtr` was therefore never true for the real ship
+     * and this veto was dead code; compare against the pool index instead. */
+    if (index == 0 && DebugToggle_MaxHealthEnabled())
+    {
+        *(s32 *)(actor + ACTOR_OFF_HP) = (s32)FullShipHpForPlayer(actor);
+        return FALSE;
+    }
+
     hp_before = *(s32 *)(actor + ACTOR_OFF_HP);
 
     ok = DamageApply(index, damage, flags);
