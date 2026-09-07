@@ -20,6 +20,30 @@ its C code compiles and its debug-menu UI looks wired up).
 | "How do I report a fix that's verified at the code level but not the full gameplay level?" | `.claude/skills/verification-scope-honesty` |
 | "What should I check before trusting a new LynJump/veneer hook?" | `.claude/skills/rom-hook-regression-check` |
 
+## Test-driven workflow (required for debug-menu / per-frame hook / runtime-toggle changes)
+
+`tools/regtest/` is a build-time regression suite: it boots the just-built
+ROM under headless mGBA and asserts gameplay invariants that a bad hook can
+silently break with zero compiler errors. It exists because a debug-menu
+"ship picker" feature once compiled cleanly, looked correct on inspection,
+and then got the player stuck in an unrecoverable animation pose the moment
+it was actually exercised — see `documentation/debug-menu.md`'s "Ship
+picker — removed, incident record" for the full incident writeup, and
+`tools/regtest/README.md` for how the suite works.
+
+**Before adding or changing anything that runs every frame, writes to an
+actor-struct offset, or adds a new debug-menu entry**: write (or extend) a
+`tools/regtest/cases/*.py` case that encodes the invariant your change must
+not break, confirm it fails against the current tree (proves it actually
+tests something), *then* implement the change until the case passes. This
+is the same negative-control discipline `.claude/skills/gba-causal-trace-hunt`
+already asks for when root-causing a bug — apply it going forward instead of
+only after an incident.
+
+Run `make test` (build + full suite) before considering such a change done.
+A change that only "looks correct on inspection" is exactly the failure
+mode this rule exists to close.
+
 ## Non-obvious defaults worth knowing up front
 
 - `configs/runtime.c` is the build-time source of truth for which cheats

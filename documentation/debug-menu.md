@@ -49,6 +49,8 @@ A "Ship" row was added and then **removed** after it caused a live regression: t
 
 **Do not re-add a ship-type picker by writing this offset.** Any future version needs: (1) a real per-model sprite/ANM selector identified via disassembly — `GetArchiveFileStart__Replacement` in `src_custom/suction_hooks.c` is the existing, confirmed-safe pattern for swapping a specific graphic (used today only for the Phoenix revive popup; the player ship's own ANM file-table index has not yet been identified), and (2) any per-frame apply hook gated on a confirmed real flight `gMode`, not just a toggle-enabled check — see the `gba-ram-address-audit` and `rom-hook-regression-check` skills before writing to any actor-struct offset whose full read/write site set hasn't been enumerated.
 
+This incident is also why `tools/regtest/` exists: a build-time regression suite (`make test`) that boots the ROM under headless mGBA and asserts gameplay invariants like "no overworld actor's model/animation field holds a flight-stage-only value" and "the player can still move on a field mode." See `tools/regtest/cases/debug_menu_actor_safety.py` for the direct regression coverage of this bug, and `AGENTS.md`'s "Test-driven workflow" section for the rule this suite is meant to enforce going forward: write the regtest case before the implementation for any new per-frame hook or debug-menu entry.
+
 It deliberately **never** calls `StatusToggle`, `StatusPanel`, `SetMode(0x168)`, or `LeaveStatusRestore`. `gMode` stays on the overworld value while the menu is open; world sim is paused by LynJumps on the overworld frame, not by changing modes. Warps close the overlay and then `QueueModeFade`; bosses close it and call `TryStartBattle`.
 
 | Screen | Behaviour |

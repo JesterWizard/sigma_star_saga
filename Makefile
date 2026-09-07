@@ -79,9 +79,28 @@ SHELL := bash -o pipefail
 .SECONDARY:
 .DELETE_ON_ERROR:
 
-.PHONY: all rom modern compare clean tidy tools check-baserom
+.PHONY: all rom modern compare clean tidy tools check-baserom test regtest regtest-harness
 
 all: rom
+
+# Build-time regression suite (tools/regtest/): boots the just-built ROM
+# under headless mGBA and asserts gameplay invariants a bad hook can break
+# without any compiler error catching it -- see documentation/debug-menu.md
+# "Ship picker -- removed, incident record" for the bug class this exists
+# to catch. Run after every change to a debug-menu / per-frame hook file,
+# not just before a release.
+MGBA_PROBE_INC := /home/username/tools/mgba/usr/include
+MGBA_PROBE_LIB := /home/username/tools/mgba/usr/lib/x86_64-linux-gnu
+
+regtest-harness: tools/regtest_harness.c
+	gcc -O2 -o tools/regtest_harness tools/regtest_harness.c \
+		-I$(MGBA_PROBE_INC) -L$(MGBA_PROBE_LIB) \
+		-Wl,-rpath-link,$(MGBA_PROBE_LIB) -Wl,-rpath,$(MGBA_PROBE_LIB) -lmgba
+
+regtest: rom regtest-harness
+	python3 -m tools.regtest.run_regtests
+
+test: regtest
 
 C_SUBDIR = src
 CUSTOM_C_SUBDIR = src_custom
