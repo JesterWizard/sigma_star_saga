@@ -21,7 +21,7 @@ Wiring the HQ blob in would never be called by GAX.
 [] Add custom gun data to boost defense
 [x] Add a debug anywhere save command
 [x] Disable START button debug menu when talking
-[] Add debug menu for choosing which ship to pilot
+[] Add debug menu for choosing which ship to pilot (reverted a regression-causing attempt; needs real sprite/ANM research first — see documentation/debug-menu.md)
 [] Fix the bug that allows ships that are too big for a stage to spawn
 [] Display objectives on the map with a red exclamation
 [] Introduce a currency system for buying gun data/equippables for your parasite?
@@ -29,7 +29,7 @@ Wiring the HQ blob in would never be called by GAX.
 
 ## Impact Data:
 [x] 29. Suction - Pull in EXP drops from afar
-[] 30. Training Weights - Cut your ATK power in half for 50% more EXP gain
+[x] 30. Training Weights - Cut your ATK power in half for 50% more EXP gain
 [x] 31. Phoenix - One revival to full health on death per map
 [] 32. Hitchhiker — First hit on an enemy plants a spore; when it dies, your next volley spawns from its corpse. Turns kills into repositioning — great on big stages.
 [] 33. Kindling — Staying on one target makes your shots grow (size + damage); switching targets resets. Rewards focus without being a boring ATK buff.

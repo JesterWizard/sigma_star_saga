@@ -197,6 +197,21 @@ APPEND_RODATA static const DebugBossEntry sDebugBosses[] = {
 
 #define DEBUG_BOSS_COUNT 29
 
+/* Ship picker removed (see documentation/debug-menu.md TODO): the write
+ * mechanism it used (forcing PLAYER_STAGE_TYPE_OFF / player+0x22 into
+ * gActorPool[0] every UpdateShooterFrame call) was confirmed via live probe
+ * to corrupt unrelated actors — that offset is ACTOR_OFF_MODEL, a general
+ * model/animation-index field reused by overworld/cutscene actors that also
+ * occupy pool slot 0, and UpdateShooterFrame's call site (vanilla 0xD610) is
+ * shared by ~129 gMode values, not flight-exclusive. Confirmed root cause of
+ * a stuck "climbing pose" regression. Also, HP tiers were never the right
+ * axis for "which ship to pilot" — no sprite/visual difference was ever
+ * found tied to that field. Re-add only after: (1) a real per-model
+ * sprite/ANM selector is identified via disassembly (see suction_hooks.c's
+ * GetArchiveFileStart__Replacement swap pattern for the mechanism shape),
+ * and (2) any per-frame apply hook is gated on a confirmed real flight gMode,
+ * not just a toggle-enabled check. */
+
 enum {
     DBG_OPT_SAVE = 0,
     DBG_OPT_WARP,

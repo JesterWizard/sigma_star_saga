@@ -36,6 +36,19 @@ Root options:
 
 Rows 5–8 are the sole runtime source of truth for their cheat (`DebugToggle_*` in `src_custom/debug_toggles.c`) — seeded once from the matching `RuntimeConfig` field as the menu's starting state, but freely switchable either direction in-game, including turning on a cheat the ROM shipped disabled. The one build-time dependency: `enemy_hp_bars`'s LynJump hook (`DrawActors__Replacement` / `InitActorParams__Replacement`) is only installed in the ROM when `.enemy_hp_bars` **or** `.debug_menu` is TRUE (see `tools/apply_lynjump.py`); with `.debug_menu = TRUE` that's always satisfied, but a debug-menu-less build with `.enemy_hp_bars = FALSE` has no hook to toggle. `always_max_health` / `always_max_bombs` / `all_key_items` / `all_tools` share hooks (`UpdateShooterFrame__Replacement`, `OverworldPlayerUpdate__Replacement`) that are already installed whenever any gun-data unlock is on, which the shipped config always has.
 
+### Ship picker — removed, incident record
+
+A "Ship" row was added and then **removed** after it caused a live regression: the player (Ian Recker) got stuck in an unrecoverable climbing pose. Root cause (confirmed via disassembly + mGBA live probe, see git history for the full investigation):
+
+- The row force-wrote `player+0x22` (called `PLAYER_STAGE_TYPE_OFF` by `FullShipHpForPlayer`, `src_custom/suction_hooks.c`) into `gActorPool[0]` every frame from `UpdateShooterFrame__Replacement`.
+- That offset is **not player-exclusive** — `src_custom/overworld_enemy_exp_hooks.c` independently names the same actor-struct offset `ACTOR_OFF_MODEL`, a general model/animation-index field reused by overworld and cutscene actors that also occupy pool slot 0 (`gActorPool[0]` is documented as "flight + cutscenes" — `documentation/ram-map.md`).
+- `UpdateShooterFrame`'s call site (vanilla `0x0800D610`) is the same broadly-shared overworld/field main-frame body reached by ~129 of ~256 `gMode` values, not a flight-exclusive path — so the write could land on a non-ship actor's model index.
+- A stray value written to that offset during flight was confirmed (live probe) to **persist across a mode transition**, unlike sibling fields that get reinitialized — so it could bleed into whatever actor next occupied slot 0, misread as a bogus animation/model index and produce a stuck pose.
+- Toggle-gating alone (`if (index != 0)`) was not sufficient: it stops the *default-off* case, but the write is still unsafe whenever the feature is actually in use, from any mode that reaches that shared call site.
+- Separately, HP tiers were never the right feature anyway — no sprite/visual difference was ever found tied to `player+0x22`; it only changes HP stock.
+
+**Do not re-add a ship-type picker by writing this offset.** Any future version needs: (1) a real per-model sprite/ANM selector identified via disassembly — `GetArchiveFileStart__Replacement` in `src_custom/suction_hooks.c` is the existing, confirmed-safe pattern for swapping a specific graphic (used today only for the Phoenix revive popup; the player ship's own ANM file-table index has not yet been identified), and (2) any per-frame apply hook gated on a confirmed real flight `gMode`, not just a toggle-enabled check — see the `gba-ram-address-audit` and `rom-hook-regression-check` skills before writing to any actor-struct offset whose full read/write site set hasn't been enumerated.
+
 It deliberately **never** calls `StatusToggle`, `StatusPanel`, `SetMode(0x168)`, or `LeaveStatusRestore`. `gMode` stays on the overworld value while the menu is open; world sim is paused by LynJumps on the overworld frame, not by changing modes. Warps close the overlay and then `QueueModeFade`; bosses close it and call `TryStartBattle`.
 
 | Screen | Behaviour |
@@ -193,6 +206,7 @@ On close, restore cameras, VRAM snapshot, DISPCNT mirrors, and soft-text dirty b
 ## TODO
 
 - [x] More menu entries (flags, item grants) behind the same overlay — max health, max bombs, all items/tools, enemy HP bars
+- [ ] Ship picker row — reverted after causing a stuck-pose regression; needs a real sprite/ANM selector (see "Ship picker — removed, incident record" above) before re-attempting
 - [ ] Pin full BG palette bank 15 so text color does not inherit field leftovers
 - [ ] Drop temporary `DEBUG_MENU_LOG` / No$ prints once the overlay is considered stable
 - [ ] Optional non-blocking save (today `WriteSave` freezes the CPU for ~20 frames on EEPROM)

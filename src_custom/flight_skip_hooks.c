@@ -16,6 +16,7 @@
 #define PLAYER_HP_OFF 0x34
 #define PLAYER_FLAGS_OFF 0x18
 #define PLAYER_HIT_FLAG 0x1000
+#define PLAYER_STAGE_TYPE_OFF 0x22 /* see suction_hooks.c FullShipHpForPlayer */
 
 /* Game-over mode queued by whatever vanilla collision handler kills the
  * ship — confirmed live via mGBA: a savestate hit from a specific attack

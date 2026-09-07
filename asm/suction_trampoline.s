@@ -152,15 +152,6 @@ AbsorbShot__Continue:
 	bx r3
 	.pool
 
-@ CalcAtk @ 0x080304D0 — 8-byte veneer; resume at 0x080304D8.
-	.global CalcAtk__Continue
-	.thumb_func
-CalcAtk__Continue:
-	push {lr}
-	ldr r3, =0x080304D9
-	bx r3
-	.pool
-
 @ CalcShotDamage @ 0x080305C8 — 8-byte veneer; resume at 0x080305D0.
 	.global CalcShotDamage__Continue
 	.thumb_func

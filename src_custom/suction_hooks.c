@@ -4,6 +4,7 @@
 #include "actor.h"
 #include "data_structures.h"
 #include "suction.h"
+#include "atk.h"
 #include "nocash.h"
 
 typedef u32 (*CalcAngleFn)(s32 x0, s32 y0, s32 x1, s32 y1);
@@ -42,7 +43,6 @@ void LeechGemUpdate__Continue(void);
 void GetGunDataIconFrame__Continue(u32 type, u32 local, u32 owned, u16 *out);
 u32 IsGunDataOwned__Continue(u32 type, u32 local);
 void AbsorbShot__Continue(u32 shot_index);
-u32 CalcAtk__Continue(void);
 u32 CalcShotDamage__Continue(u32 shot_index, u32 arg1);
 
 /*
@@ -93,9 +93,9 @@ APPEND_TEXT u32 EquippedImpactIndex(void)
 APPEND_TEXT u32 ImpactIdIsPhoenix(u32 id)
 {
     id &= 0xFF;
-    return id == IMPACT_PHOENIX
-        || id == IMPACT_ID_PHOENIX
-        || id == IMPACT_NUM_PHOENIX;
+    /* Local index 30 / Gun Data id 79 only. Do not match badge #31 — that
+     * is Training Weights' local index, and would make both effects fire. */
+    return id == IMPACT_PHOENIX || id == IMPACT_ID_PHOENIX;
 }
 
 APPEND_TEXT u32 PhoenixIsEquipped(void)
@@ -106,7 +106,7 @@ APPEND_TEXT u32 PhoenixIsEquipped(void)
 
     /* Active slot first (same as OnImpact / Suction). Also accept the other
      * loadout word so a sticky primary-flag mismatch cannot soft-disable it.
-     * Phoenix may appear as local index 30, Gun Data ID 79, or badge #31.
+     * Phoenix may appear as local index 30 or Gun Data ID 79.
      * Do NOT treat mere ownership as equipped — all_impact_data would make
      * Phoenix always-on and poison DeleteActor skips on the overworld. */
     if (ImpactIdIsPhoenix(idx) || ImpactIdIsPhoenix(primary) || ImpactIdIsPhoenix(alt))
@@ -115,32 +115,16 @@ APPEND_TEXT u32 PhoenixIsEquipped(void)
     return 0;
 }
 
-APPEND_TEXT u32 ImpactIdIsTrainingWeights(u32 id)
-{
-    id &= 0xFF;
-    return id == IMPACT_TRAINING_WEIGHTS
-        || id == IMPACT_ID_TRAINING_WEIGHTS
-        || id == IMPACT_NUM_TRAINING_WEIGHTS;
-}
-
 APPEND_TEXT u32 TrainingWeightsIsEquipped(void)
 {
-    u32 idx = EquippedImpactIndex();
-    u32 primary = gGunLoadoutImpact & 0xFF;
-    u32 alt = gGunLoadoutImpactAlt & 0xFF;
-
-    if (ImpactIdIsTrainingWeights(idx)
-        || ImpactIdIsTrainingWeights(primary)
-        || ImpactIdIsTrainingWeights(alt))
-        return 1;
-
-    return 0;
+    /* Active slot only — an inactive alt piece must not halve ATK. */
+    return EquippedImpactIndex() == IMPACT_TRAINING_WEIGHTS;
 }
 
 /* Status-screen ATK @ 0x080304D0 — bullet-type offset added to gPlayerLevel. */
 APPEND_TEXT u32 CalcAtk__Replacement(void)
 {
-    u32 atk = CalcAtk__Continue();
+    u32 atk = CalcAtk();
 
     if (TrainingWeightsIsEquipped())
         atk >>= 1;

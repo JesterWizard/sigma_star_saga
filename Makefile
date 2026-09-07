@@ -102,6 +102,7 @@ C_SRCS := \
 	$(C_SUBDIR)/actor_draw.c \
 	$(C_SUBDIR)/actor_death.c \
 	$(C_SUBDIR)/damage.c \
+	$(C_SUBDIR)/atk.c \
 	$(C_SUBDIR)/overworld_encounters.c \
 	$(C_SUBDIR)/overworld_frame.c \
 	$(C_SUBDIR)/debug_text.c \
